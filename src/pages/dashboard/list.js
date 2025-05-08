@@ -21,19 +21,36 @@ function List({ uid }) {
 
   useEffect(() => {
     ;(async () => {
-      const user = await getUserByID(uid)
-      const postPromises = user.readingList.map(async pid => {
-        const post = await getPostByID(pid)
-        const author = await firestore
-          .collection('users')
-          .doc(post.author)
-          .get()
-        post.author = author.data()
-        return post
-      })
-      const posts = await Promise.all(postPromises)
-      console.log(posts)
-      setList(posts)
+      try {
+        const user = await getUserByID(uid)
+        // Check if user has readingList and it's not empty
+        if (user.readingList && user.readingList.length > 0) {
+          const postPromises = user.readingList.map(async pid => {
+            try {
+              const post = await getPostByID(pid)
+              const author = await firestore
+                .collection('users')
+                .doc(post.author)
+                .get()
+              post.author = author.data()
+              return post
+            } catch (error) {
+              console.error(`Error fetching post ${pid}:`, error)
+              return null
+            }
+          })
+          const posts = await Promise.all(postPromises)
+          // Filter out null values (posts that failed to load)
+          const validPosts = posts.filter(post => post !== null)
+          console.log(validPosts)
+          setList(validPosts)
+        } else {
+          setList([])
+        }
+      } catch (error) {
+        console.error('Error loading reading list:', error)
+        setList([])
+      }
     })()
   }, [uid])
 
@@ -115,7 +132,7 @@ export default function ReadingList() {
       router.push('/')
       return
     }
-  }, [user, userLoading, userError])
+  }, [router, user, userLoading, userError])
 
   return (
     <>
