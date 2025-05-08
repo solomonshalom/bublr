@@ -1,0 +1,10 @@
+{
+  "appId": "com.bublr.app",
+  "appName": "Bublr",
+  "webDir": "out",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://localhost:3000",
+    "cleartext": true
+  }
+}
