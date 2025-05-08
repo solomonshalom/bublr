@@ -21,6 +21,11 @@ export async function getUserByID(id) {
   }
 
   const user = doc.data()
+  // Initialize readingList as an empty array if it doesn't exist
+  if (!user.readingList) {
+    user.readingList = []
+  }
+  
   const postDocPromises = user.posts.map(postId => getPostByID(postId))
   user.posts = await Promise.all(postDocPromises)
 
