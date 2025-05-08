@@ -21,13 +21,20 @@ function AddToReadingListButton({ uid, pid }) {
 
   useEffect(() => {
     ;(async () => {
-      const data = await getUserByID(uid)
-      setUser(data)
+      try {
+        const data = await getUserByID(uid)
+        setUser(data)
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+        setUser({ readingList: [] })
+      }
     })()
   }, [uid])
 
   useEffect(() => {
-    setInList(user.readingList.includes(pid))
+    if (user && user.readingList) {
+      setInList(user.readingList.includes(pid))
+    }
   }, [pid, user])
 
   return (
