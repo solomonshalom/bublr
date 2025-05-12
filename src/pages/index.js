@@ -9,7 +9,22 @@ import { setUser, userWithIDExists } from '../lib/db'
 import meta from '../components/meta'
 import Spinner from '../components/spinner'
 import Container from '../components/container'
+import PeepWalk from '../components/PeepWalk'
 import Button, { LinkButton } from '../components/button'
+
+const dicebearStyles = [
+  'notionists-neutral',
+  'notionists',
+  'lorelei-neutral',
+  'lorelei',
+  'dylan',
+]
+
+function generateDiceBearAvatar(uid) {
+  const hash = uid.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const style = dicebearStyles[hash % dicebearStyles.length]
+  return `https://api.dicebear.com/9.x/${style}/svg?seed=${uid}`
+}
 
 export default function Home() {
   const [user, loading, error] = useAuthState(auth)
@@ -37,13 +52,13 @@ export default function Home() {
           width: 2rem;
           height: 2rem;
 
-          background-image: url('/images/logo.png');
+          background-image: url('/images/logo-dark.png');
           background-position: center;
           background-repeat: no-repeat;
           background-size: 2rem;
 
           html[data-theme='dark'] & {
-            background-image: url('/images/logo-dark.png');
+            background-image: url('/images/logo.png');
           }
         `}
       ></div>
@@ -119,7 +134,7 @@ export default function Home() {
                     displayName: cred.user.displayName || 'Anonymous',
                     about: 'Nothing to say about you.',
                     posts: [],
-                    photo: cred.user.photoURL,
+                    photo: generateDiceBearAvatar(cred.user.uid),
                     readingList: [],
                   })
                 }
@@ -142,7 +157,7 @@ export default function Home() {
                     displayName: cred.user.displayName || 'Anonymous',
                     about: 'Nothing to say about you.',
                     posts: [],
-                    photo: cred.user.photoURL,
+                    photo: generateDiceBearAvatar(cred.user.uid),
                     readingList: [],
                   })
                 }
@@ -153,6 +168,17 @@ export default function Home() {
           </Button>
         </div>
       )}
+      <div
+        css={css`
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          z-index: -1;
+        `}
+      >
+        <PeepWalk height="450px" width="100%" />
+      </div>
     </div>
   )
 }
