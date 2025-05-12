@@ -370,11 +370,61 @@ function Editor({ post }) {
   })
 
   function addImage() {
-    const url = window.prompt('URL')
-
-    if (url) {
-      contentEditor.chain().focus().setImage({ src: url }).run()
+    // Create a file input element
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    
+    // Listen for file selection
+    input.onchange = async (event) => {
+      const file = event.target.files[0]
+      if (!file) return
+      
+      // Show loading indicator
+      const loadingEl = document.createElement('div')
+      loadingEl.textContent = 'Uploading image...'
+      loadingEl.style.padding = '1rem'
+      loadingEl.style.background = 'var(--grey-5)'
+      loadingEl.style.borderRadius = '0.5rem'
+      loadingEl.style.position = 'fixed'
+      loadingEl.style.zIndex = '9999'
+      loadingEl.style.top = '1rem'
+      loadingEl.style.right = '1rem'
+      document.body.appendChild(loadingEl)
+      
+      try {
+        // Import the function to avoid module issues
+        const { uploadToImgBB } = await import('../../lib/utils')
+        
+        // Get API key from environment variable
+        // This ensures we're not hardcoding sensitive keys in the source code
+        const apiKey = process.env.NEXT_PUBLIC_IMGBB_API
+        
+        if (!apiKey) {
+          alert('ImgBB API key not configured. Please check your environment variables.')
+          return
+        }
+        
+        // Upload image
+        const imageUrl = await uploadToImgBB(file, apiKey)
+        
+        if (imageUrl) {
+          // Insert the image into the editor
+          contentEditor.chain().focus().setImage({ src: imageUrl }).run()
+        } else {
+          alert('Failed to upload image. Please try again.')
+        }
+      } catch (error) {
+        console.error('Image upload error:', error)
+        alert('Error uploading image. Please try again.')
+      } finally {
+        // Remove loading indicator
+        document.body.removeChild(loadingEl)
+      }
     }
+    
+    // Trigger file selection dialog
+    input.click()
   }
 
   return (
