@@ -37,7 +37,7 @@ export default function Home() {
           width: 2rem;
           height: 2rem;
 
-          background-image: url('/images/logo-light.png');
+          background-image: url('/images/logo.png');
           background-position: center;
           background-repeat: no-repeat;
           background-size: 2rem;
@@ -54,7 +54,7 @@ export default function Home() {
           margin-bottom: 1.5rem;
         `}
       >
-        An ultra-minimal platform for anybody who writes
+        An open-source, ultra-minimal community for writers, to write.
       </h1>
       <ul
         css={css`
@@ -162,9 +162,9 @@ Home.getLayout = function HomeLayout(page) {
     <Container maxWidth="420px">
       <Head>
         {meta({
-          title: 'OSPress',
+          title: 'Bublr',
           description:
-            'An ultra minimal blogging platform for anybody who writes',
+            'An open-source, ultra-minimal community for writers, to write.',
           url: '/',
           image: '/images/socials.png',
         })}

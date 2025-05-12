@@ -141,7 +141,7 @@ function Editor({ user }) {
       >
         See your profile live at:{' '}
         <a target="_blank" rel="noreferrer" href={`/${user.name}`}>
-          ospress.co/{user.name}
+          bublr.life/{user.name}
         </a>
       </p>
 
