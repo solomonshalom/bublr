@@ -32,6 +32,7 @@ function Editor({ user }) {
     name: '',
     displayName: '',
     about: '',
+    link: '',
     posts: [],
     photo: '',
     readingList: [],
@@ -109,6 +110,21 @@ function Editor({ user }) {
         </div>
 
         <div>
+          <StyledLabel htmlFor="profile-link">Link</StyledLabel>
+          <Input
+            id="profile-link"
+            type="text"
+            value={clientUser.link || ''}
+            onChange={e =>
+              setClientUser(prevUser => ({
+                ...prevUser,
+                link: e.target.value,
+              }))
+            }
+          />
+        </div>
+
+        <div>
           <StyledLabel htmlFor="profile-about">About</StyledLabel>
           <Textarea
             id="profile-about"
@@ -155,6 +171,7 @@ function Editor({ user }) {
           user.name === clientUser.name &&
           user.displayName === clientUser.displayName &&
           user.about === clientUser.about &&
+          user.link === clientUser.link &&
           !usernameErr
         }
         onClick={async () => {

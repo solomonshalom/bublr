@@ -62,6 +62,27 @@ export default function Profile({ user }) {
         {user.about}
       </p>
 
+      {user.link && (
+        <p
+          css={css`
+            margin-top: 1rem;
+            font-size: 1rem;
+          `}
+        >
+          <a 
+            href={user.link.startsWith('http') ? user.link : `https://${user.link}`} 
+            target="_blank" 
+            rel="noreferrer"
+            css={css`
+              color: var(--grey-4);
+              text-decoration: underline;
+            `}
+          >
+            {user.link}
+          </a>
+        </p>
+      )}
+
       <ul
         id="posts"
         css={css`
@@ -146,7 +167,8 @@ export default function Profile({ user }) {
           "name": user.displayName,
           "url": `https://bublr.life/${user.name}`,
           "image": user.photo,
-          "description": user.about
+          "description": user.about,
+          "sameAs": user.link ? (user.link.startsWith('http') ? user.link : `https://${user.link}`) : undefined
         })
       }} />
     </Container>
