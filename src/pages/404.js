@@ -8,7 +8,9 @@ export default function NotFound() {
   return (
     <Container maxWidth="640px">
       <Head>
-        <title>Not Found</title>
+        <title>404 - Page Not Found | Bublr</title>
+        <meta name="robots" content="noindex, follow" />
+        <meta name="description" content="The page you are looking for could not be found. Navigate back to Bublr homepage." />
       </Head>
       <h1>404</h1>
       <p

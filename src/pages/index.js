@@ -162,12 +162,27 @@ Home.getLayout = function HomeLayout(page) {
     <Container maxWidth="420px">
       <Head>
         {meta({
-          title: 'Bublr',
+          title: 'Bublr - A Minimal Writing Community',
           description:
-            'An open-source, ultra-minimal community for writers, to write.',
+            'Bublr is an open-source, ultra-minimal community for writers to share their thoughts, stories, and ideas without ads or paywalls.',
           url: '/',
           image: '/images/socials.png',
         })}
+        <link rel="canonical" href="https://bublr.life/" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "url": "https://bublr.life/",
+            "name": "Bublr",
+            "description": "An open-source, ultra-minimal community for writers to share their thoughts, stories, and ideas without ads or paywalls.",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://bublr.life/{search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          })
+        }} />
       </Head>
       {page}
     </Container>

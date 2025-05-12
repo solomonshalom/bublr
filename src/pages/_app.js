@@ -3,17 +3,34 @@ import Head from 'next/head'
 import { ThemeProvider } from 'next-themes'
 import { Global, css } from '@emotion/react'
 import { IdProvider } from '@radix-ui/react-id'
+import { useRouter } from 'next/router'
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || (page => page)
+  const router = useRouter()
 
   return (
     <>
       <Head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="theme-color" content="#FCFCFC" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
           rel="stylesheet"
         />
+        {/* Open Graph default fallback values */}
+        {!router.pathname.includes('[') && (
+          <>
+            <meta property="og:site_name" content="Bublr" />
+            <meta property="twitter:site" content="@bublr" />
+          </>
+        )}
       </Head>
       <Global
         styles={css`
