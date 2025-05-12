@@ -1,18 +1,21 @@
-# ImgBB Image Upload Integration
+# [Bublr](https://bublr.life)
 
-This project now includes direct image uploading to ImgBB when adding images to posts.
+An open-source, ultra-minimal community for writers, to write.
 
-## Environment Variables Setup
+## Tech Stack
 
-1. Get an API key from [ImgBB](https://api.imgbb.com/)
-2. Add your API key to the `.env.local` file:
-   ```
-   NEXT_PUBLIC_IMGBB_API=your_imgbb_api_key
-   ```
-3. Restart the development server after adding the key
+This project is built using:
 
-The application securely uses this environment variable for all API requests instead of hardcoding any keys in the source code.
+- [Next.js](https://nextjs.org/) - The React Framework for the Web
+- [Firebase](https://www.firebase.google.com) - A modern all-in-one solution to building backend
+- [TipTap](https://tiptap.dev) - A modern, open-source, framework-agnostic WYSIWYG editor
 
-## Usage
+## Features
 
-When editing a post, click the "+ Image" button to open a file selector. The selected image will be automatically uploaded to ImgBB and inserted into the post content.
+- [x] Make & edit a profile
+- [x] Create, edit & publish posts
+- [X] API
+- [X] Image upload
+- [X] Upgrade the TipTap editor
+- [ ] Explore tab
+- [ ] Upgrade NextJS / Firebase
