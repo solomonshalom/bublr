@@ -228,14 +228,18 @@ export async function getStaticProps({ params }) {
 
   try {
     const post = await getPostByUsernameAndSlug(username, slug)
-    if (!post.published) {
+    if (!post.published || post.visibility === 'private' || (post.visibility === 'unlisted' && !params.preview)) {
       return { notFound: true }
     }
     const userDoc = await firestore.collection('users').doc(post.author).get()
     post.author = userDoc.data()
     post.lastEdited = post.lastEdited.toDate().getTime()
+    
+    // Add noindex meta for unlisted posts
+    const noIndex = post.visibility === 'unlisted'
+    
     return {
-      props: { post },
+      props: { post, noIndex },
       revalidate: 60, // Revalidate at most once per minute
     }
   } catch (err) {
