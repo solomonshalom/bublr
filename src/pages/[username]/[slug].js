@@ -21,6 +21,7 @@ import meta from '../../components/meta'
 import Container from '../../components/container'
 import { IconButton } from '../../components/button'
 import PostContainer from '../../components/post-container'
+import { TextToSpeechButton } from '../../components/speech-controls'
 
 function AddToReadingListButton({ uid, pid }) {
   const [user, setUser] = useState({ readingList: [] })
@@ -101,6 +102,7 @@ function AddToReadingListButton({ uid, pid }) {
 
 export default function Post({ post }) {
   const [user, _loading, _error] = useAuthState(auth)
+  const postContent = htmlToText(post.content || '')
 
   return (
     <Container maxWidth="640px">
@@ -109,7 +111,7 @@ export default function Post({ post }) {
           title: `${htmlToText(post.title) || 'Untitled'} - ${post.author.displayName} | Bublr`,
           description: post.excerpt || truncateContent(post.content, 160),
           url: `/${post.author.name}/${post.slug}`,
-          type: 'article', 
+          type: 'article',
           keywords: `${post.author.displayName}, ${post.author.name}, writing, blog post, article`
         })}
         <link
@@ -146,16 +148,24 @@ export default function Post({ post }) {
         }} />
       </Head>
 
-      <h1
-        css={css`
-          font-size: 1.75rem;
-          letter-spacing: -0.02em;
-          line-height: 1.35;
-          margin-bottom: 2rem;
-        `}
-      >
-        {post.title ? htmlToText(post.title) : 'Untitled'}
-      </h1>
+      <div css={css`
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+      `}>
+        <h1
+          css={css`
+            font-size: 1.75rem;
+            letter-spacing: -0.02em;
+            line-height: 1.35;
+          `}
+        >
+          {post.title ? htmlToText(post.title) : 'Untitled'}
+        </h1>
+        
+        <TextToSpeechButton text={postContent} />
+      </div>
 
       <div
         css={css`
