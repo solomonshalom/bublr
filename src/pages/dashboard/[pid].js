@@ -45,6 +45,7 @@ import Container from '../../components/container'
 import ModalOverlay from '../../components/modal-overlay'
 import PostContainer from '../../components/post-container'
 import Button, { IconButton, LinkIconButton } from '../../components/button'
+import { SpeechToTextButton } from '../../components/speech-controls'
 
 function SelectionMenu({ editor }) {
   const [editingLink, setEditingLink] = useState(false)
@@ -719,19 +720,29 @@ function Editor({ post }) {
         </Dialog.Root>
       </header>
 
-      <Button
-        outline
-        css={css`
-          font-size: 0.9rem;
-          margin-top: 5rem;
-          margin-bottom: 2.5rem;
-        `}
-        onClick={() => {
-          addImage()
-        }}
-      >
-        + Image
-      </Button>
+      <div css={css`
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 5rem;
+        margin-bottom: 2.5rem;
+      `}>
+        <Button
+          outline
+          css={css`
+            font-size: 0.9rem;
+          `}
+          onClick={addImage}
+        >
+          + Image
+        </Button>
+
+        <SpeechToTextButton
+          onTranscription={(text) => {
+            contentEditor.commands.insertContent(text);
+          }}
+        />
+      </div>
 
       <div
         css={css`
