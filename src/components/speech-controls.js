@@ -56,30 +56,75 @@ export function SpeechToTextButton({ onTranscription }) {
 
 export function TextToSpeechButton({ text }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const speechRef = useRef(null);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const audioRef = useRef(new Audio());
 
-  const startSpeaking = async () => {
+  const generateSpeech = async () => {
     try {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.onend = () => setIsPlaying(false);
-      speechRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
+      const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY,
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_monolingual_v1',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.5,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate speech');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+      
+      audioRef.current.src = url;
+      audioRef.current.play();
       setIsPlaying(true);
     } catch (error) {
       console.error('Text-to-speech error:', error);
-      alert('Text-to-speech is not supported in this browser.');
+      alert('Failed to generate speech. Please try again.');
     }
   };
 
-  const stopSpeaking = () => {
-    window.speechSynthesis.cancel();
-    setIsPlaying(false);
+  const togglePlayback = async () => {
+    if (!audioUrl) {
+      await generateSpeech();
+    } else if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
   };
+
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    
+    audio.onended = () => {
+      setIsPlaying(false);
+    };
+
+    return () => {
+      audio.onended = null;
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [audioUrl]);
 
   return (
     <IconButton
-      onClick={isPlaying ? stopSpeaking : startSpeaking}
-      title={isPlaying ? "Stop speaking" : "Start speaking"}
+      onClick={togglePlayback}
+      title={isPlaying ? "Pause" : "Play"}
     >
       {isPlaying ? (
         <PauseIcon style={{ width: '24px', height: '24px' }} />
