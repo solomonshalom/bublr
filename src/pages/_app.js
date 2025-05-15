@@ -4,10 +4,26 @@ import { ThemeProvider } from 'next-themes'
 import { Global, css } from '@emotion/react'
 import { IdProvider } from '@radix-ui/react-id'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || (page => page)
   const router = useRouter()
+  
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(
+          (registration) => {
+            console.log('Service Worker registration successful with scope: ', registration.scope)
+          },
+          (err) => {
+            console.log('Service Worker registration failed: ', err)
+          }
+        )
+      })
+    }
+  }, [])
 
   return (
     <>
@@ -18,6 +34,7 @@ const App = ({ Component, pageProps }) => {
         <meta name="theme-color" content="#FCFCFC" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)" />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

@@ -102,10 +102,23 @@ function AddToReadingListButton({ uid, pid }) {
 
 export default function Post({ post }) {
   const [user, _loading, _error] = useAuthState(auth)
-  const postTitle = htmlToText(post.title || '')
-  const postExcerpt = htmlToText(post.excerpt || '')
-  const postMainContent = htmlToText(post.content || '')
-  const postContent = `${postTitle}. ${postExcerpt ? postExcerpt + '. ' : ''}${postMainContent}`
+  // Safely extract text with error handling
+  const safeHtmlToText = (html) => {
+    try {
+      return htmlToText(html || '');
+    } catch (error) {
+      console.error('Error converting HTML to text:', error);
+      return '';
+    }
+  };
+  
+  const postTitle = safeHtmlToText(post.title || '')
+  const postExcerpt = safeHtmlToText(post.excerpt || '')
+  const postMainContent = safeHtmlToText(post.content || '')
+  
+  // Limit content length to avoid API limitations
+  const maxContentLength = 2000;
+  const postContent = `${postTitle}. ${postExcerpt ? postExcerpt + '. ' : ''}${postMainContent.substring(0, maxContentLength)}`
 
   return (
     <Container maxWidth="640px">
@@ -164,7 +177,7 @@ export default function Post({ post }) {
             line-height: 1.35;
           `}
         >
-          {post.title ? htmlToText(post.title) : 'Untitled'}
+          {post.title ? safeHtmlToText(post.title) : 'Untitled'}
         </h1>
         
         <TextToSpeechButton text={postContent} />

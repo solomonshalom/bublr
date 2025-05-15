@@ -79,10 +79,16 @@ export function SpeechToTextButton({ onTranscription }) {
 export function TextToSpeechButton({ text }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const audioRef = useRef(new Audio());
 
   const generateSpeech = async () => {
     try {
+      setIsLoading(true);
+      
+      // Showing a loading state to the user
+      audioRef.current.pause();
+      
       const response = await fetch('/api/text-to-speech', {
         method: 'POST',
         headers: {
@@ -92,10 +98,17 @@ export function TextToSpeechButton({ text }) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate speech');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to generate speech');
       }
 
       const blob = await response.blob();
+      
+      // Revoke previous URL to avoid memory leaks
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+      
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
       
@@ -104,29 +117,62 @@ export function TextToSpeechButton({ text }) {
       setIsPlaying(true);
     } catch (error) {
       console.error('Text-to-speech error:', error);
-      alert('Failed to generate speech. Please try again.');
+      alert(`Failed to generate speech: ${error.message}`);
       setIsPlaying(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const togglePlayback = async () => {
+    if (isLoading) return;
+    
     if (!audioUrl) {
       await generateSpeech();
     } else if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play();
-      setIsPlaying(true);
+      try {
+        await audioRef.current.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.error('Error playing audio:', error);
+        // If the audio fails to play (corrupted), generate a new one
+        await generateSpeech();
+      }
     }
   };
+
+  // Add event listener for when audio playback ends
+  useEffect(() => {
+    const audio = audioRef.current;
+    
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
+    
+    audio.addEventListener('ended', handleEnded);
+    
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
+      // Clean up the audio URL when component unmounts
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [audioUrl]);
 
   return (
     <IconButton
       onClick={togglePlayback}
-      title={isPlaying ? "Pause" : "Play"}
+      title={isPlaying ? "Pause" : (isLoading ? "Loading..." : "Play")}
+      disabled={isLoading}
     >
-      {isPlaying ? (
+      {isLoading ? (
+        // You could add a spinner here if you have one
+        <span style={{ fontSize: '24px' }}>⌛</span>
+      ) : isPlaying ? (
         <PauseIcon style={{ width: '24px', height: '24px' }} />
       ) : (
         <PlayIcon style={{ width: '24px', height: '24px' }} />
