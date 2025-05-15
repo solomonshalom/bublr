@@ -29,6 +29,11 @@ function generateDiceBearAvatar(uid) {
 export default function Home() {
   const [user, loading, error] = useAuthState(auth);
 
+  // Handle Firebase auth not being available during SSR
+  if (typeof window === 'undefined') {
+    return null; // Don't render anything during SSR
+  }
+
   if (error) {
     return (
       <>

@@ -7,6 +7,9 @@ import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
 
+// Import Firebase for initialization
+import firebase from '../lib/firebase'
+
 // Animation for speech controls
 const animationStyle = `
 @keyframes spin {
@@ -19,17 +22,28 @@ const App = ({ Component, pageProps }) => {
   const router = useRouter()
   
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(
-          (registration) => {
-            console.log('Service Worker registration successful with scope: ', registration.scope)
-          },
-          (err) => {
-            console.log('Service Worker registration failed: ', err)
-          }
-        )
-      })
+    // Initialize Firebase auth for client
+    if (typeof window !== 'undefined' && !window.__FIREBASE_INIT__) {
+      window.__FIREBASE_INIT__ = true;
+      
+      // Notify that Firebase auth is ready
+      if (window.__FIREBASE_RESOLVE_AUTH__) {
+        window.__FIREBASE_RESOLVE_AUTH__(true);
+      }
+      
+      // Setup service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(
+            (registration) => {
+              console.log('Service Worker registration successful with scope: ', registration.scope)
+            },
+            (err) => {
+              console.log('Service Worker registration failed: ', err)
+            }
+          )
+        })
+      }
     }
     
     // Preload and cache speech capabilities

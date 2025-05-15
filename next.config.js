@@ -137,6 +137,8 @@ module.exports = withPWA({
   compress: true,
   // Add poweredByHeader false to remove X-Powered-By header for security
   poweredByHeader: false,
-  // Disable SSG for builds to avoid Firebase auth issues
-  target: 'server'
+  // Set to serverless for Vercel deployment
+  target: 'serverless',
+  // Declare firebase auth pages as fallbacks
+  trailingSlash: false
 });

@@ -4,9 +4,12 @@ import 'firebase/firestore'
 
 import FIREBASE_CONFIG from './firebase-config'
 
-// Initialize Firebase only on client-side
-if (typeof window !== 'undefined' && firebase.apps.length === 0) {
-  firebase.initializeApp(FIREBASE_CONFIG)
+// For SSR compatibility
+const isBrowser = typeof window !== 'undefined';
+
+// Initialize Firebase only on the client-side
+if (isBrowser && !firebase.apps.length) {
+  firebase.initializeApp(FIREBASE_CONFIG);
   
   // Performance optimizations for Firestore
   const firestoreSettings = {
@@ -14,37 +17,60 @@ if (typeof window !== 'undefined' && firebase.apps.length === 0) {
     ignoreUndefinedProperties: true,
   };
   
-  // Enable offline persistence for better user experience
+  // Enable offline persistence in production
   if (process.env.NODE_ENV === 'production') {
     firestoreSettings.experimentalForceLongPolling = false;
     firebase.firestore().enablePersistence({ synchronizeTabs: true })
       .catch((err) => {
-        console.error("Firestore persistence error:", err.code);
+        if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
+          console.error("Firestore persistence error:", err.code);
+        }
       });
   }
   
   firebase.firestore().settings(firestoreSettings);
 }
 
-// Lazy-loaded auth and firestore to avoid SSR issues
-let _auth, _firestore;
-
-// Helper function to get auth instance
-const getAuth = () => {
-  if (!_auth) {
-    _auth = firebase.auth();
-  }
-  return _auth;
+// Create empty objects for server-side rendering
+const emptyAuth = {
+  currentUser: null,
+  onAuthStateChanged: () => (() => {}),
+  signInWithPopup: () => Promise.resolve({}),
+  signOut: () => Promise.resolve({}),
 };
 
-// Helper function to get firestore instance
-const getFirestore = () => {
-  if (!_firestore) {
-    _firestore = firebase.firestore();
-  }
-  return _firestore;
+const emptyFirestore = {
+  collection: () => ({
+    doc: () => ({
+      get: () => Promise.resolve({ exists: false, data: () => ({}) }),
+      set: () => Promise.resolve(),
+      update: () => Promise.resolve(),
+    }),
+    where: () => ({
+      get: () => Promise.resolve({ docs: [] }),
+      onSnapshot: () => (() => {}),
+    }),
+  }),
+  doc: (path) => ({
+    get: () => Promise.resolve({ exists: false, data: () => ({}) }),
+    collection: () => emptyFirestore.collection(),
+  }),
+  batch: () => ({
+    set: () => {},
+    update: () => {},
+    delete: () => {},
+    commit: () => Promise.resolve(),
+  }),
 };
 
-export const auth = typeof window !== 'undefined' ? getAuth() : null;
-export const firestore = typeof window !== 'undefined' ? getFirestore() : null;
+// Export the appropriate objects based on environment
+export const auth = isBrowser ? firebase.auth() : emptyAuth;
+export const firestore = isBrowser ? firebase.firestore() : emptyFirestore;
+
+// Add direct access to Firebase methods for compatibility
+if (!isBrowser) {
+  firebase.auth = () => emptyAuth;
+  firebase.firestore = () => emptyFirestore;
+}
+
 export default firebase;
