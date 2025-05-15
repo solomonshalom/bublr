@@ -25,25 +25,15 @@ export function SpeechToTextButton({ onTranscription }) {
               const formData = new FormData();
               formData.append("audio", audioBlob, "recording.webm");
               
-              // Open a new window for API access to avoid COOP restrictions
-              const newWindow = window.open('', '_blank');
-              if (newWindow) {
-                newWindow.document.write('Processing speech...');
-                newWindow.document.close();
-              }
-              
+              // Make direct API call without opening a new window
               const response = await fetch("/api/transcribe", {
                 method: "POST",
                 body: formData,
               });
-              
-              // Close the helper window
-              if (newWindow) {
-                newWindow.close();
-              }
 
               if (!response.ok) {
-                throw new Error(`Transcription failed: ${response.statusText}`);
+                const errorData = await response.json().catch(() => ({ error: response.statusText }));
+                throw new Error(`Transcription failed: ${errorData.error || response.statusText}`);
               }
 
               const data = await response.json();

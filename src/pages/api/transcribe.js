@@ -23,15 +23,25 @@ export default async function handler(req, res) {
         apiKey: process.env.ELEVENLABS_API_KEY,
       });
 
+      // Add debug logging
+      console.log("Sending audio to ElevenLabs API");
+      
       const transcription = await client.speechToText.convert({
-        model_id: "scribe_v1",
+        model_id: "whisper-1",  // Changed to use whisper-1 which is more commonly available
         file: audio,
       });
+
+      console.log("Received transcription response:", transcription);
+      
+      if (!transcription || !transcription.text) {
+        console.error("Invalid transcription response:", transcription);
+        return res.status(500).json({ error: "Invalid response from speech-to-text service" });
+      }
 
       return res.status(200).json({ text: transcription.text });
     } catch (elevenLabsError) {
       console.error("ElevenLabs API error:", elevenLabsError);
-      return res.status(500).json({ error: "Speech-to-text service error" });
+      return res.status(500).json({ error: `Speech-to-text service error: ${elevenLabsError.message}` });
     }
   } catch (error) {
     console.error("Error processing transcription request:", error);
