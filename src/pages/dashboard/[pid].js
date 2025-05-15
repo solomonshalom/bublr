@@ -739,7 +739,14 @@ function Editor({ post }) {
 
         <SpeechToTextButton
           onTranscription={(text) => {
-            contentEditor.commands.insertContent(text);
+            // If the editor is focused, insert at cursor position
+            // Otherwise append to the end
+            if (contentEditor.isFocused) {
+              contentEditor.commands.insertContent(text);
+            } else {
+              contentEditor.commands.focus('end');
+              contentEditor.commands.insertContent(text);
+            }
           }}
         />
       </div>

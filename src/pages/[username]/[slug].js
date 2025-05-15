@@ -102,7 +102,10 @@ function AddToReadingListButton({ uid, pid }) {
 
 export default function Post({ post }) {
   const [user, _loading, _error] = useAuthState(auth)
-  const postContent = htmlToText(post.content || '')
+  const postTitle = htmlToText(post.title || '')
+  const postExcerpt = htmlToText(post.excerpt || '')
+  const postMainContent = htmlToText(post.content || '')
+  const postContent = `${postTitle}. ${postExcerpt ? postExcerpt + '. ' : ''}${postMainContent}`
 
   return (
     <Container maxWidth="640px">

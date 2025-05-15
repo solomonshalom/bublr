@@ -1,55 +1,75 @@
 import React, { useState, useRef } from 'react';
 import { IconButton } from './button';
-import { PlayIcon, PauseIcon, MicrophoneIcon } from '@radix-ui/react-icons';
+import { PlayIcon as PlayIconHuge, PauseIcon as PauseIconHuge, Mic02Icon, MicOff02Icon } from 'hugeicons-react';
+import { PlayIcon, PauseIcon } from '@radix-ui/react-icons';
 
 export function SpeechToTextButton({ onTranscription }) {
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
 
-  const startListening = async () => {
-    try {
-      const recognition = new window.webkitSpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
+  const handleRecord = async () => {
+    if (isRecording && mediaRecorder) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setMediaRecorder(null);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        setMediaRecorder(recorder);
 
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0])
-          .map(result => result.transcript)
-          .join('');
+        recorder.addEventListener("dataavailable", async (event) => {
+          if (event.data.size > 0) {
+            const audioBlob = event.data;
+            try {
+              const formData = new FormData();
+              formData.append("audio", audioBlob, "recording.webm");
 
-        if (event.results[0].isFinal) {
-          onTranscription(transcript);
-        }
-      };
+              const response = await fetch("/api/transcribe", {
+                method: "POST",
+                body: formData,
+              });
 
-      recognition.onend = () => {
-        setIsListening(false);
-      };
+              if (!response.ok) {
+                throw new Error(`Transcription failed: ${response.statusText}`);
+              }
 
-      recognitionRef.current = recognition;
-      recognition.start();
-      setIsListening(true);
-    } catch (error) {
-      console.error('Speech recognition error:', error);
-      alert('Speech recognition is not supported in this browser.');
-    }
-  };
+              const data = await response.json();
+              if (data.text) {
+                onTranscription(data.text);
+              } else {
+                console.error("Transcription response did not contain text:", data);
+              }
+            } catch (error) {
+              console.error("Error during transcription request:", error);
+            } finally {
+              setIsRecording(false);
+              setMediaRecorder(null);
+              stream.getTracks().forEach((track) => track.stop());
+            }
+          }
+        });
 
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
+        recorder.addEventListener("stop", () => {
+          stream.getTracks().forEach((track) => track.stop());
+        });
+
+        recorder.start();
+        setIsRecording(true);
+      } catch (error) {
+        console.error("Error accessing microphone:", error);
+        setIsRecording(false);
+      }
     }
   };
 
   return (
     <IconButton
-      onClick={isListening ? stopListening : startListening}
-      title={isListening ? "Stop recording" : "Start recording"}
-      style={{ color: isListening ? 'red' : 'inherit' }}
+      onClick={handleRecord}
+      title={isRecording ? "Stop recording" : "Start recording"}
+      style={{ color: isRecording ? 'red' : 'inherit' }}
     >
-      <MicrophoneIcon style={{ width: '24px', height: '24px' }} />
+      {isRecording ? <MicOff02Icon style={{ width: '24px', height: '24px' }} /> : <Mic02Icon style={{ width: '24px', height: '24px' }} />}
     </IconButton>
   );
 }
@@ -61,20 +81,12 @@ export function TextToSpeechButton({ text }) {
 
   const generateSpeech = async () => {
     try {
-      const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
+      const response = await fetch('/api/text-to-speech', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'xi-api-key': process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY,
         },
-        body: JSON.stringify({
-          text,
-          model_id: 'eleven_monolingual_v1',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.5,
-          },
-        }),
+        body: JSON.stringify({ text }),
       });
 
       if (!response.ok) {
@@ -91,6 +103,7 @@ export function TextToSpeechButton({ text }) {
     } catch (error) {
       console.error('Text-to-speech error:', error);
       alert('Failed to generate speech. Please try again.');
+      setIsPlaying(false);
     }
   };
 
@@ -105,21 +118,6 @@ export function TextToSpeechButton({ text }) {
       setIsPlaying(true);
     }
   };
-
-  React.useEffect(() => {
-    const audio = audioRef.current;
-    
-    audio.onended = () => {
-      setIsPlaying(false);
-    };
-
-    return () => {
-      audio.onended = null;
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
-    };
-  }, [audioUrl]);
 
   return (
     <IconButton
