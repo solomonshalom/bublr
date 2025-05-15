@@ -13,16 +13,26 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "No audio file found in form data." });
     }
 
-    const client = new ElevenLabsClient({
-      apiKey: process.env.ELEVENLABS_API_KEY,
-    });
+    if (!process.env.ELEVENLABS_API_KEY) {
+      console.error("ELEVENLABS_API_KEY is not defined in environment variables");
+      return res.status(500).json({ error: "API key configuration error" });
+    }
 
-    const transcription = await client.speechToText.convert({
-      model_id: "scribe_v1",
-      file: audio,
-    });
+    try {
+      const client = new ElevenLabsClient({
+        apiKey: process.env.ELEVENLABS_API_KEY,
+      });
 
-    return res.status(200).json({ text: transcription.text });
+      const transcription = await client.speechToText.convert({
+        model_id: "scribe_v1",
+        file: audio,
+      });
+
+      return res.status(200).json({ text: transcription.text });
+    } catch (elevenLabsError) {
+      console.error("ElevenLabs API error:", elevenLabsError);
+      return res.status(500).json({ error: "Speech-to-text service error" });
+    }
   } catch (error) {
     console.error("Error processing transcription request:", error);
     return res.status(500).json({ error: "Internal server error" });

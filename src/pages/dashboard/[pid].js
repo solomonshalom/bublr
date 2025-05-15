@@ -589,50 +589,7 @@ function Editor({ post }) {
                 </div>
               </form>
 
-              {post.published && (
-                <div css={css`margin-top: 1.5rem;`}>
-                  <label
-                    htmlFor="post-visibility"
-                    css={css`
-                      display: block;
-                      margin-bottom: 0.5rem;
-                    `}
-                  >
-                    Visibility
-                  </label>
-                  <select
-                    id="post-visibility"
-                    value={post.visibility || 'public'}
-                    onChange={async (e) => {
-                      await firestore
-                        .collection('posts')
-                        .doc(post.id)
-                        .update({ visibility: e.target.value })
-                    }}
-                    css={css`
-                      display: block;
-                      width: 17em;
-                      padding: 0.75em 1.5em;
-                      background: none;
-                      border: 1px solid var(--grey-2);
-                      outline: none;
-                      border-radius: 0.5rem;
-                      color: var(--grey-4);
-                      font-family: inherit;
-                      font-size: inherit;
-                      cursor: pointer;
-                      
-                      &:focus {
-                        border-color: var(--grey-3);
-                      }
-                    `}
-                  >
-                    <option value="public">Public – Visible to everyone</option>
-                    <option value="unlisted">Unlisted – Anyone with the link</option>
-                    <option value="private">Private – Only you</option>
-                  </select>
-                </div>
-              )}
+
             </div>
 
             <div
@@ -659,8 +616,7 @@ function Editor({ post }) {
                     .collection('posts')
                     .doc(post.id)
                     .update({ 
-                      published: !post.published,
-                      visibility: !post.published ? 'public' : undefined 
+                      published: !post.published
                     })
                 }}
               >
