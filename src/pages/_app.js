@@ -5,6 +5,14 @@ import { Global, css } from '@emotion/react'
 import { IdProvider } from '@radix-ui/react-id'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
+import dynamic from 'next/dynamic'
+
+// Animation for speech controls
+const animationStyle = `
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}`;
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || (page => page)
@@ -22,6 +30,25 @@ const App = ({ Component, pageProps }) => {
           }
         )
       })
+    }
+    
+    // Preload and cache speech capabilities
+    if (typeof window !== 'undefined') {
+      // Preload speech synthesis capability
+      if ('speechSynthesis' in window) {
+        // Preload voices
+        window.speechSynthesis.getVoices();
+      }
+      
+      // Preload audio context for better performance
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          window._audioContext = new AudioContext();
+        }
+      } catch (e) {
+        console.log('AudioContext initialization failed:', e);
+      }
     }
   }, [])
 
@@ -51,6 +78,8 @@ const App = ({ Component, pageProps }) => {
       </Head>
       <Global
         styles={css`
+          ${animationStyle}
+          
           :root {
             --grey-1: #fcfcfc;
             --grey-2: #c7c7c7;

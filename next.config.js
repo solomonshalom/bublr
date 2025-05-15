@@ -131,10 +131,12 @@ module.exports = withPWA({
   },
   // Configure image optimization
   images: {
-    domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com']
+    domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com', 'api.dicebear.com']
   },
   // Enable compression for better performance
   compress: true,
   // Add poweredByHeader false to remove X-Powered-By header for security
-  poweredByHeader: false
+  poweredByHeader: false,
+  // Disable SSG for builds to avoid Firebase auth issues
+  target: 'server'
 });
