@@ -26,9 +26,13 @@ export default async function handler(req, res) {
       // Add debug logging
       console.log("Sending audio to ElevenLabs API");
       
+      // Convert the Blob to ArrayBuffer before sending to ElevenLabs
+      const arrayBuffer = await audio.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
       const transcription = await client.speechToText.convert({
         model_id: "whisper-1",  // Changed to use whisper-1 which is more commonly available
-        file: audio,
+        file: buffer,
       });
 
       console.log("Received transcription response:", transcription);
