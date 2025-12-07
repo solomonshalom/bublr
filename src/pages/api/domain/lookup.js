@@ -1,4 +1,4 @@
-import { getUserByDomain } from '../../../lib/db'
+import { firestore } from '../../../lib/firebase'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -9,53 +9,37 @@ export default async function handler(req, res) {
     const { domain } = req.query
 
     if (!domain) {
-      return res.status(400).json({ error: 'Domain is required' })
+      return res.status(400).json({ error: 'Missing domain parameter' })
     }
 
-    try {
-      const user = await getUserByDomain(domain)
+    // Look up user by custom domain
+    const usersSnapshot = await firestore
+      .collection('users')
+      .where('customDomain.domain', '==', domain.toLowerCase())
+      .where('customDomain.status', '==', 'verified')
+      .limit(1)
+      .get()
 
-      if (user.subscriptionStatus === 'on_hold' && user.subscriptionGracePeriodEnds) {
-        const now = new Date()
-        const graceEnds = user.subscriptionGracePeriodEnds.toDate()
-
-        if (now > graceEnds) {
-          return res.status(404).json({ 
-            error: 'Domain inactive',
-            active: false 
-          })
-        }
-      }
-
-      if (user.subscriptionStatus === 'cancelled' || !user.customDomainActive) {
-        return res.status(404).json({ 
-          error: 'Domain inactive',
-          active: false 
-        })
-      }
-
-      return res.status(200).json({
-        active: true,
-        user: {
-          id: user.id,
-          name: user.name,
-          displayName: user.displayName
-        }
-      })
-    } catch (err) {
-      if (err.code === 'user/not-found') {
-        return res.status(404).json({ 
-          error: 'Domain not found',
-          active: false 
-        })
-      }
-      throw err
+    if (usersSnapshot.empty) {
+      return res.status(404).json({ error: 'Domain not found' })
     }
-  } catch (error) {
-    console.error('Domain lookup error:', error)
-    return res.status(500).json({ 
-      error: 'Internal server error',
-      details: error.message 
+
+    const userDoc = usersSnapshot.docs[0]
+    const userData = userDoc.data()
+
+    // Check if user still has active subscription
+    if (!userData.hasCustomDomainAccess) {
+      return res.status(403).json({ error: 'Custom domain subscription not active' })
+    }
+
+    return res.status(200).json({
+      userId: userDoc.id,
+      userName: userData.name,
+      displayName: userData.displayName,
+      customBranding: userData.customBranding || null,
     })
+  } catch (error) {
+    console.error('Error looking up domain:', error)
+    return res.status(500).json({ error: 'Failed to look up domain' })
   }
 }

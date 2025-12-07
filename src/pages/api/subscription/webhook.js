@@ -1,24 +1,21 @@
-import { Webhook } from 'standardwebhooks'
+import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
 import { firestore } from '../../../lib/firebase'
-import firebase from '../../../lib/firebase'
+import { WEBHOOK_SECRET } from '../../../lib/polar'
 
+// Disable body parsing, we need the raw body for webhook verification
 export const config = {
   api: {
     bodyParser: false,
   },
 }
 
+// Helper to get raw body
 async function getRawBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = ''
-    req.on('data', chunk => {
-      data += chunk
-    })
-    req.on('end', () => {
-      resolve(data)
-    })
-    req.on('error', reject)
-  })
+  const chunks = []
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+  }
+  return Buffer.concat(chunks)
 }
 
 export default async function handler(req, res) {
@@ -28,102 +25,155 @@ export default async function handler(req, res) {
 
   try {
     const rawBody = await getRawBody(req)
-    const signature = req.headers['webhook-signature'] || req.headers['x-webhook-signature']
-    
-    if (!signature) {
-      console.error('No webhook signature found')
-      return res.status(400).json({ error: 'No signature provided' })
+    const bodyString = rawBody.toString('utf8')
+
+    if (!WEBHOOK_SECRET) {
+      console.error('POLAR_WEBHOOK_SECRET not configured')
+      return res.status(500).json({ error: 'Webhook secret not configured' })
     }
 
-    const webhook = new Webhook(process.env.DODO_WEBHOOK_SECRET)
-    
+    // Verify webhook signature
     let event
     try {
-      event = webhook.verify(rawBody, {
-        'webhook-signature': signature,
-        'webhook-id': req.headers['webhook-id'] || '',
-        'webhook-timestamp': req.headers['webhook-timestamp'] || ''
-      })
-    } catch (err) {
-      console.error('Webhook signature verification failed:', err)
-      return res.status(400).json({ error: 'Invalid signature' })
+      event = validateEvent(bodyString, req.headers, WEBHOOK_SECRET)
+    } catch (error) {
+      if (error instanceof WebhookVerificationError) {
+        console.error('Webhook verification failed:', error.message)
+        return res.status(403).json({ error: 'Invalid webhook signature' })
+      }
+      throw error
     }
 
-    const eventData = typeof event === 'string' ? JSON.parse(event) : event
-
-    console.log('Webhook event received:', eventData.event_type)
-
-    const subscriptionId = eventData.data?.subscription_id || eventData.subscription_id
-    
-    if (!subscriptionId) {
-      console.error('No subscription ID in webhook payload')
-      return res.status(400).json({ error: 'No subscription ID' })
-    }
-
-    const usersQuery = await firestore
-      .collection('users')
-      .where('subscriptionId', '==', subscriptionId)
-      .get()
-
-    if (usersQuery.empty) {
-      console.error('User not found for subscription:', subscriptionId)
-      return res.status(404).json({ error: 'User not found' })
-    }
-
-    const userDoc = usersQuery.docs[0]
-    const userId = userDoc.id
-
-    switch (eventData.event_type) {
-      case 'subscription.active':
-      case 'subscription.activated':
+    // Handle different event types
+    switch (event.type) {
       case 'subscription.created':
-        await firestore.collection('users').doc(userId).update({
-          subscriptionStatus: 'active',
-          subscriptionExpiresAt: null,
-          subscriptionGracePeriodEnds: null,
-          updatedAt: Date.now()
-        })
+      case 'subscription.active':
+        await handleSubscriptionActive(event.data)
         break
 
-      case 'subscription.renewed':
-        await firestore.collection('users').doc(userId).update({
-          subscriptionStatus: 'active',
-          subscriptionExpiresAt: null,
-          subscriptionGracePeriodEnds: null,
-          updatedAt: Date.now()
-        })
+      case 'subscription.updated':
+        await handleSubscriptionUpdated(event.data)
         break
 
-      case 'subscription.on_hold':
-      case 'subscription.payment_failed':
-        const gracePeriodEnd = new Date()
-        gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 3)
-        
-        await firestore.collection('users').doc(userId).update({
-          subscriptionStatus: 'on_hold',
-          subscriptionExpiresAt: firebase.firestore.Timestamp.now(),
-          subscriptionGracePeriodEnds: firebase.firestore.Timestamp.fromDate(gracePeriodEnd),
-          updatedAt: Date.now()
-        })
+      case 'subscription.canceled':
+      case 'subscription.revoked':
+        await handleSubscriptionCanceled(event.data)
         break
 
-      case 'subscription.cancelled':
-      case 'subscription.expired':
-        await firestore.collection('users').doc(userId).update({
-          subscriptionStatus: 'cancelled',
-          customDomainActive: false,
-          subscriptionExpiresAt: firebase.firestore.Timestamp.now(),
-          updatedAt: Date.now()
-        })
+      case 'order.paid':
+        // Order has been paid - subscription should be active
+        console.log('Order paid:', event.data.id)
         break
 
       default:
-        console.log('Unhandled event type:', eventData.event_type)
+        console.log('Unhandled event type:', event.type)
     }
 
-    return res.status(200).json({ received: true })
+    return res.status(202).json({ received: true })
   } catch (error) {
     console.error('Webhook error:', error)
     return res.status(500).json({ error: 'Webhook processing failed' })
   }
+}
+
+async function handleSubscriptionActive(subscription) {
+  const userId = subscription.metadata?.userId
+  if (!userId) {
+    console.error('No userId in subscription metadata')
+    return
+  }
+
+  // Update user's subscription status in Firestore
+  await firestore.collection('users').doc(userId).update({
+    subscription: {
+      id: subscription.id,
+      status: subscription.status,
+      customerId: subscription.customerId,
+      productId: subscription.productId,
+      currentPeriodStart: subscription.currentPeriodStart,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
+      updatedAt: new Date().toISOString(),
+    },
+    hasCustomDomainAccess: true,
+  })
+
+  console.log('Subscription activated for user:', userId)
+}
+
+async function handleSubscriptionUpdated(subscription) {
+  const userId = subscription.metadata?.userId
+  if (!userId) {
+    // Try to find user by subscription ID
+    const usersSnapshot = await firestore
+      .collection('users')
+      .where('subscription.id', '==', subscription.id)
+      .limit(1)
+      .get()
+
+    if (usersSnapshot.empty) {
+      console.error('No user found for subscription:', subscription.id)
+      return
+    }
+
+    const userDoc = usersSnapshot.docs[0]
+    await updateUserSubscription(userDoc.id, subscription)
+    return
+  }
+
+  await updateUserSubscription(userId, subscription)
+}
+
+async function updateUserSubscription(userId, subscription) {
+  const isActive = ['active', 'trialing'].includes(subscription.status)
+
+  await firestore.collection('users').doc(userId).update({
+    subscription: {
+      id: subscription.id,
+      status: subscription.status,
+      customerId: subscription.customerId,
+      productId: subscription.productId,
+      currentPeriodStart: subscription.currentPeriodStart,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
+      updatedAt: new Date().toISOString(),
+    },
+    hasCustomDomainAccess: isActive,
+  })
+
+  console.log('Subscription updated for user:', userId, 'Status:', subscription.status)
+}
+
+async function handleSubscriptionCanceled(subscription) {
+  const userId = subscription.metadata?.userId
+
+  // Try to find user by subscription ID if not in metadata
+  let targetUserId = userId
+  if (!targetUserId) {
+    const usersSnapshot = await firestore
+      .collection('users')
+      .where('subscription.id', '==', subscription.id)
+      .limit(1)
+      .get()
+
+    if (!usersSnapshot.empty) {
+      targetUserId = usersSnapshot.docs[0].id
+    }
+  }
+
+  if (!targetUserId) {
+    console.error('No user found for canceled subscription:', subscription.id)
+    return
+  }
+
+  // Update subscription status but keep the custom domain data
+  // until period ends (if cancelAtPeriodEnd was true)
+  await firestore.collection('users').doc(targetUserId).update({
+    'subscription.status': subscription.status,
+    'subscription.cancelAtPeriodEnd': true,
+    'subscription.updatedAt': new Date().toISOString(),
+    hasCustomDomainAccess: false,
+  })
+
+  console.log('Subscription canceled for user:', targetUserId)
 }

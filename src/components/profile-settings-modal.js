@@ -1,12 +1,9 @@
 /** @jsxImportSource @emotion/react */
-import { css } from '@emotion/react'
-import { useState, useEffect } from 'react'
+import { css, keyframes } from '@emotion/react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { Cross2Icon } from '@radix-ui/react-icons'
+import { Cross2Icon, PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon, DragHandleDots2Icon, ExternalLinkIcon, CheckCircledIcon, CrossCircledIcon } from '@radix-ui/react-icons'
 import { useDocumentData } from 'react-firebase-hooks/firestore'
-import { useAuthState } from 'react-firebase-hooks/auth'
-import { gsap } from 'gsap'
-import axios from 'axios'
 
 import { firestore, auth } from '../lib/firebase'
 import { userWithNameExists } from '../lib/db'
@@ -15,6 +12,40 @@ import Spinner from './spinner'
 import Input, { Textarea } from './input'
 import ModalOverlay from './modal-overlay'
 import Button, { IconButton } from './button'
+
+// Status badge component for domain status
+const StatusBadge = ({ status }) => {
+  const colors = {
+    verified: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
+    pending: { bg: '#fef9c3', text: '#854d0e', border: '#fde047' },
+    error: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },
+  }
+  const c = colors[status] || colors.pending
+
+  return (
+    <span
+      css={css`
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-radius: 9999px;
+        background: ${c.bg};
+        color: ${c.text};
+        border: 1px solid ${c.border};
+      `}
+    >
+      {status === 'verified' && <CheckCircledIcon width={12} height={12} />}
+      {status === 'pending' && <span css={css`width: 8px; height: 8px; border-radius: 50%; background: ${c.text};`} />}
+      {status === 'error' && <CrossCircledIcon width={12} height={12} />}
+      {status}
+    </span>
+  )
+}
 
 const StyledLabel = props => (
   <label
@@ -30,388 +61,697 @@ const StyledLabel = props => (
   </label>
 )
 
-function CustomDomainSection({ userId }) {
-  const [authUser] = useAuthState(auth)
-  const [subscription, setSubscription] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [domain, setDomain] = useState('')
-  const [verifying, setVerifying] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState(null)
+const SectionHeader = ({ children }) => (
+  <h3
+    css={css`
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--grey-3);
+      margin: 2rem 0 1rem 0;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--grey-2);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    `}
+  >
+    {children}
+  </h3>
+)
 
-  useEffect(() => {
-    fetchSubscriptionStatus()
-  }, [authUser])
+const SmallInput = props => (
+  <Input
+    {...props}
+    css={css`
+      width: 100%;
+      padding: 0.5em 0.75em;
+      font-size: 0.85rem;
+    `}
+  />
+)
 
-  const fetchSubscriptionStatus = async () => {
-    if (!authUser) return
-    
-    setLoading(true)
-    setError(null)
-    try {
-      const token = await authUser.getIdToken()
-      const response = await axios.get('/api/subscription/status', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setSubscription(response.data)
-      if (response.data.customDomain) {
-        setDomain(response.data.customDomain)
+const TagInput = ({ tags, onChange, placeholder }) => {
+  const [inputValue, setInputValue] = useState('')
+
+  const handleKeyDown = e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      const value = inputValue.trim()
+      if (value && !tags.includes(value)) {
+        onChange([...tags, value])
+        setInputValue('')
       }
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load subscription status')
-    } finally {
-      setLoading(false)
+    } else if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
+      onChange(tags.slice(0, -1))
     }
   }
+
+  const removeTag = index => {
+    onChange(tags.filter((_, i) => i !== index))
+  }
+
+  return (
+    <div
+      css={css`
+        border: 1px solid var(--grey-2);
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        min-height: 2.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+      `}
+    >
+      {tags.map((tag, index) => (
+        <span
+          key={index}
+          css={css`
+            display: inline-flex;
+            align-items: center;
+            background: var(--grey-2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            gap: 0.25rem;
+          `}
+        >
+          {tag}
+          <button
+            type="button"
+            onClick={() => removeTag(index)}
+            css={css`
+              background: none;
+              border: none;
+              cursor: pointer;
+              padding: 0;
+              display: flex;
+              align-items: center;
+              color: var(--grey-3);
+              &:hover {
+                color: var(--grey-4);
+              }
+            `}
+          >
+            <Cross2Icon width={12} height={12} />
+          </button>
+        </span>
+      ))}
+      <input
+        type="text"
+        value={inputValue}
+        onChange={e => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={tags.length === 0 ? placeholder : ''}
+        css={css`
+          border: none;
+          outline: none;
+          background: none;
+          flex: 1;
+          min-width: 100px;
+          font-size: 0.85rem;
+          color: var(--grey-4);
+          &::placeholder {
+            color: var(--grey-3);
+          }
+        `}
+      />
+    </div>
+  )
+}
+
+// Custom Domain Section Component
+function CustomDomainSection({ userId, userName }) {
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [domain, setDomain] = useState('')
+  const [footerText, setFooterText] = useState('')
+  const [domainError, setDomainError] = useState(null)
+  const [domainSuccess, setDomainSuccess] = useState(null)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [verifying, setVerifying] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
+  const [emailFromAuth, setEmailFromAuth] = useState(false)
+
+  // Get email from Firebase Auth directly
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Try to get email from user object or providerData
+        const email = user.email ||
+          (user.providerData && user.providerData[0]?.email) ||
+          null
+        if (email) {
+          setUserEmail(email)
+          setEmailFromAuth(true)
+        }
+      }
+    })
+    return () => unsubscribe()
+  }, [])
+
+  // Fetch subscription status on mount
+  useEffect(() => {
+    async function fetchStatus() {
+      try {
+        const res = await fetch(`/api/subscription/status?userId=${userId}`)
+        const data = await res.json()
+        setSubscriptionStatus(data)
+        if (data.customDomain?.domain) {
+          setDomain(data.customDomain.domain)
+        }
+        if (data.customBranding?.footerText !== undefined) {
+          setFooterText(data.customBranding.footerText)
+        }
+      } catch (err) {
+        console.error('Error fetching subscription status:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (userId) {
+      fetchStatus()
+    }
+  }, [userId])
 
   const handleSubscribe = async () => {
-    if (!authUser) return
-    
+    // Validate required fields before making API call
+    if (!userId) {
+      setDomainError('User ID not available. Please try refreshing the page.')
+      return
+    }
+    if (!userEmail || !userEmail.includes('@')) {
+      setDomainError('Please enter a valid email address.')
+      return
+    }
+
+    setActionLoading(true)
+    setDomainError(null)
     try {
-      const token = await authUser.getIdToken()
-      const response = await axios.post('/api/subscription/create-checkout', {}, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetch('/api/subscription/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, userEmail, userName }),
       })
-      
-      if (response.data.checkout_url) {
-        window.location.href = response.data.checkout_url
+      const data = await res.json()
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl
+      } else {
+        setDomainError(data.error || 'Failed to create checkout session')
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create checkout session')
+      setDomainError('Failed to create checkout session')
+    } finally {
+      setActionLoading(false)
     }
   }
 
-  const handleSaveDomain = async () => {
-    if (!authUser || !domain) return
-    
-    setSaving(true)
-    setError(null)
-    setMessage(null)
+  const handleSetDomain = async () => {
+    setDomainError(null)
+    setDomainSuccess(null)
+    setActionLoading(true)
+
     try {
-      const token = await authUser.getIdToken()
-      const response = await axios.post('/api/domain/set', 
-        { domain },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      setMessage({ type: 'success', text: response.data.message })
-      await fetchSubscriptionStatus()
+      const res = await fetch('/api/domain/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, domain: domain.toLowerCase().trim() }),
+      })
+      const data = await res.json()
+
+      if (res.ok) {
+        setDomainSuccess(data.message)
+        // Refresh status
+        const statusRes = await fetch(`/api/subscription/status?userId=${userId}`)
+        const statusData = await statusRes.json()
+        setSubscriptionStatus(statusData)
+      } else {
+        setDomainError(data.error || 'Failed to set domain')
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save domain')
+      setDomainError('Failed to set domain')
     } finally {
-      setSaving(false)
+      setActionLoading(false)
     }
   }
 
   const handleVerifyDomain = async () => {
-    if (!authUser) return
-    
     setVerifying(true)
-    setError(null)
-    setMessage(null)
+    setDomainError(null)
+    setDomainSuccess(null)
+
     try {
-      const token = await authUser.getIdToken()
-      const response = await axios.post('/api/domain/verify', {}, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetch('/api/domain/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
       })
-      setMessage({ type: 'success', text: response.data.message })
-      await fetchSubscriptionStatus()
+      const data = await res.json()
+
+      if (data.verified) {
+        setDomainSuccess('Domain verified successfully!')
+        // Refresh status
+        const statusRes = await fetch(`/api/subscription/status?userId=${userId}`)
+        const statusData = await statusRes.json()
+        setSubscriptionStatus(statusData)
+      } else {
+        setDomainError('Domain not yet verified. Please check your DNS settings.')
+      }
     } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.message || 'DNS verification failed')
+      setDomainError('Failed to verify domain')
     } finally {
       setVerifying(false)
     }
   }
 
   const handleRemoveDomain = async () => {
-    if (!authUser || !confirm('Are you sure you want to remove your custom domain?')) return
-    
-    setSaving(true)
-    setError(null)
-    setMessage(null)
+    if (!confirm('Are you sure you want to remove your custom domain?')) return
+
+    setActionLoading(true)
+    setDomainError(null)
+
     try {
-      const token = await authUser.getIdToken()
-      const response = await axios.post('/api/domain/remove', {}, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetch('/api/domain/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
       })
-      setMessage({ type: 'success', text: response.data.message })
-      setDomain('')
-      await fetchSubscriptionStatus()
+      const data = await res.json()
+
+      if (res.ok) {
+        setDomain('')
+        setDomainSuccess('Domain removed successfully')
+        // Refresh status
+        const statusRes = await fetch(`/api/subscription/status?userId=${userId}`)
+        const statusData = await statusRes.json()
+        setSubscriptionStatus(statusData)
+      } else {
+        setDomainError(data.error || 'Failed to remove domain')
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to remove domain')
+      setDomainError('Failed to remove domain')
     } finally {
-      setSaving(false)
+      setActionLoading(false)
+    }
+  }
+
+  const handleUpdateBranding = async () => {
+    setDomainError(null)
+    setDomainSuccess(null)
+    setActionLoading(true)
+
+    try {
+      const res = await fetch('/api/domain/branding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, footerText }),
+      })
+      const data = await res.json()
+
+      if (res.ok) {
+        setDomainSuccess('Branding updated successfully!')
+      } else {
+        setDomainError(data.error || 'Failed to update branding')
+      }
+    } catch (err) {
+      setDomainError('Failed to update branding')
+    } finally {
+      setActionLoading(false)
     }
   }
 
   if (loading) {
     return (
-      <div css={css`margin: 2rem 0;`}>
-        <h3 css={css`font-size: 1rem; margin-bottom: 1rem;`}>Custom Domain</h3>
-        <Spinner />
-      </div>
+      <>
+        <SectionHeader>Custom Domain</SectionHeader>
+        <div css={css`display: flex; justify-content: center; padding: 2rem;`}>
+          <Spinner />
+        </div>
+      </>
     )
   }
 
-  const isSubscribed = subscription?.subscriptionStatus === 'active' || 
-                       (subscription?.subscriptionStatus === 'on_hold' && subscription?.isInGracePeriod)
+  const hasAccess = subscriptionStatus?.hasCustomDomainAccess
+  const currentDomain = subscriptionStatus?.customDomain
+  const verification = currentDomain?.verification || []
 
   return (
-    <div css={css`
-      margin: 2.5rem 0;
-      padding: 1.5rem;
-      border: 1px solid var(--grey-2);
-      border-radius: 0.5rem;
-    `}>
-      <h3 css={css`
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      `}>
-        Custom Domain
-        {isSubscribed && <span css={css`
-          font-size: 0.75rem;
-          padding: 0.25em 0.5em;
-          background: #22c55e;
-          color: white;
-          border-radius: 0.25rem;
-        `}>Active</span>}
-        {subscription?.isInGracePeriod && <span css={css`
-          font-size: 0.75rem;
-          padding: 0.25em 0.5em;
-          background: #f59e0b;
-          color: white;
-          border-radius: 0.25rem;
-        `}>Grace Period</span>}
-      </h3>
+    <>
+      <SectionHeader>Custom Domain</SectionHeader>
 
-      {error && (
-        <p css={css`
-          color: #ef4444;
-          font-size: 0.9rem;
-          margin: 1rem 0;
-          padding: 0.75rem;
-          background: rgba(239, 68, 68, 0.1);
-          border-radius: 0.25rem;
-        `}>{error}</p>
-      )}
-
-      {message && (
-        <p css={css`
-          color: ${message.type === 'success' ? '#22c55e' : '#f59e0b'};
-          font-size: 0.9rem;
-          margin: 1rem 0;
-          padding: 0.75rem;
-          background: ${message.type === 'success' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)'};
-          border-radius: 0.25rem;
-        `}>{message.text}</p>
-      )}
-
-      {!isSubscribed ? (
-        <>
-          <p css={css`
-            color: var(--grey-4);
-            font-size: 0.9rem;
-            margin: 1rem 0;
-            line-height: 1.5;
-          `}>
-            Access your profile via your own domain. Only $2/month.
-          </p>
-          <Button 
-            onClick={handleSubscribe}
-            css={css`font-size: 0.9rem;`}
-          >
-            Subscribe for $2/month →
-          </Button>
-        </>
-      ) : subscription?.customDomainActive ? (
-        <>
-          <p css={css`
-            color: var(--grey-4);
-            font-size: 0.9rem;
-            margin: 1rem 0;
-          `}>
-            <strong css={css`color: var(--grey-5);`}>{subscription.customDomain}</strong>
-          </p>
-          <p css={css`
-            color: #22c55e;
-            font-size: 0.9rem;
-            margin: 0.5rem 0 1rem 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          `}>
-            ✓ Active and verified
-          </p>
-          <p css={css`
-            color: var(--grey-3);
-            font-size: 0.9rem;
-            margin: 1rem 0;
-          `}>
-            Your profile is accessible at:<br />
-            <a 
-              href={`https://${subscription.customDomain}`}
-              target="_blank"
-              rel="noreferrer"
-              css={css`
-                color: var(--grey-5);
-                text-decoration: underline;
-              `}
-            >
-              https://{subscription.customDomain}
-            </a>
-          </p>
-          <div css={css`
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-          `}>
-            <Button
-              outline
-              onClick={() => {
-                setDomain('')
-                fetchSubscriptionStatus().then(() => {
-                  const sub = subscription
-                  sub.customDomainActive = false
-                  setSubscription(sub)
-                })
-              }}
-              css={css`font-size: 0.9rem;`}
-            >
-              Change Domain
-            </Button>
-            <Button
-              outline
-              onClick={handleRemoveDomain}
-              disabled={saving}
-              css={css`font-size: 0.9rem;`}
-            >
-              {saving ? 'Removing...' : 'Remove Domain'}
-            </Button>
-          </div>
-        </>
-      ) : subscription?.customDomain && !subscription?.domainVerified ? (
-        <>
-          <p css={css`
-            color: var(--grey-4);
-            font-size: 0.9rem;
-            margin: 1rem 0;
-          `}>
-            <strong css={css`color: var(--grey-5);`}>{subscription.customDomain}</strong>
-          </p>
-          <p css={css`
-            color: #f59e0b;
-            font-size: 0.9rem;
-            margin: 0.5rem 0 1rem 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          `}>
-            ⏳ Verifying DNS...
-          </p>
-          <div css={css`
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
+      {/* Subscription promo / status */}
+      {!hasAccess ? (
+        <div
+          css={css`
+            position: relative;
+            background: #DD814C;
+            background: linear-gradient(315deg, #DD814C, #BC3C00);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            color: white;
             margin-bottom: 1rem;
-          `}>
-            <Button
-              onClick={handleVerifyDomain}
-              disabled={verifying}
-              css={css`font-size: 0.9rem;`}
-            >
-              {verifying ? 'Checking...' : 'Check DNS Now'}
-            </Button>
-            <Button
-              outline
-              onClick={() => {
-                setDomain('')
-                const sub = subscription
-                sub.customDomain = null
-                setSubscription(sub)
-              }}
-              css={css`font-size: 0.9rem;`}
-            >
-              Change Domain
-            </Button>
-          </div>
-          <div css={css`
-            background: var(--grey-1);
-            border: 1px solid var(--grey-2);
-            padding: 1rem;
-            border-radius: 0.5rem;
-            font-size: 0.85rem;
-            color: var(--grey-4);
-            line-height: 1.6;
-          `}>
-            <p css={css`font-weight: 600; margin-bottom: 0.5rem;`}>DNS Setup Instructions:</p>
-            <p css={css`margin-bottom: 0.5rem;`}>
-              1. Go to your domain registrar (GoDaddy, Namecheap, etc.)<br />
-              2. Add a CNAME record pointing to: <strong>{process.env.NEXT_PUBLIC_APP_DOMAIN || 'bublr.life'}</strong>
+            overflow: hidden;
+
+            &::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background-image: url('https://lovable.dev/_next/static/media/grain.1ccdda41.png');
+              background-size: 100px 100px;
+              background-repeat: repeat;
+              background-position: left top;
+              mix-blend-mode: overlay;
+              opacity: 0.5;
+              pointer-events: none;
+            }
+          `}
+        >
+          <div css={css`position: relative; z-index: 1;`}>
+            <h4 css={css`margin: 0 0 0.5rem 0; font-size: 1rem; font-weight: 600;`}>
+              Upgrade to Custom Domain
+            </h4>
+            <p css={css`font-size: 0.85rem; margin: 0 0 1rem 0; opacity: 0.9;`}>
+              Use your own domain (e.g., blog.yoursite.com) and customize the &quot;Made with Bublr&quot; footer text.
             </p>
-            <p css={css`color: var(--grey-3); font-size: 0.8rem;`}>
-              DNS may take up to 48 hours to propagate.
-            </p>
+
+            {/* Email input if not available from auth */}
+            {!emailFromAuth && (
+              <div css={css`margin-bottom: 1rem;`}>
+                <input
+                  type="email"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  placeholder="Enter your email for billing"
+                  css={css`
+                    width: 100%;
+                    padding: 0.6rem 0.75rem;
+                    border: none;
+                    border-radius: 0.5rem;
+                    font-size: 0.85rem;
+                    background: rgba(255,255,255,0.9);
+                    color: #333;
+
+                    &::placeholder {
+                      color: #999;
+                    }
+
+                    &:focus {
+                      outline: none;
+                      background: white;
+                    }
+                  `}
+                />
+              </div>
+            )}
+
+            <div css={css`display: flex; align-items: center; justify-content: space-between;`}>
+              <span css={css`font-size: 1.25rem; font-weight: 700;`}>$2/month</span>
+              <button
+                onClick={handleSubscribe}
+                disabled={actionLoading || (!emailFromAuth && !userEmail.includes('@'))}
+                css={css`
+                  background: white;
+                  color: #BC3C00;
+                  border: none;
+                  padding: 0.6rem 1.25rem;
+                  border-radius: 0.5rem;
+                  font-weight: 600;
+                  font-size: 0.85rem;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  opacity: ${actionLoading || (!emailFromAuth && !userEmail.includes('@')) ? 0.7 : 1};
+
+                  &:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                  }
+                `}
+              >
+                {actionLoading ? 'Loading...' : 'Subscribe'}
+              </button>
+            </div>
           </div>
-        </>
+        </div>
       ) : (
         <>
-          <p css={css`
-            color: var(--grey-4);
-            font-size: 0.9rem;
-            margin: 1rem 0;
-          `}>
-            Enter your custom domain below:
-          </p>
-          <Input
-            type="text"
-            value={domain}
-            onChange={(e) => setDomain(e.target.value)}
-            placeholder="blog.example.com"
-            css={css`margin-bottom: 1rem;`}
-          />
-          <Button
-            onClick={handleSaveDomain}
-            disabled={!domain || saving}
-            css={css`font-size: 0.9rem;`}
-          >
-            {saving ? 'Saving...' : 'Save Domain'}
-          </Button>
+          {/* Domain input section */}
+          <div css={css`margin-bottom: 1.25rem;`}>
+            <StyledLabel htmlFor="custom-domain">Your Domain</StyledLabel>
+            <div css={css`display: flex; gap: 0.5rem; align-items: flex-start;`}>
+              <div css={css`flex: 1;`}>
+                <SmallInput
+                  id="custom-domain"
+                  type="text"
+                  value={domain}
+                  onChange={e => {
+                    setDomain(e.target.value)
+                    setDomainError(null)
+                    setDomainSuccess(null)
+                  }}
+                  placeholder="blog.yoursite.com"
+                  disabled={currentDomain?.status === 'verified'}
+                />
+              </div>
+              {currentDomain?.domain ? (
+                <div css={css`display: flex; gap: 0.25rem;`}>
+                  {currentDomain.status !== 'verified' && (
+                    <button
+                      onClick={handleVerifyDomain}
+                      disabled={verifying}
+                      css={css`
+                        background: var(--grey-5);
+                        color: var(--grey-1);
+                        border: none;
+                        padding: 0.5rem 0.75rem;
+                        border-radius: 0.5rem;
+                        font-size: 0.8rem;
+                        cursor: pointer;
+                        white-space: nowrap;
+                        opacity: ${verifying ? 0.7 : 1};
+
+                        &:hover:not(:disabled) {
+                          opacity: 0.8;
+                        }
+                      `}
+                    >
+                      {verifying ? 'Verifying...' : 'Verify'}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleRemoveDomain}
+                    disabled={actionLoading}
+                    css={css`
+                      background: none;
+                      color: #dc2626;
+                      border: 1px solid #dc2626;
+                      padding: 0.5rem 0.75rem;
+                      border-radius: 0.5rem;
+                      font-size: 0.8rem;
+                      cursor: pointer;
+                      white-space: nowrap;
+
+                      &:hover {
+                        background: #fef2f2;
+                      }
+                    `}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleSetDomain}
+                  disabled={actionLoading || !domain.trim()}
+                  css={css`
+                    background: var(--grey-5);
+                    color: var(--grey-1);
+                    border: none;
+                    padding: 0.5rem 0.75rem;
+                    border-radius: 0.5rem;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    opacity: ${actionLoading || !domain.trim() ? 0.5 : 1};
+
+                    &:hover:not(:disabled) {
+                      opacity: 0.8;
+                    }
+                  `}
+                >
+                  {actionLoading ? 'Adding...' : 'Add Domain'}
+                </button>
+              )}
+            </div>
+
+            {/* Domain status badge */}
+            {currentDomain && (
+              <div css={css`margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;`}>
+                <StatusBadge status={currentDomain.status} />
+                {currentDomain.status === 'verified' && (
+                  <a
+                    href={`https://${currentDomain.domain}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    css={css`
+                      font-size: 0.75rem;
+                      color: var(--grey-3);
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 0.25rem;
+                      &:hover { color: var(--grey-4); }
+                    `}
+                  >
+                    Visit site <ExternalLinkIcon width={12} height={12} />
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* DNS verification instructions */}
+            {currentDomain?.status === 'pending' && verification.length > 0 && (
+              <div
+                css={css`
+                  margin-top: 1rem;
+                  background: #fffbeb;
+                  border: 1px solid #fde68a;
+                  border-radius: 0.5rem;
+                  padding: 1rem;
+                  font-size: 0.8rem;
+                `}
+              >
+                <p css={css`margin: 0 0 0.75rem 0; font-weight: 500; color: #92400e;`}>
+                  Configure your DNS to verify your domain:
+                </p>
+                {verification.map((v, i) => (
+                  <div key={i} css={css`margin-bottom: 0.5rem; background: white; padding: 0.5rem; border-radius: 0.25rem;`}>
+                    <p css={css`margin: 0; color: #78716c;`}>
+                      <strong>Type:</strong> {v.type} <br />
+                      <strong>Name/Host:</strong> {v.domain} <br />
+                      <strong>Value:</strong> <code css={css`background: #f5f5f4; padding: 0.1rem 0.25rem; border-radius: 0.2rem; font-size: 0.75rem; word-break: break-all;`}>{v.value}</code>
+                    </p>
+                  </div>
+                ))}
+                <p css={css`margin: 0.75rem 0 0 0; font-size: 0.75rem; color: #a8a29e;`}>
+                  DNS changes can take up to 48 hours to propagate. Click &quot;Verify&quot; after updating your DNS.
+                </p>
+              </div>
+            )}
+
+            {/* A Record instruction for apex domains */}
+            {currentDomain?.status === 'pending' && verification.length === 0 && (
+              <div
+                css={css`
+                  margin-top: 1rem;
+                  background: #fffbeb;
+                  border: 1px solid #fde68a;
+                  border-radius: 0.5rem;
+                  padding: 1rem;
+                  font-size: 0.8rem;
+                `}
+              >
+                <p css={css`margin: 0 0 0.75rem 0; font-weight: 500; color: #92400e;`}>
+                  Point your domain to Bublr:
+                </p>
+                <div css={css`background: white; padding: 0.5rem; border-radius: 0.25rem;`}>
+                  <p css={css`margin: 0; color: #78716c;`}>
+                    Add a <strong>CNAME</strong> record pointing to <code css={css`background: #f5f5f4; padding: 0.1rem 0.25rem; border-radius: 0.2rem;`}>cname.vercel-dns.com</code>
+                  </p>
+                </div>
+                <p css={css`margin: 0.75rem 0 0 0; font-size: 0.75rem; color: #a8a29e;`}>
+                  DNS changes can take up to 48 hours. Click &quot;Verify&quot; when ready.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Custom branding section */}
+          <div css={css`margin-bottom: 1rem;`}>
+            <StyledLabel htmlFor="footer-text">Custom Footer Text</StyledLabel>
+            <div css={css`display: flex; gap: 0.5rem;`}>
+              <SmallInput
+                id="footer-text"
+                type="text"
+                value={footerText}
+                onChange={e => {
+                  setFooterText(e.target.value)
+                  setDomainError(null)
+                  setDomainSuccess(null)
+                }}
+                placeholder="Made with Bublr"
+                maxLength={100}
+              />
+              <button
+                onClick={handleUpdateBranding}
+                disabled={actionLoading}
+                css={css`
+                  background: var(--grey-5);
+                  color: var(--grey-1);
+                  border: none;
+                  padding: 0.5rem 0.75rem;
+                  border-radius: 0.5rem;
+                  font-size: 0.8rem;
+                  cursor: pointer;
+                  white-space: nowrap;
+                  opacity: ${actionLoading ? 0.5 : 1};
+
+                  &:hover:not(:disabled) {
+                    opacity: 0.8;
+                  }
+                `}
+              >
+                Save
+              </button>
+            </div>
+            <p css={css`font-size: 0.75rem; color: var(--grey-3); margin-top: 0.5rem;`}>
+              Replace &quot;Made with Bublr&quot; in your profile and post footers. Leave empty to hide it entirely.
+            </p>
+          </div>
+
+          {/* Subscription info */}
           <div css={css`
-            background: var(--grey-1);
-            border: 1px solid var(--grey-2);
-            padding: 1rem;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
             border-radius: 0.5rem;
-            font-size: 0.85rem;
-            color: var(--grey-4);
-            line-height: 1.6;
-            margin-top: 1rem;
+            padding: 0.75rem;
+            font-size: 0.8rem;
+            color: #166534;
           `}>
-            <p css={css`font-weight: 600; margin-bottom: 0.5rem;`}>DNS Setup Instructions:</p>
-            <p>
-              After saving, you'll need to add a CNAME record at your domain registrar pointing to: <strong>{process.env.NEXT_PUBLIC_APP_DOMAIN || 'bublr.life'}</strong>
+            <p css={css`margin: 0;`}>
+              <CheckCircledIcon css={css`vertical-align: middle; margin-right: 0.25rem;`} />
+              Custom Domain subscription active
             </p>
           </div>
         </>
       )}
 
-      {subscription?.isInGracePeriod && (
-        <div css={css`
-          margin-top: 1rem;
-          padding: 1rem;
-          background: rgba(245, 158, 11, 0.1);
-          border: 1px solid #f59e0b;
-          border-radius: 0.5rem;
-          color: var(--grey-5);
-          font-size: 0.9rem;
+      {/* Error/Success messages */}
+      {domainError && (
+        <p css={css`
+          font-size: 0.8rem;
+          color: #dc2626;
+          margin-top: 0.75rem;
+          padding: 0.5rem;
+          background: #fef2f2;
+          border-radius: 0.25rem;
         `}>
-          ⚠️ <strong>Payment Failed - Grace Period</strong><br />
-          Your domain will be deactivated in {subscription.gracePeriodDaysLeft} day{subscription.gracePeriodDaysLeft !== 1 ? 's' : ''}. Please update your payment method.
-        </div>
+          {domainError}
+        </p>
       )}
-    </div>
+      {domainSuccess && (
+        <p css={css`
+          font-size: 0.8rem;
+          color: #166534;
+          margin-top: 0.75rem;
+          padding: 0.5rem;
+          background: #f0fdf4;
+          border-radius: 0.25rem;
+        `}>
+          {domainSuccess}
+        </p>
+      )}
+    </>
   )
 }
 
@@ -424,37 +764,246 @@ function Editor({ user }) {
     posts: [],
     photo: '',
     readingList: [],
+    socialLinks: {
+      github: '',
+      twitter: '',
+      instagram: '',
+      linkedin: '',
+      youtube: '',
+      email: '',
+    },
+    skills: [],
+    skillsSectionTitle: '',
+    customSections: [],
+    sectionOrder: ['skills', 'writing', 'custom'],
   })
   const [usernameErr, setUsernameErr] = useState(null)
+  const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
+  const saveTimeoutRef = useRef(null)
+  const isInitialMount = useRef(true)
 
   useEffect(() => {
-    setClientUser(user)
+    setClientUser({
+      ...user,
+      socialLinks: user.socialLinks || {
+        github: '',
+        twitter: '',
+        instagram: '',
+        linkedin: '',
+        youtube: '',
+        email: '',
+      },
+      skills: user.skills || [],
+      skillsSectionTitle: user.skillsSectionTitle || '',
+      customSections: user.customSections || [],
+      sectionOrder: user.sectionOrder || ['skills', 'writing', 'custom'],
+    })
   }, [user])
+
+  const DEFAULT_SECTION_ORDER = ['skills', 'writing', 'custom']
+
+  const SECTION_LABELS = {
+    skills: 'Skills & Tags',
+    writing: 'Writing',
+    custom: 'Custom Sections',
+  }
+
+  const moveSectionUp = (index) => {
+    if (index === 0) return
+    const newOrder = [...(clientUser.sectionOrder || DEFAULT_SECTION_ORDER)]
+    ;[newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]]
+    setClientUser(prev => ({ ...prev, sectionOrder: newOrder }))
+  }
+
+  const moveSectionDown = (index) => {
+    const order = clientUser.sectionOrder || DEFAULT_SECTION_ORDER
+    if (index === order.length - 1) return
+    const newOrder = [...order]
+    ;[newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]]
+    setClientUser(prev => ({ ...prev, sectionOrder: newOrder }))
+  }
+
+  // Drag and drop state
+  const [draggedSection, setDraggedSection] = useState(null)
+  const [dragOverSection, setDragOverSection] = useState(null)
+
+  const handleDragStart = (e, section) => {
+    setDraggedSection(section)
+    e.dataTransfer.effectAllowed = 'move'
+    // Make the drag image semi-transparent
+    e.target.style.opacity = '0.5'
+  }
+
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = '1'
+    setDraggedSection(null)
+    setDragOverSection(null)
+  }
+
+  const handleDragOver = (e, section) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (section !== draggedSection) {
+      setDragOverSection(section)
+    }
+  }
+
+  const handleDragLeave = () => {
+    setDragOverSection(null)
+  }
+
+  const handleDrop = (e, targetSection) => {
+    e.preventDefault()
+    if (!draggedSection || draggedSection === targetSection) return
+
+    const order = clientUser.sectionOrder || DEFAULT_SECTION_ORDER
+    const newOrder = [...order]
+    const draggedIndex = newOrder.indexOf(draggedSection)
+    const targetIndex = newOrder.indexOf(targetSection)
+
+    // Remove dragged item and insert at target position
+    newOrder.splice(draggedIndex, 1)
+    newOrder.splice(targetIndex, 0, draggedSection)
+
+    setClientUser(prev => ({ ...prev, sectionOrder: newOrder }))
+    setDraggedSection(null)
+    setDragOverSection(null)
+  }
+
+  const updateSocialLink = (platform, value) => {
+    setClientUser(prev => ({
+      ...prev,
+      socialLinks: {
+        ...prev.socialLinks,
+        [platform]: value,
+      },
+    }))
+  }
+
+  const addCustomSection = () => {
+    setClientUser(prev => ({
+      ...prev,
+      customSections: [
+        ...prev.customSections,
+        { title: '', content: '' },
+      ],
+    }))
+  }
+
+  const updateCustomSection = (index, field, value) => {
+    setClientUser(prev => ({
+      ...prev,
+      customSections: prev.customSections.map((section, i) =>
+        i === index ? { ...section, [field]: value } : section
+      ),
+    }))
+  }
+
+  const removeCustomSection = index => {
+    setClientUser(prev => ({
+      ...prev,
+      customSections: prev.customSections.filter((_, i) => i !== index),
+    }))
+  }
+
+  const hasChanges = useCallback(() => {
+    const originalSocialLinks = user.socialLinks || {}
+    const originalSkills = user.skills || []
+    const originalSkillsSectionTitle = user.skillsSectionTitle || ''
+    const originalCustomSections = user.customSections || []
+    const originalSectionOrder = user.sectionOrder || ['skills', 'writing', 'custom']
+
+    return (
+      user.name !== clientUser.name ||
+      user.displayName !== clientUser.displayName ||
+      user.about !== clientUser.about ||
+      user.link !== clientUser.link ||
+      JSON.stringify(originalSocialLinks) !== JSON.stringify(clientUser.socialLinks) ||
+      JSON.stringify(originalSkills) !== JSON.stringify(clientUser.skills) ||
+      originalSkillsSectionTitle !== clientUser.skillsSectionTitle ||
+      JSON.stringify(originalCustomSections) !== JSON.stringify(clientUser.customSections) ||
+      JSON.stringify(originalSectionOrder) !== JSON.stringify(clientUser.sectionOrder)
+    )
+  }, [user, clientUser])
+
+  // Auto-save function
+  const performAutoSave = useCallback(async () => {
+    // Don't auto-save if username changed (requires validation)
+    if (clientUser.name !== user.name) {
+      return
+    }
+
+    if (!hasChanges()) return
+
+    setSaveStatus('saving')
+    try {
+      let toSave = { ...clientUser }
+      delete toSave.id
+      await firestore.collection('users').doc(user.id).set(toSave)
+      setSaveStatus('saved')
+    } catch (err) {
+      console.error('Auto-save error:', err)
+      setSaveStatus('unsaved')
+    }
+  }, [clientUser, user, hasChanges])
+
+  // Trigger auto-save when clientUser changes (with debounce)
+  useEffect(() => {
+    // Skip initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
+    // Don't auto-save if there are no changes
+    if (!hasChanges()) return
+
+    // Don't auto-save username changes
+    if (clientUser.name !== user.name) {
+      setSaveStatus('unsaved')
+      return
+    }
+
+    setSaveStatus('unsaved')
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+
+    // Set new timeout for auto-save (1 second debounce)
+    saveTimeoutRef.current = setTimeout(() => {
+      performAutoSave()
+    }, 1000)
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [clientUser, user.name, hasChanges, performAutoSave])
 
   return (
     <>
       <div
         css={css`
-          margin: 1.5rem 0 2.5rem 0;
-
           font-size: 0.9rem;
 
           input,
           textarea {
-            width: 20em;
+            width: 100%;
           }
 
           textarea {
-            min-height: 12em;
+            min-height: 8em;
             resize: none;
-          }
-
-          div {
-            margin-bottom: 1.5rem;
           }
         `}
       >
-        <div>
+        {/* Basic Info Section */}
+        <SectionHeader>Basic Info</SectionHeader>
+
+        <div css={css`margin-bottom: 1.25rem;`}>
           <StyledLabel htmlFor="profile-display-name">Display Name</StyledLabel>
           <Input
             id="profile-display-name"
@@ -469,8 +1018,8 @@ function Editor({ user }) {
           />
         </div>
 
-        <div>
-          <StyledLabel htmlFor="profile-username">Name</StyledLabel>
+        <div css={css`margin-bottom: 1.25rem;`}>
+          <StyledLabel htmlFor="profile-username">Username</StyledLabel>
           <Input
             id="profile-username"
             type="text"
@@ -486,10 +1035,9 @@ function Editor({ user }) {
           {usernameErr !== null && (
             <p
               css={css`
-                font-size: 0.9rem;
-                color: var(--grey-3);
-                width: 20rem;
-                margin-top: 1rem;
+                font-size: 0.85rem;
+                color: #e55050;
+                margin-top: 0.5rem;
               `}
             >
               {usernameErr}
@@ -497,22 +1045,7 @@ function Editor({ user }) {
           )}
         </div>
 
-        <div>
-          <StyledLabel htmlFor="profile-link">Link</StyledLabel>
-          <Input
-            id="profile-link"
-            type="text"
-            value={clientUser.link || ''}
-            onChange={e =>
-              setClientUser(prevUser => ({
-                ...prevUser,
-                link: e.target.value,
-              }))
-            }
-          />
-        </div>
-
-        <div>
+        <div css={css`margin-bottom: 1.25rem;`}>
           <StyledLabel htmlFor="profile-about">About</StyledLabel>
           <Textarea
             id="profile-about"
@@ -523,80 +1056,486 @@ function Editor({ user }) {
                 about: e.target.value,
               }))
             }
+            placeholder="Tell people about yourself..."
           />
+        </div>
+
+        <div css={css`margin-bottom: 1.25rem;`}>
+          <StyledLabel htmlFor="profile-link">Website</StyledLabel>
+          <Input
+            id="profile-link"
+            type="text"
+            value={clientUser.link || ''}
+            onChange={e =>
+              setClientUser(prevUser => ({
+                ...prevUser,
+                link: e.target.value,
+              }))
+            }
+            placeholder="yourwebsite.com"
+          />
+        </div>
+
+        {/* Social Links Section */}
+        <SectionHeader>Social Links</SectionHeader>
+
+        <div css={css`
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+
+          @media (max-width: 500px) {
+            grid-template-columns: 1fr;
+          }
+        `}>
+          <div>
+            <StyledLabel htmlFor="social-github">GitHub</StyledLabel>
+            <SmallInput
+              id="social-github"
+              type="text"
+              value={clientUser.socialLinks?.github || ''}
+              onChange={e => updateSocialLink('github', e.target.value)}
+              placeholder="username"
+            />
+          </div>
+
+          <div>
+            <StyledLabel htmlFor="social-twitter">Twitter / X</StyledLabel>
+            <SmallInput
+              id="social-twitter"
+              type="text"
+              value={clientUser.socialLinks?.twitter || ''}
+              onChange={e => updateSocialLink('twitter', e.target.value)}
+              placeholder="username"
+            />
+          </div>
+
+          <div>
+            <StyledLabel htmlFor="social-instagram">Instagram</StyledLabel>
+            <SmallInput
+              id="social-instagram"
+              type="text"
+              value={clientUser.socialLinks?.instagram || ''}
+              onChange={e => updateSocialLink('instagram', e.target.value)}
+              placeholder="username"
+            />
+          </div>
+
+          <div>
+            <StyledLabel htmlFor="social-linkedin">LinkedIn</StyledLabel>
+            <SmallInput
+              id="social-linkedin"
+              type="text"
+              value={clientUser.socialLinks?.linkedin || ''}
+              onChange={e => updateSocialLink('linkedin', e.target.value)}
+              placeholder="username"
+            />
+          </div>
+
+          <div>
+            <StyledLabel htmlFor="social-youtube">YouTube</StyledLabel>
+            <SmallInput
+              id="social-youtube"
+              type="text"
+              value={clientUser.socialLinks?.youtube || ''}
+              onChange={e => updateSocialLink('youtube', e.target.value)}
+              placeholder="@handle"
+            />
+          </div>
+
+          <div>
+            <StyledLabel htmlFor="social-email">Email</StyledLabel>
+            <SmallInput
+              id="social-email"
+              type="email"
+              value={clientUser.socialLinks?.email || ''}
+              onChange={e => updateSocialLink('email', e.target.value)}
+              placeholder="you@email.com"
+            />
+          </div>
+        </div>
+
+        {/* Skills/Tags Section */}
+        <SectionHeader>Skills & Tags</SectionHeader>
+
+        <div css={css`margin-bottom: 1.25rem;`}>
+          <StyledLabel htmlFor="skills-section-title">Section Title</StyledLabel>
+          <SmallInput
+            id="skills-section-title"
+            type="text"
+            value={clientUser.skillsSectionTitle || ''}
+            onChange={e =>
+              setClientUser(prev => ({
+                ...prev,
+                skillsSectionTitle: e.target.value,
+              }))
+            }
+            placeholder="What I work with"
+          />
+          <p css={css`
+            font-size: 0.75rem;
+            color: var(--grey-3);
+            margin-top: 0.5rem;
+          `}>
+            Customize the title for your skills section (default: "What I work with")
+          </p>
+        </div>
+
+        <div css={css`margin-bottom: 1.25rem;`}>
+          <StyledLabel>Skills</StyledLabel>
+          <TagInput
+            tags={clientUser.skills || []}
+            onChange={skills => setClientUser(prev => ({ ...prev, skills }))}
+            placeholder="Type a skill and press Enter..."
+          />
+          <p css={css`
+            font-size: 0.75rem;
+            color: var(--grey-3);
+            margin-top: 0.5rem;
+          `}>
+            Press Enter or comma to add a tag. Backspace to remove.
+          </p>
+        </div>
+
+        {/* Custom Sections */}
+        <SectionHeader>Custom Sections</SectionHeader>
+
+        <p css={css`
+          font-size: 0.8rem;
+          color: var(--grey-3);
+          margin-bottom: 1rem;
+        `}>
+          Add custom sections to your profile page (e.g., "Currently working on", "Support me", etc.)
+        </p>
+
+        {clientUser.customSections?.map((section, index) => (
+          <div
+            key={index}
+            css={css`
+              background: var(--grey-1);
+              border: 1px solid var(--grey-2);
+              border-radius: 0.5rem;
+              padding: 1rem;
+              margin-bottom: 1rem;
+              position: relative;
+            `}
+          >
+            <button
+              type="button"
+              onClick={() => removeCustomSection(index)}
+              css={css`
+                position: absolute;
+                top: 0.75rem;
+                right: 0.75rem;
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--grey-3);
+                padding: 0.25rem;
+                display: flex;
+                align-items: center;
+                &:hover {
+                  color: #e55050;
+                }
+              `}
+            >
+              <TrashIcon width={14} height={14} />
+            </button>
+
+            <div css={css`margin-bottom: 0.75rem;`}>
+              <StyledLabel>Section Title</StyledLabel>
+              <SmallInput
+                type="text"
+                value={section.title}
+                onChange={e => updateCustomSection(index, 'title', e.target.value)}
+                placeholder="e.g., What I'm working on"
+              />
+            </div>
+
+            <div>
+              <StyledLabel>Content</StyledLabel>
+              <Textarea
+                value={section.content}
+                onChange={e => updateCustomSection(index, 'content', e.target.value)}
+                placeholder="Write your section content..."
+                css={css`
+                  min-height: 5em;
+                `}
+              />
+            </div>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={addCustomSection}
+          css={css`
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: 1px dashed var(--grey-2);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: var(--grey-3);
+            cursor: pointer;
+            width: 100%;
+            justify-content: center;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+
+            &:hover {
+              border-color: var(--grey-3);
+              color: var(--grey-4);
+            }
+          `}
+        >
+          <PlusIcon width={14} height={14} />
+          Add Section
+        </button>
+
+        {/* Layout Order Section */}
+        <SectionHeader>Layout Order</SectionHeader>
+
+        <p css={css`
+          font-size: 0.8rem;
+          color: var(--grey-3);
+          margin-bottom: 1rem;
+        `}>
+          Drag to reorder sections on your profile page
+        </p>
+
+        <div css={css`
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        `}>
+          {(clientUser.sectionOrder || DEFAULT_SECTION_ORDER).map((section, index) => (
+            <div
+              key={section}
+              draggable
+              onDragStart={(e) => handleDragStart(e, section)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, section)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, section)}
+              css={css`
+                display: flex;
+                align-items: center;
+                background: ${dragOverSection === section ? 'var(--grey-2)' : 'var(--grey-1)'};
+                border: 1px solid ${dragOverSection === section ? 'var(--grey-3)' : 'var(--grey-2)'};
+                border-radius: 0.5rem;
+                padding: 0.5rem 0.75rem;
+                transition: all 0.15s ease;
+                cursor: grab;
+                user-select: none;
+
+                &:hover {
+                  border-color: var(--grey-3);
+                  background: var(--grey-2);
+                }
+
+                &:active {
+                  cursor: grabbing;
+                }
+              `}
+            >
+              {/* Drag handle */}
+              <span css={css`
+                color: var(--grey-3);
+                margin-right: 0.75rem;
+                display: flex;
+                align-items: center;
+              `}>
+                <DragHandleDots2Icon width={16} height={16} />
+              </span>
+
+              {/* Section label */}
+              <span css={css`
+                font-size: 0.85rem;
+                color: var(--grey-4);
+                flex: 1;
+              `}>
+                {SECTION_LABELS[section]}
+              </span>
+
+              {/* Move buttons */}
+              <div css={css`
+                display: flex;
+                gap: 0.125rem;
+              `}>
+                <button
+                  type="button"
+                  onClick={() => moveSectionUp(index)}
+                  disabled={index === 0}
+                  css={css`
+                    background: ${index === 0 ? 'none' : 'var(--grey-2)'};
+                    border: none;
+                    border-radius: 0.25rem;
+                    cursor: ${index === 0 ? 'not-allowed' : 'pointer'};
+                    padding: 0.35rem;
+                    color: ${index === 0 ? 'var(--grey-2)' : 'var(--grey-3)'};
+                    display: flex;
+                    align-items: center;
+                    transition: all 0.15s ease;
+
+                    &:hover:not(:disabled) {
+                      background: var(--grey-3);
+                      color: var(--grey-1);
+                    }
+                  `}
+                >
+                  <ChevronUpIcon width={14} height={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveSectionDown(index)}
+                  disabled={index === (clientUser.sectionOrder || DEFAULT_SECTION_ORDER).length - 1}
+                  css={css`
+                    background: ${index === (clientUser.sectionOrder || DEFAULT_SECTION_ORDER).length - 1 ? 'none' : 'var(--grey-2)'};
+                    border: none;
+                    border-radius: 0.25rem;
+                    cursor: ${index === (clientUser.sectionOrder || DEFAULT_SECTION_ORDER).length - 1 ? 'not-allowed' : 'pointer'};
+                    padding: 0.35rem;
+                    color: ${index === (clientUser.sectionOrder || DEFAULT_SECTION_ORDER).length - 1 ? 'var(--grey-2)' : 'var(--grey-3)'};
+                    display: flex;
+                    align-items: center;
+                    transition: all 0.15s ease;
+
+                    &:hover:not(:disabled) {
+                      background: var(--grey-3);
+                      color: var(--grey-1);
+                    }
+                  `}
+                >
+                  <ChevronDownIcon width={14} height={14} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <p
-        css={css`
-          font-size: 0.9rem;
-          max-width: 20rem;
-          margin-bottom: 1.5rem;
-          margin-top: -1rem;
-          word-wrap: break-word;
+      {/* Custom Domain Section */}
+      <CustomDomainSection userId={user.id} userName={user.name} />
 
-          a {
-            text-decoration: none;
-            color: inherit;
-            font-style: italic;
-            border-bottom: 1px dotted var(--grey-3);
-          }
-        `}
-      >
-        See your profile live at:{' '}
-        <a target="_blank" rel="noreferrer" href={`/${user.name}`}>
-          bublr.life/{user.name}
-        </a>
-      </p>
+      <div css={css`
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--grey-2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      `}>
+        <p
+          css={css`
+            font-size: 0.8rem;
+            color: var(--grey-3);
+            word-wrap: break-word;
 
-      <Button
-        css={css`
-          margin-left: auto;
-          font-size: 0.9rem;
-        `}
-        outline
-        disabled={
-          user.name === clientUser.name &&
-          user.displayName === clientUser.displayName &&
-          user.about === clientUser.about &&
-          user.link === clientUser.link &&
-          !usernameErr
-        }
-        onClick={async () => {
-          if (clientUser.name !== user.name) {
-            let nameClashing = await userWithNameExists(clientUser.name)
-            if (nameClashing) {
-              setUsernameErr('That username is in use already.')
-              return
-            } else if (clientUser.name === '') {
-              setUsernameErr('Username cannot be empty.')
-              return
-            } else if (!clientUser.name.match(/^[a-z0-9-]+$/i)) {
-              setUsernameErr(
-                'Username can only consist of letters (a-z,A-Z), numbers (0-9) and dashes (-).',
-              )
-              return
-            } else if (clientUser.name === 'dashboard') {
-              setUsernameErr('That username is reserved.')
-              return
+            a {
+              text-decoration: none;
+              color: inherit;
+              font-style: italic;
+              border-bottom: 1px dotted var(--grey-3);
             }
-          }
+          `}
+        >
+          Preview:{' '}
+          <a target="_blank" rel="noreferrer" href={`/${user.name}`}>
+            bublr.life/{user.name}
+          </a>
+        </p>
 
-          let toSave = { ...clientUser }
-          delete toSave.id
-          await firestore.collection('users').doc(user.id).set(toSave)
-          setUsernameErr(null)
-        }}
-      >
-        Save changes
-      </Button>
+        {/* Show save button only for username changes, otherwise show auto-save status */}
+        {clientUser.name !== user.name ? (
+          <Button
+            css={css`font-size: 0.9rem;`}
+            outline
+            disabled={!hasChanges() || usernameErr}
+            onClick={async () => {
+              let nameClashing = await userWithNameExists(clientUser.name)
+              if (nameClashing) {
+                setUsernameErr('That username is in use already.')
+                return
+              } else if (clientUser.name === '') {
+                setUsernameErr('Username cannot be empty.')
+                return
+              } else if (!clientUser.name.match(/^[a-z0-9-]+$/i)) {
+                setUsernameErr(
+                  'Username can only consist of letters (a-z,A-Z), numbers (0-9) and dashes (-).',
+                )
+                return
+              } else if (clientUser.name === 'dashboard') {
+                setUsernameErr('That username is reserved.')
+                return
+              }
 
-      <CustomDomainSection userId={user.id} />
+              setSaveStatus('saving')
+              let toSave = { ...clientUser }
+              delete toSave.id
+              await firestore.collection('users').doc(user.id).set(toSave)
+              setUsernameErr(null)
+              setSaveStatus('saved')
+            }}
+          >
+            Save username
+          </Button>
+        ) : (
+          <span
+            css={css`
+              font-size: 0.8rem;
+              color: var(--grey-3);
+              display: flex;
+              align-items: center;
+              gap: 0.4rem;
+            `}
+          >
+            {saveStatus === 'saving' && (
+              <>
+                <span css={css`
+                  width: 8px;
+                  height: 8px;
+                  border: 1.5px solid var(--grey-3);
+                  border-bottom-color: transparent;
+                  border-radius: 50%;
+                  display: inline-block;
+                  animation: spin 0.8s linear infinite;
+                  @keyframes spin {
+                    to { transform: rotate(360deg); }
+                  }
+                `} />
+                Saving...
+              </>
+            )}
+            {saveStatus === 'saved' && (
+              <>
+                <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11.4669 3.72684C11.7558 3.91574 11.8369 4.30308 11.648 4.59198L7.39799 11.092C7.29783 11.2452 7.13556 11.3467 6.95402 11.3699C6.77247 11.3931 6.58989 11.3355 6.45446 11.2124L3.70446 8.71241C3.44905 8.48022 3.43023 8.08494 3.66242 7.82953C3.89461 7.57412 4.28989 7.55529 4.5453 7.78749L6.75292 9.79441L10.6018 3.90792C10.7907 3.61902 11.178 3.53795 11.4669 3.72684Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd" />
+                </svg>
+                Saved
+              </>
+            )}
+            {saveStatus === 'unsaved' && (
+              <>
+                <span css={css`
+                  width: 6px;
+                  height: 6px;
+                  background: #f59e0b;
+                  border-radius: 50%;
+                  display: inline-block;
+                `} />
+                Unsaved
+              </>
+            )}
+          </span>
+        )}
+      </div>
     </>
   )
 }
 
-function ProfileEditor({ uid }) {
+function ProfileEditor({ uid, authEmail }) {
   const [user, userLoading, userError] = useDocumentData(
     firestore.doc(`users/${uid}`),
     {
@@ -612,97 +1551,11 @@ function ProfileEditor({ uid }) {
       </>
     )
   } else if (user) {
-    return <Editor user={user} />
+    // Pass authEmail to Editor so CustomDomainSection can use it
+    return <Editor user={{ ...user, email: authEmail }} />
   }
 
   return <Spinner />
-}
-
-function AnimatedUnderline() {
-  useEffect(() => {
-    let mounted = true;
-    
-    const timeoutId = setTimeout(() => {
-      if (!mounted) return;
-      
-      const loadDrawSVGPlugin = async () => {
-        try {
-          if (!window.DrawSVGPlugin) {
-            await new Promise((resolve, reject) => {
-              const script = document.createElement('script');
-              script.src = 'https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/DrawSVGPlugin.min.js';
-              script.onload = resolve;
-              script.onerror = reject;
-              document.head.appendChild(script);
-            });
-          }
-          
-          if (!mounted) return;
-          
-          gsap.registerPlugin(window.DrawSVGPlugin);
-          
-          const svgVariants = [
-            `<svg width="310" height="40" viewBox="0 0 310 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.99805 20.9998C65.6267 17.4649 126.268 13.845 187.208 12.8887C226.483 12.2723 265.751 13.2796 304.998 13.9998" stroke="currentColor" stroke-width="10" stroke-linecap="round"/></svg>`,
-            `<svg width="310" height="40" viewBox="0 0 310 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 20.9999C26.7762 16.2245 49.5532 11.5572 71.7979 14.6666C84.9553 16.5057 97.0392 21.8432 109.987 24.3888C116.413 25.6523 123.012 25.5143 129.042 22.6388C135.981 19.3303 142.586 15.1422 150.092 13.3333C156.799 11.7168 161.702 14.6225 167.887 16.8333C181.562 21.7212 194.975 22.6234 209.252 21.3888C224.678 20.0548 239.912 17.991 255.42 18.3055C272.027 18.6422 288.409 18.867 305 17.9999" stroke="currentColor" stroke-width="10" stroke-linecap="round"/></svg>`,
-            `<svg width="310" height="40" viewBox="0 0 310 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 24.2592C26.233 20.2879 47.7083 16.9968 69.135 13.8421C98.0469 9.5853 128.407 4.02322 158.059 5.14674C172.583 5.69708 187.686 8.66104 201.598 11.9696C207.232 13.3093 215.437 14.9471 220.137 18.3619C224.401 21.4596 220.737 25.6575 217.184 27.6168C208.309 32.5097 197.199 34.281 186.698 34.8486C183.159 35.0399 147.197 36.2657 155.105 26.5837C158.11 22.9053 162.993 20.6229 167.764 18.7924C178.386 14.7164 190.115 12.1115 201.624 10.3984C218.367 7.90626 235.528 7.06127 252.521 7.49276C258.455 7.64343 264.389 7.92791 270.295 8.41825C280.321 9.25056 296 10.8932 305 13.0242" stroke="#E55050" stroke-width="10" stroke-linecap="round"/></svg>`
-          ];
-          
-          const box = document.querySelector('[data-modal-draw-line-box]');
-          if (!box || !mounted) return;
-          
-          const randomIndex = Math.floor(Math.random() * svgVariants.length);
-          box.innerHTML = svgVariants[randomIndex];
-          const svg = box.querySelector('svg');
-          if (svg) {
-            svg.setAttribute('preserveAspectRatio', 'none');
-            svg.querySelectorAll('path').forEach(path => {
-              path.setAttribute('stroke', 'currentColor');
-            });
-            const path = svg.querySelector('path');
-            if (path && mounted) {
-              requestAnimationFrame(() => {
-                gsap.set(path, { drawSVG: '0%' });
-                gsap.to(path, {
-                  duration: 0.3,
-                  drawSVG: '100%',
-                  ease: 'power2.inOut'
-                });
-              });
-            }
-          }
-        } catch (error) {
-          console.warn('Animation loading failed:', error);
-        }
-      };
-      
-      loadDrawSVGPlugin();
-    }, 100);
-    
-    return () => {
-      mounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, []);
-
-  return (
-    <div 
-      data-modal-draw-line-box="" 
-      css={css`
-        color: #e55050;
-        width: 80px;
-        height: 0.625em;
-        position: relative;
-        margin-top: 0.5rem;
-        
-        svg {
-          width: 100%;
-          height: 100%;
-          position: absolute;
-          overflow: visible !important;
-        }
-      `}
-    />
-  );
 }
 
 export default function ProfileSettingsModal(props) {
@@ -718,28 +1571,54 @@ export default function ProfileSettingsModal(props) {
         css={css`
           background: var(--grey-1);
           border-radius: 0.5rem;
-          padding: 1.5rem;
+          padding: 0;
           position: fixed;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
+          width: 90%;
+          max-width: 500px;
+          max-height: 85vh;
+          display: flex;
+          flex-direction: column;
         `}
       >
-        <Dialog.Title>Profile</Dialog.Title>
-        <AnimatedUnderline />
-        <Dialog.Description
+        {/* Fixed Header */}
+        <div css={css`
+          padding: 1.5rem 1.5rem 1rem 1.5rem;
+          flex-shrink: 0;
+        `}>
+          <Dialog.Title css={css`margin: 0;`}>Profile Settings</Dialog.Title>
+          <Dialog.Description
+            css={css`
+              margin: 0.5rem 0 0 0;
+              color: var(--grey-3);
+              font-size: 0.9rem;
+            `}
+          >
+            Customize your public profile page
+          </Dialog.Description>
+        </div>
+
+        {/* Scrollable Content */}
+        <div
           css={css`
-            margin: 1rem 0 0.5rem 0;
-            max-width: 20rem;
-            color: var(--grey-3);
-            font-size: 0.9rem;
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 1.5rem 1.5rem 1.5rem;
+
+            /* Hide scrollbar for Chrome, Safari and Opera */
+            &::-webkit-scrollbar {
+              display: none;
+            }
+
+            /* Hide scrollbar for IE, Edge and Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
           `}
         >
-          Change your profile details and make sure to hit save when you&apos;re
-          done.
-        </Dialog.Description>
-
-        <ProfileEditor uid={props.uid} />
+          <ProfileEditor uid={props.uid} authEmail={props.email} />
+        </div>
 
         <Dialog.Close
           as={IconButton}

@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import Link from 'next/link'
 import Head from 'next/head'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { css } from '@emotion/react'
 import { useRouter } from 'next/router'
 import { htmlToText } from 'html-to-text'
@@ -17,6 +17,8 @@ import Spinner from '../../components/spinner'
 import Container from '../../components/container'
 import Search from '../../components/search'
 import ProfileSettingsModal from '../../components/profile-settings-modal'
+import ThemeToggle from '../../components/theme-toggle'
+import NotificationsPanel, { NotificationsTrigger } from '../../components/notifications-panel'
 import { formatDate } from '../../lib/utils'
 
 export default function Dashboard() {
@@ -28,6 +30,30 @@ export default function Dashboard() {
     { idField: 'id' },
   )
   const [filteredPosts, setFilteredPosts] = useState([]);
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Fetch unread count on mount and when user changes
+  useEffect(() => {
+    if (!user) return
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch(`/api/notifications?userId=${user.uid}&limit=1`)
+        const data = await response.json()
+        if (response.ok) {
+          setUnreadCount(data.unreadCount || 0)
+        }
+      } catch (err) {
+        console.error('Failed to fetch unread count:', err)
+      }
+    }
+
+    fetchUnreadCount()
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchUnreadCount, 60000)
+    return () => clearInterval(interval)
+  }, [user])
 
   useEffect(() => {
     console.log(user, userLoading, userError)
@@ -56,21 +82,40 @@ export default function Dashboard() {
     <>
       <Header>
 
-        <Link href="/dashboard/list">
-         <svg css={css`color: var(--grey-2); &:hover { color: var(--grey-3) }; cursor: pointer;`} width="21" height="21" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 2.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v11a.5.5 0 0 1-.765.424L7.5 11.59l-3.735 2.334A.5.5 0 0 1 3 13.5zM4 3v9.598l2.97-1.856a1 1 0 0 1 1.06 0L11 12.598V3z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"/></svg>
-        </Link>
+        <NotificationsTrigger
+          onClick={() => setIsPanelOpen(true)}
+          unreadCount={unreadCount}
+        />
 
         <Link href="/explore">
         <svg css={css`color: var(--grey-2); &:hover { color: var(--grey-3) }; cursor: pointer;`} width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 9.1a4.9 4.9 0 1 1-9.8 0 4.9 4.9 0 0 1 9.8 0m-.967 4.922a6.3 6.3 0 1 1 .99-.99l3.973 3.972a.7.7 0 0 1-.991.991z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"/></svg>
         </Link>
 
-        <ProfileSettingsModal Trigger={() => <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.5 1.225a5.075 5.075 0 0 0-1.408 9.953c-1.672.203-3.105.794-4.186 1.859-1.375 1.354-2.071 3.371-2.071 6.003a.665.665 0 1 0 1.33 0c0-2.408.634-4.032 1.674-5.057 1.042-1.026 2.598-1.558 4.661-1.558s3.619.532 4.662 1.558c1.039 1.026 1.673 2.649 1.673 5.057a.665.665 0 1 0 1.33 0c0-2.632-.696-4.648-2.072-6.003-1.078-1.064-2.513-1.656-4.185-1.859A5.078 5.078 0 0 0 10.5 1.225M6.755 6.3a3.745 3.745 0 1 1 7.49 0 3.745 3.745 0 0 1-7.49 0" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"/></svg>} uid={user?.uid} />
+        <ProfileSettingsModal Trigger={() => <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.5 1.225a5.075 5.075 0 0 0-1.408 9.953c-1.672.203-3.105.794-4.186 1.859-1.375 1.354-2.071 3.371-2.071 6.003a.665.665 0 1 0 1.33 0c0-2.408.634-4.032 1.674-5.057 1.042-1.026 2.598-1.558 4.661-1.558s3.619.532 4.662 1.558c1.039 1.026 1.673 2.649 1.673 5.057a.665.665 0 1 0 1.33 0c0-2.632-.696-4.648-2.072-6.003-1.078-1.064-2.513-1.656-4.185-1.859A5.078 5.078 0 0 0 10.5 1.225M6.755 6.3a3.745 3.745 0 1 1 7.49 0 3.745 3.745 0 0 1-7.49 0" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"/></svg>} uid={user?.uid} email={user?.email} />
 
-          {/* Sign out */}
+        {/* Theme toggle */}
+        <ThemeToggle />
+
+        {/* Sign out */}
         <button onClick={() => auth.signOut()}>
         <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.2 1.4a1.4 1.4 0 0 0-1.4 1.4v15.4a1.4 1.4 0 0 0 1.4 1.4h10.5a.7.7 0 0 0 0-1.4H4.2V2.8h10.5a.7.7 0 0 0 0-1.4zm13.446 5.454a.7.7 0 0 0-.991.991L18.61 9.8H9.1a.7.7 0 0 0 0 1.4h9.51l-1.956 1.954a.7.7 0 0 0 .991.991l3.15-3.15a.7.7 0 0 0 0-.991z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"/></svg>
         </button>
       </Header>
+
+      {/* Notifications Panel */}
+      <NotificationsPanel
+        isOpen={isPanelOpen}
+        onClose={() => {
+          setIsPanelOpen(false)
+          // Refresh unread count when closing panel
+          if (user) {
+            fetch(`/api/notifications?userId=${user.uid}&limit=1`)
+              .then(res => res.json())
+              .then(data => setUnreadCount(data.unreadCount || 0))
+              .catch(console.error)
+          }
+        }}
+      />
 
       {userError || postsError ? (
         <>
@@ -103,28 +148,20 @@ export default function Dashboard() {
   width="21px"
   height="21px"
   fill="none"
-  stroke-width="1.5"
+  strokeWidth="1.5"
   viewBox="0 0 24 24"
-  color="#ffffff"
   css={css`
     margin: 0.2em 0 0 0.1em;
 
     path {
-      stroke: black;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      path {
-        stroke: white;
-      }
+      stroke: var(--grey-4);
     }
   `}
 >
   <path
-    stroke="#ffffff"
-    stroke-width="1.3"
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeWidth="1.3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
     d="m14.363 5.652 1.48-1.48a2 2 0 0 1 2.829 0l1.414 1.414a2 2 0 0 1 0 2.828l-1.48 1.48m-4.243-4.242-9.616 9.615a2 2 0 0 0-.578 1.238l-.242 2.74a1 1 0 0 0 1.084 1.085l2.74-.242a2 2 0 0 0 1.24-.578l9.615-9.616m-4.243-4.242 4.243 4.242"
   ></path>
 </svg>
@@ -137,7 +174,7 @@ export default function Dashboard() {
             getSearchInput={getSearchInput}
           ></Search>
           
-          <Link href="https://bublr.life/solomon/guide">
+          <Link href="/about">
             <Button
               outline
               css={css`
@@ -152,31 +189,25 @@ export default function Dashboard() {
                 text-align: center;
               `}
               >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="1.1em" 
-                height="1.1em" 
-                fill="none" 
-                stroke-width="1.5" 
-                viewBox="0 0 24 24" 
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="1.1em"
+                height="1.1em"
+                fill="none"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
                 css={css`
                   margin: 0.25em 0 0 0.05em;
 
                   path {
-                    stroke: white;
-                  }
-
-                  @media (prefers-color-scheme: light) {
-                    path {
-                      stroke: black;
-                    }
+                    stroke: var(--grey-4);
                   }
                 `}
               >
-                <path 
-                  stroke-width="1.5" 
-                  stroke-linecap="round" 
-                  stroke-linejoin="round" 
+                <path
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   d="M7.9 8.08c0-4.773 7.5-4.773 7.5 0 0 3.409-3.409 2.727-3.409 6.818M12 19.01l.01-.011">
                 </path>
               </svg>

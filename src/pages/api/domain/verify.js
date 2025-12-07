@@ -1,6 +1,9 @@
-import { firestore, auth } from '../../../lib/firebase'
-import firebase from '../../../lib/firebase'
-import { verifyDNS } from '../../../lib/domain-utils'
+import { firestore } from '../../../lib/firebase'
+
+// Vercel API configuration
+const VERCEL_TOKEN = process.env.VERCEL_TOKEN
+const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID
+const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -8,67 +11,88 @@ export default async function handler(req, res) {
   }
 
   try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Unauthorized - No token provided' })
+    const { userId } = req.body
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId' })
     }
 
-    const token = authHeader.split('Bearer ')[1]
-    const decodedToken = await auth.verifyIdToken(token)
-    const userId = decodedToken.uid
-
+    // Get user's domain configuration
     const userDoc = await firestore.collection('users').doc(userId).get()
     if (!userDoc.exists) {
       return res.status(404).json({ error: 'User not found' })
     }
 
     const userData = userDoc.data()
+    const domain = userData.customDomain?.domain
 
-    if (!userData.customDomain) {
-      return res.status(400).json({ 
-        error: 'No domain set',
-        message: 'Please set a custom domain first'
-      })
+    if (!domain) {
+      return res.status(400).json({ error: 'No domain configured' })
     }
 
-    if (userData.subscriptionStatus !== 'active') {
-      return res.status(403).json({ 
-        error: 'Active subscription required',
-        message: 'Your subscription must be active to verify a domain'
-      })
+    if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) {
+      return res.status(500).json({ error: 'Vercel API not configured' })
     }
 
-    const targetDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || 'bublr.life'
-    
-    const verification = await verifyDNS(userData.customDomain, targetDomain)
+    // Call Vercel API to verify domain
+    const url = VERCEL_TEAM_ID
+      ? `https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain}/verify?teamId=${VERCEL_TEAM_ID}`
+      : `https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain}/verify`
 
-    if (verification.verified) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${VERCEL_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    const vercelResponse = await response.json()
+
+    if (response.ok && vercelResponse.verified) {
+      // Domain is verified! Update user document
       await firestore.collection('users').doc(userId).update({
-        domainVerified: true,
-        customDomainActive: true,
-        domainVerifiedAt: firebase.firestore.Timestamp.now(),
-        updatedAt: Date.now()
+        'customDomain.status': 'verified',
+        'customDomain.verification': [],
+        'customDomain.verifiedAt': new Date().toISOString(),
       })
 
       return res.status(200).json({
+        success: true,
         verified: true,
-        message: 'Domain verified successfully!',
-        recordType: verification.recordType,
-        domain: userData.customDomain
-      })
-    } else {
-      return res.status(400).json({
-        verified: false,
-        error: verification.error,
-        message: 'DNS verification failed',
-        domain: userData.customDomain
+        message: 'Domain has been verified successfully!',
       })
     }
+
+    // Domain not yet verified, return verification requirements
+    // Fetch current domain status to get updated verification info
+    const statusUrl = VERCEL_TEAM_ID
+      ? `https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain}?teamId=${VERCEL_TEAM_ID}`
+      : `https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain}`
+
+    const statusResponse = await fetch(statusUrl, {
+      headers: {
+        Authorization: `Bearer ${VERCEL_TOKEN}`,
+      },
+    })
+
+    const domainStatus = await statusResponse.json()
+
+    // Update verification info in database
+    if (domainStatus.verification) {
+      await firestore.collection('users').doc(userId).update({
+        'customDomain.verification': domainStatus.verification,
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      verified: false,
+      verification: domainStatus.verification || [],
+      message: 'Domain is not yet verified. Please check your DNS configuration.',
+    })
   } catch (error) {
     console.error('Error verifying domain:', error)
-    return res.status(500).json({ 
-      error: 'Failed to verify domain',
-      details: error.message 
-    })
+    return res.status(500).json({ error: 'Failed to verify domain' })
   }
 }

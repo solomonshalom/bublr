@@ -184,3 +184,47 @@ Home.getLayout = function HomeLayout(page) {
     </Container>
   )
 }
+
+// Check for custom domain and redirect to user's profile
+export async function getServerSideProps({ req }) {
+  const host = req.headers.host || ''
+
+  // List of main domains that should show the home page
+  const mainDomains = ['bublr.life', 'www.bublr.life', 'localhost', 'localhost:3000']
+  const hostWithoutPort = host.split(':')[0]
+
+  // Check if it's a main domain or Vercel preview
+  const isMainDomain = mainDomains.some(domain => {
+    const domainWithoutPort = domain.split(':')[0]
+    return hostWithoutPort === domainWithoutPort
+  })
+  const isVercelPreview = host.includes('.vercel.app')
+
+  if (isMainDomain || isVercelPreview) {
+    // Show normal home page
+    return { props: {} }
+  }
+
+  // This might be a custom domain - look up the user
+  try {
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
+    const res = await fetch(`${baseUrl}/api/domain/lookup?domain=${encodeURIComponent(host)}`)
+
+    if (res.ok) {
+      const data = await res.json()
+      // Redirect to user's profile page (internally)
+      return {
+        redirect: {
+          destination: `/${data.userName}`,
+          permanent: false,
+        },
+      }
+    }
+  } catch (error) {
+    console.error('Custom domain lookup error:', error)
+  }
+
+  // Domain not found or error - show home page
+  return { props: {} }
+}

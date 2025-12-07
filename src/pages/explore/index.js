@@ -17,6 +17,8 @@ import Spinner from '../../components/spinner'
 import Container from '../../components/container'
 import Search from '../../components/search'
 import ProfileSettingsModal from '../../components/profile-settings-modal'
+import ThemeToggle from '../../components/theme-toggle'
+import NotificationsPanel, { NotificationsTrigger } from '../../components/notifications-panel'
 import { truncate } from '../../lib/utils'
 import { getPostByID } from '../../lib/db'
 
@@ -27,6 +29,29 @@ export default function Explore() {
   const [explorePosts, setExplorePosts] = useState([]);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread count
+  useEffect(() => {
+    if (!user) return
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch(`/api/notifications?userId=${user.uid}&limit=1`)
+        const data = await response.json()
+        if (response.ok) {
+          setUnreadCount(data.unreadCount || 0)
+        }
+      } catch (err) {
+        console.error('Failed to fetch unread count:', err)
+      }
+    }
+
+    fetchUnreadCount()
+    const interval = setInterval(fetchUnreadCount, 60000)
+    return () => clearInterval(interval)
+  }, [user]);
 
   useEffect(() => {
     if (!user && !userLoading && !userError) {
@@ -170,11 +195,10 @@ export default function Explore() {
   return (
     <>
       <Header>
-        <Link href="/dashboard/list">
-          <svg css={css`color: var(--grey-2); &:hover { color: var(--grey-3) }; cursor: pointer;`} width="21" height="21" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 2.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v11a.5.5 0 0 1-.765.424L7.5 11.59l-3.735 2.334A.5.5 0 0 1 3 13.5zM4 3v9.598l2.97-1.856a1 1 0 0 1 1.06 0L11 12.598V3z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"/>
-          </svg>
-        </Link>
+        <NotificationsTrigger
+          onClick={() => setIsPanelOpen(true)}
+          unreadCount={unreadCount}
+        />
 
         <Link href="/dashboard">
           <svg css={css`color: var(--grey-2); &:hover { color: var(--grey-3) }; cursor: pointer;`} width="21" height="21" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -182,7 +206,9 @@ export default function Explore() {
           </svg>
         </Link>
 
-        <ProfileSettingsModal Trigger={() => <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.5 1.225a5.075 5.075 0 0 0-1.408 9.953c-1.672.203-3.105.794-4.186 1.859-1.375 1.354-2.071 3.371-2.071 6.003a.665.665 0 1 0 1.33 0c0-2.408.634-4.032 1.674-5.057 1.042-1.026 2.598-1.558 4.661-1.558s3.619.532 4.662 1.558c1.039 1.026 1.673 2.649 1.673 5.057a.665.665 0 1 0 1.33 0c0-2.632-.696-4.648-2.072-6.003-1.078-1.064-2.513-1.656-4.185-1.859A5.078 5.078 0 0 0 10.5 1.225M6.755 6.3a3.745 3.745 0 1 1 7.49 0 3.745 3.745 0 0 1-7.49 0" fill="currentColor" fillRule="evenodd" clipRule="evenodd"/></svg>} uid={user?.uid} />
+        <ProfileSettingsModal Trigger={() => <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.5 1.225a5.075 5.075 0 0 0-1.408 9.953c-1.672.203-3.105.794-4.186 1.859-1.375 1.354-2.071 3.371-2.071 6.003a.665.665 0 1 0 1.33 0c0-2.408.634-4.032 1.674-5.057 1.042-1.026 2.598-1.558 4.661-1.558s3.619.532 4.662 1.558c1.039 1.026 1.673 2.649 1.673 5.057a.665.665 0 1 0 1.33 0c0-2.632-.696-4.648-2.072-6.003-1.078-1.064-2.513-1.656-4.185-1.859A5.078 5.078 0 0 0 10.5 1.225M6.755 6.3a3.745 3.745 0 1 1 7.49 0 3.745 3.745 0 0 1-7.49 0" fill="currentColor" fillRule="evenodd" clipRule="evenodd"/></svg>} uid={user?.uid} email={user?.email} />
+
+        <ThemeToggle />
 
         <button onClick={() => auth.signOut()}>
           <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -190,6 +216,20 @@ export default function Explore() {
           </svg>
         </button>
       </Header>
+
+      {/* Notifications Panel */}
+      <NotificationsPanel
+        isOpen={isPanelOpen}
+        onClose={() => {
+          setIsPanelOpen(false)
+          if (user) {
+            fetch(`/api/notifications?userId=${user.uid}&limit=1`)
+              .then(res => res.json())
+              .then(data => setUnreadCount(data.unreadCount || 0))
+              .catch(console.error)
+          }
+        }}
+      />
 
       {userError ? (
         <>
@@ -221,29 +261,23 @@ export default function Explore() {
                 height: 2.15em;
               `}
             >
-              <svg 
-                width="21" 
-                height="21" 
-                strokeWidth="1.5" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg" 
-                color="#ffffff"
+              <svg
+                width="21"
+                height="21"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
                 css={css`
                   margin: 0.2em 0 0 0.1em;
                   path {
-                    stroke: black;
-                  }
-                  @media (prefers-color-scheme: dark) {
-                    path {
-                      stroke: white;
-                    }
+                    stroke: var(--grey-4);
                   }
                 `}
               >
-                <path d="M3 15V9a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M15 3s-4.5 0-4.5 9H13c0 9 2 9 2 9" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16.5 14.5s-1.5 2-4.5 2-4.5-2-4.5-2M7 9v2m10-2v2" stroke="#ffffff" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 15V9a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M15 3s-4.5 0-4.5 9H13c0 9 2 9 2 9" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16.5 14.5s-1.5 2-4.5 2-4.5-2-4.5-2M7 9v2m10-2v2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </Button>
             <Search

@@ -335,33 +335,6 @@ export async function userWithNameExists(name) {
   return !query.empty
 }
 
-export async function getUserByDomain(domain) {
-  const query = await firestore
-    .collection('users')
-    .where('customDomain', '==', domain)
-    .where('customDomainActive', '==', true)
-    .get()
-
-  if (query.empty || !query.docs[0].exists) {
-    throw { code: 'user/not-found' }
-  }
-
-  const user = { id: query.docs[0].id, ...query.docs[0].data() }
-  const postDocPromises = user.posts.map(postId => getPostByID(postId))
-  user.posts = await Promise.all(postDocPromises)
-
-  return user
-}
-
-export async function domainExists(domain) {
-  const query = await firestore
-    .collection('users')
-    .where('customDomain', '==', domain)
-    .get()
-
-  return !query.empty
-}
-
 export async function getUserByID(id) {
   const doc = await firestore.collection('users').doc(id).get()
   if (!doc.exists) {
