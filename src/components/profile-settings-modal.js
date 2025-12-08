@@ -1518,6 +1518,7 @@ function Editor({ user }) {
       statsAlignment: user.statsAlignment || 'center',
       buttonsVisibility: user.buttonsVisibility || { follow: false, newsletter: true },
       buttonsOrder: user.buttonsOrder || ['follow', 'newsletter'],
+      dividersVisibility: user.dividersVisibility || { skills: true, writing: true, custom: true },
     })
   }, [user])
 
@@ -1542,6 +1543,37 @@ function Editor({ user }) {
   const BUTTONS_LABELS = {
     follow: 'Follow Button',
     newsletter: 'Newsletter Button',
+  }
+
+  const DEFAULT_DIVIDERS_VISIBILITY = { skills: true, writing: true, custom: true }
+
+  const DIVIDERS_LABELS = {
+    skills: 'Before Skills',
+    writing: 'Before Writing',
+    custom: 'Before Custom Sections',
+  }
+
+  // Toggle divider visibility
+  const toggleDividerVisibility = (divider) => {
+    setClientUser(prev => ({
+      ...prev,
+      dividersVisibility: {
+        ...prev.dividersVisibility,
+        [divider]: prev.dividersVisibility?.[divider] === false ? true : false
+      }
+    }))
+  }
+
+  // Toggle all dividers
+  const toggleAllDividers = (show) => {
+    setClientUser(prev => ({
+      ...prev,
+      dividersVisibility: {
+        skills: show,
+        writing: show,
+        custom: show
+      }
+    }))
   }
 
   const moveSectionUp = (index) => {
@@ -1799,6 +1831,7 @@ function Editor({ user }) {
     const originalStatsAlignment = user.statsAlignment || 'center'
     const originalButtonsVisibility = user.buttonsVisibility || { follow: false, newsletter: true }
     const originalButtonsOrder = user.buttonsOrder || ['follow', 'newsletter']
+    const originalDividersVisibility = user.dividersVisibility || { skills: true, writing: true, custom: true }
 
     return (
       user.name !== clientUser.name ||
@@ -1816,7 +1849,8 @@ function Editor({ user }) {
       originalStatsStyle !== clientUser.statsStyle ||
       originalStatsAlignment !== clientUser.statsAlignment ||
       JSON.stringify(originalButtonsVisibility) !== JSON.stringify(clientUser.buttonsVisibility) ||
-      JSON.stringify(originalButtonsOrder) !== JSON.stringify(clientUser.buttonsOrder)
+      JSON.stringify(originalButtonsOrder) !== JSON.stringify(clientUser.buttonsOrder) ||
+      JSON.stringify(originalDividersVisibility) !== JSON.stringify(clientUser.dividersVisibility)
     )
   }, [user, clientUser])
 
@@ -2197,32 +2231,39 @@ function Editor({ user }) {
         </button>
 
         {/* Profile Customization - Collapsible Section */}
-        <div css={css`margin-top: 1.5rem;`}>
+        <div css={css`
+          margin-top: 2rem;
+          background: var(--grey-1);
+          border: 1px solid var(--grey-2);
+          border-radius: 0.75rem;
+          overflow: hidden;
+        `}>
           <button
             type="button"
             onClick={() => setIsCustomizationExpanded(!isCustomizationExpanded)}
             css={css`
               display: flex;
               align-items: center;
-              gap: 0.5rem;
-              background: none;
+              gap: 0.75rem;
+              background: ${isCustomizationExpanded ? 'var(--grey-2)' : 'transparent'};
               border: none;
-              padding: 0;
-              font-size: 0.85rem;
-              color: var(--grey-3);
+              padding: 1rem 1.25rem;
+              font-size: 0.9rem;
+              font-weight: 500;
+              color: var(--grey-4);
               cursor: pointer;
-              transition: color 0.15s ease;
+              transition: all 0.2s ease;
               width: 100%;
               text-align: left;
 
               &:hover {
-                color: var(--grey-4);
+                background: var(--grey-2);
               }
             `}
           >
             <svg
-              width="14"
-              height="14"
+              width="16"
+              height="16"
               viewBox="0 0 15 15"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -2234,18 +2275,148 @@ function Editor({ user }) {
                 clipRule="evenodd"
               />
             </svg>
-            <span>Profile Customization</span>
-            <span css={css`margin-left: auto;`}>
-              {isCustomizationExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+            <span>Advanced Customization</span>
+            <span css={css`
+              margin-left: auto;
+              display: flex;
+              align-items: center;
+              color: var(--grey-3);
+              transition: transform 0.2s ease;
+              transform: ${isCustomizationExpanded ? 'rotate(180deg)' : 'rotate(0deg)'};
+            `}>
+              <ChevronDownIcon width={16} height={16} />
             </span>
           </button>
 
           {isCustomizationExpanded && (
             <div css={css`
-              margin-top: 1rem;
-              padding-top: 1rem;
+              padding: 1.25rem;
               border-top: 1px solid var(--grey-2);
             `}>
+              {/* Section Dividers */}
+              <div css={css`margin-bottom: 1.5rem;`}>
+                <div css={css`
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  margin-bottom: 0.75rem;
+                `}>
+                  <h4 css={css`
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                    color: var(--grey-4);
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                  `}>
+                    Section Dividers
+                  </h4>
+                  <div css={css`display: flex; gap: 0.5rem;`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleAllDividers(true)}
+                      css={css`
+                        background: none;
+                        border: 1px solid var(--grey-2);
+                        border-radius: 0.25rem;
+                        padding: 0.25rem 0.5rem;
+                        font-size: 0.7rem;
+                        color: var(--grey-3);
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                        &:hover {
+                          border-color: var(--grey-3);
+                          color: var(--grey-4);
+                        }
+                      `}
+                    >
+                      Show All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleAllDividers(false)}
+                      css={css`
+                        background: none;
+                        border: 1px solid var(--grey-2);
+                        border-radius: 0.25rem;
+                        padding: 0.25rem 0.5rem;
+                        font-size: 0.7rem;
+                        color: var(--grey-3);
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                        &:hover {
+                          border-color: var(--grey-3);
+                          color: var(--grey-4);
+                        }
+                      `}
+                    >
+                      Hide All
+                    </button>
+                  </div>
+                </div>
+                <p css={css`
+                  font-size: 0.75rem;
+                  color: var(--grey-3);
+                  margin-bottom: 0.75rem;
+                `}>
+                  Control the horizontal lines between sections
+                </p>
+                <div css={css`
+                  display: flex;
+                  flex-direction: column;
+                  gap: 0.5rem;
+                `}>
+                  {['skills', 'writing', 'custom'].map((divider) => (
+                    <div
+                      key={divider}
+                      css={css`
+                        display: flex;
+                        align-items: center;
+                        background: var(--grey-1);
+                        border: 1px solid var(--grey-2);
+                        border-radius: 0.5rem;
+                        padding: 0.5rem 0.75rem;
+                        opacity: ${clientUser.dividersVisibility?.[divider] === false ? 0.5 : 1};
+                      `}
+                    >
+                      <span css={css`
+                        font-size: 0.85rem;
+                        color: var(--grey-4);
+                        flex: 1;
+                      `}>
+                        {DIVIDERS_LABELS[divider]}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleDividerVisibility(divider)}
+                        css={css`
+                          background: ${clientUser.dividersVisibility?.[divider] !== false ? 'var(--grey-4)' : 'var(--grey-2)'};
+                          border: none;
+                          border-radius: 10px;
+                          width: 36px;
+                          height: 20px;
+                          cursor: pointer;
+                          position: relative;
+                          transition: all 0.2s ease;
+
+                          &::after {
+                            content: '';
+                            position: absolute;
+                            top: 2px;
+                            left: ${clientUser.dividersVisibility?.[divider] !== false ? '18px' : '2px'};
+                            width: 16px;
+                            height: 16px;
+                            background: white;
+                            border-radius: 50%;
+                            transition: left 0.2s ease;
+                          }
+                        `}
+                        title={clientUser.dividersVisibility?.[divider] !== false ? 'Click to hide' : 'Click to show'}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Profile Stats Section */}
               <SectionHeader css={css`margin-top: 0;`}>Profile Stats</SectionHeader>
 

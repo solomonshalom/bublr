@@ -593,7 +593,12 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
                 if (sectionType === 'skills' && hasSkills) {
                   return (
                     <div key="skills">
-                      <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      {user.dividersVisibility?.skills !== false && (
+                        <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      )}
+                      {user.dividersVisibility?.skills === false && (
+                        <div css={css`margin-top: 32px;`} />
+                      )}
                       <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                         {user.skillsSectionTitle || 'What I work with'}
                       </p>
@@ -631,7 +636,12 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
                 if (sectionType === 'writing' && user.posts.length > 0) {
                   return (
                     <div key="writing">
-                      <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      {user.dividersVisibility?.writing !== false && (
+                        <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      )}
+                      {user.dividersVisibility?.writing === false && (
+                        <div css={css`margin-top: 32px;`} />
+                      )}
                       <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                         Writing
                       </p>
@@ -693,7 +703,12 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
                     <div key="custom">
                       {user.customSections.map((section, index) => (
                         <div key={index}>
-                          <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                          {user.dividersVisibility?.custom !== false && (
+                            <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                          )}
+                          {user.dividersVisibility?.custom === false && (
+                            <div css={css`margin-top: 32px;`} />
+                          )}
                           <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                             {section.title}
                           </p>
@@ -877,6 +892,11 @@ export async function getServerSideProps({ params, req }) {
     // Ensure buttonsOrder exists
     if (!user.buttonsOrder) {
       user.buttonsOrder = ['follow', 'newsletter']
+    }
+
+    // Ensure dividersVisibility exists
+    if (!user.dividersVisibility) {
+      user.dividersVisibility = { skills: true, writing: true, custom: true }
     }
 
     // Generate schemas server-side for SSR compatibility
