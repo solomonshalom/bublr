@@ -803,13 +803,25 @@ function Editor({ post }) {
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
   const [spamPopup, setSpamPopup] = useState({ isOpen: false, reason: '', category: '' })
   const [mediumImportOpen, setMediumImportOpen] = useState(false)
-  const [settingsView, setSettingsView] = useState('settings') // 'settings' or 'import'
+  const [settingsView, setSettingsView] = useState('settings') // 'settings', 'import', or 'import-articles'
+  const [selectedPlatform, setSelectedPlatform] = useState(null)
   const [importUsername, setImportUsername] = useState('')
   const [importArticles, setImportArticles] = useState([])
   const [importLoading, setImportLoading] = useState(false)
   const [importError, setImportError] = useState('')
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [importing, setImporting] = useState(false)
+
+  // Available import platforms
+  const IMPORT_PLATFORMS = [
+    { id: 'medium', name: 'Medium', color: '#000000', placeholder: '@username', description: 'Import your Medium articles' },
+    { id: 'substack', name: 'Substack', color: '#FF6719', placeholder: 'newsletter-name', description: 'Import Substack newsletters' },
+    { id: 'blogger', name: 'Blogger', color: '#FF5722', placeholder: 'blogname', description: 'Import from Blogspot' },
+    { id: 'hashnode', name: 'Hashnode', color: '#2962FF', placeholder: 'username', description: 'Import Hashnode posts' },
+    { id: 'wordpress', name: 'WordPress', color: '#21759B', placeholder: 'blogname', description: 'Import from WordPress.com' },
+    { id: 'ghost', name: 'Ghost', color: '#15171A', placeholder: 'blog.example.com', description: 'Import from Ghost blogs' },
+    { id: 'devto', name: 'DEV.to', color: '#0A0A0A', placeholder: 'username', description: 'Import DEV.to articles' },
+  ]
   const saveTimeoutRef = useRef(null)
   const isInitialMount = useRef(true)
 
@@ -897,10 +909,15 @@ function Editor({ post }) {
     }
   }, [saveChanges])
 
-  // Handle fetching articles from Medium
+  // Handle fetching articles from selected platform
   const handleFetchArticles = async () => {
+    if (!selectedPlatform) {
+      setImportError('Please select a platform')
+      return
+    }
+
     if (!importUsername.trim()) {
-      setImportError('Please enter a Medium username')
+      setImportError(`Please enter your ${selectedPlatform.name} username/URL`)
       return
     }
 
@@ -909,27 +926,31 @@ function Editor({ post }) {
     setImportArticles([])
 
     try {
-      const response = await fetch('/api/medium/fetch', {
+      const response = await fetch('/api/import/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: importUsername.trim() }),
+        body: JSON.stringify({
+          platform: selectedPlatform.id,
+          username: importUsername.trim()
+        }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        setImportError(data.error || 'Failed to fetch articles')
+        setImportError(data.error || `Failed to fetch ${selectedPlatform.name} articles`)
         return
       }
 
       if (data.articles.length === 0) {
-        setImportError('No articles found for this user')
+        setImportError('No articles found. Make sure the blog is public.')
         return
       }
 
       setImportArticles(data.articles)
+      setSettingsView('import-articles')
     } catch (err) {
-      setImportError('Failed to connect to Medium')
+      setImportError(`Failed to connect to ${selectedPlatform.name}`)
     } finally {
       setImportLoading(false)
     }
@@ -937,16 +958,17 @@ function Editor({ post }) {
 
   // Handle importing selected article
   const handleImportArticle = async () => {
-    if (!selectedArticle) return
+    if (!selectedArticle || !selectedPlatform) return
 
     setImporting(true)
     try {
-      const response = await fetch('/api/medium/convert', {
+      const response = await fetch('/api/import/convert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: selectedArticle.content,
           title: selectedArticle.title,
+          platform: selectedPlatform.id,
         }),
       })
 
@@ -962,8 +984,12 @@ function Editor({ post }) {
           contentEditor.commands.setContent(data.content)
           setClientPost(prev => ({ ...prev, content: data.content }))
         }
-        // Go back to settings view
+        // Go back to settings view and reset import state
         setSettingsView('settings')
+        setSelectedPlatform(null)
+        setImportUsername('')
+        setImportArticles([])
+        setSelectedArticle(null)
       } else {
         setImportError('Failed to convert article')
       }
@@ -972,6 +998,16 @@ function Editor({ post }) {
     } finally {
       setImporting(false)
     }
+  }
+
+  // Handle platform selection
+  const handleSelectPlatform = (platform) => {
+    setSelectedPlatform(platform)
+    setImportUsername('')
+    setImportArticles([])
+    setImportError('')
+    setSelectedArticle(null)
+    setSettingsView('import-articles')
   }
 
   const ParagraphDocument = Document.extend({ content: 'paragraph' })
@@ -1500,11 +1536,11 @@ function Editor({ post }) {
             )}
             </div>
 
-            {/* Import View */}
+            {/* Platform Selection View */}
             <div
               css={css`
                 transition: all 0.3s ease;
-                ${settingsView === 'settings' ? 'display: none;' : ''}
+                ${settingsView !== 'import' ? 'display: none;' : ''}
               `}
             >
               <div
@@ -1516,12 +1552,15 @@ function Editor({ post }) {
                 `}
               >
                 <IconButton
-                  onClick={() => setSettingsView('settings')}
+                  onClick={() => {
+                    setSettingsView('settings')
+                    setSelectedPlatform(null)
+                  }}
                   css={css`margin-left: -0.5rem;`}
                 >
                   <ArrowLeftIcon />
                 </IconButton>
-                <Dialog.Title css={css`margin: 0;`}>Import from Medium</Dialog.Title>
+                <Dialog.Title css={css`margin: 0;`}>Import Article</Dialog.Title>
               </div>
 
               <p
@@ -1532,7 +1571,126 @@ function Editor({ post }) {
                   line-height: 1.5;
                 `}
               >
-                Bring your Medium articles to Bublr. Enter your Medium username to fetch your latest posts.
+                Choose a platform to import your content from. We&apos;ll fetch your public posts.
+              </p>
+
+              {/* Platform grid */}
+              <div
+                css={css`
+                  display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  gap: 0.5rem;
+                  margin-bottom: 1rem;
+                `}
+              >
+                {IMPORT_PLATFORMS.map((platform) => (
+                  <button
+                    key={platform.id}
+                    onClick={() => handleSelectPlatform(platform)}
+                    css={css`
+                      display: flex;
+                      align-items: center;
+                      gap: 0.6rem;
+                      padding: 0.75rem 1rem;
+                      border: 1px solid var(--grey-2);
+                      border-radius: 0.33em;
+                      background: transparent;
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                      text-align: left;
+
+                      &:hover {
+                        border-color: var(--grey-3);
+                        background: var(--grey-2);
+                      }
+                    `}
+                  >
+                    <span
+                      css={css`
+                        width: 10px;
+                        height: 10px;
+                        border-radius: 50%;
+                        background-color: ${platform.color};
+                        flex-shrink: 0;
+                      `}
+                    />
+                    <span
+                      css={css`
+                        font-size: 0.85rem;
+                        color: var(--grey-5);
+                        font-weight: 500;
+                      `}
+                    >
+                      {platform.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <p
+                css={css`
+                  font-size: 0.7rem;
+                  color: var(--grey-3);
+                  text-align: center;
+                  margin-top: 1rem;
+                `}
+              >
+                GYD (Get Your Data) - Import your content from other platforms
+              </p>
+            </div>
+
+            {/* Import Articles View */}
+            <div
+              css={css`
+                transition: all 0.3s ease;
+                ${settingsView !== 'import-articles' ? 'display: none;' : ''}
+              `}
+            >
+              <div
+                css={css`
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                  margin-bottom: 1rem;
+                `}
+              >
+                <IconButton
+                  onClick={() => {
+                    setSettingsView('import')
+                    setImportArticles([])
+                    setImportError('')
+                    setSelectedArticle(null)
+                  }}
+                  css={css`margin-left: -0.5rem;`}
+                >
+                  <ArrowLeftIcon />
+                </IconButton>
+                <div css={css`display: flex; align-items: center; gap: 0.5rem;`}>
+                  {selectedPlatform && (
+                    <span
+                      css={css`
+                        width: 10px;
+                        height: 10px;
+                        border-radius: 50%;
+                        background-color: ${selectedPlatform.color};
+                      `}
+                    />
+                  )}
+                  <Dialog.Title css={css`margin: 0;`}>
+                    Import from {selectedPlatform?.name || 'Platform'}
+                  </Dialog.Title>
+                </div>
+              </div>
+
+              <p
+                css={css`
+                  color: var(--grey-3);
+                  font-size: 0.85rem;
+                  margin-bottom: 1.25rem;
+                  line-height: 1.5;
+                `}
+              >
+                {selectedPlatform?.description || 'Enter your username to fetch your posts.'}
               </p>
 
               {/* Username input */}
@@ -1553,7 +1711,7 @@ function Editor({ post }) {
                       handleFetchArticles()
                     }
                   }}
-                  placeholder="@username"
+                  placeholder={selectedPlatform?.placeholder || 'username'}
                   css={css`
                     flex: 1;
                     padding: 0.6rem 1rem;
@@ -1695,7 +1853,14 @@ function Editor({ post }) {
 
             <Dialog.Close
               as={IconButton}
-              onClick={() => setSettingsView('settings')}
+              onClick={() => {
+                setSettingsView('settings')
+                setSelectedPlatform(null)
+                setImportUsername('')
+                setImportArticles([])
+                setImportError('')
+                setSelectedArticle(null)
+              }}
               css={css`
                 position: absolute;
                 top: 1rem;
