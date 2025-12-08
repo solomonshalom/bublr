@@ -439,10 +439,12 @@ export default function Profile({ user }) {
                                 line-height: 1.5;
                               `}>
                                 {(() => {
-                                  const text = post.excerpt
-                                    ? htmlToText(post.excerpt)
-                                    : htmlToText(post.content)
-                                  return text.length > 500 ? text.substring(0, 500) + '...' : text
+                                  // Check if excerpt has actual content (not just whitespace/empty)
+                                  const excerptText = post.excerpt ? htmlToText(post.excerpt).trim() : ''
+                                  const text = excerptText || htmlToText(post.content).trim()
+                                  // Limit to reasonable length for preview
+                                  if (!text) return ''
+                                  return text.length > 150 ? text.substring(0, 150) + '...' : text
                                 })()}
                                 {' '}
                                 <span css={css`opacity: 0.7;`}>
