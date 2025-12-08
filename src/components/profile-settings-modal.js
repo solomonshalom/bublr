@@ -1487,6 +1487,7 @@ function Editor({ user }) {
     sectionOrder: ['skills', 'writing', 'custom'],
     statsVisibility: { followers: true, following: true, subscribers: true },
     statsOrder: ['followers', 'following', 'subscribers'],
+    statsStyle: 'separator',
   })
   const [usernameErr, setUsernameErr] = useState(null)
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
@@ -1510,6 +1511,7 @@ function Editor({ user }) {
       sectionOrder: user.sectionOrder || ['skills', 'writing', 'custom'],
       statsVisibility: user.statsVisibility || { followers: true, following: true, subscribers: true },
       statsOrder: user.statsOrder || ['followers', 'following', 'subscribers'],
+      statsStyle: user.statsStyle || 'separator',
     })
   }, [user])
 
@@ -1706,6 +1708,7 @@ function Editor({ user }) {
     const originalSectionOrder = user.sectionOrder || ['skills', 'writing', 'custom']
     const originalStatsVisibility = user.statsVisibility || { followers: true, following: true, subscribers: true }
     const originalStatsOrder = user.statsOrder || ['followers', 'following', 'subscribers']
+    const originalStatsStyle = user.statsStyle || 'separator'
 
     return (
       user.name !== clientUser.name ||
@@ -1719,7 +1722,8 @@ function Editor({ user }) {
       JSON.stringify(originalCustomSections) !== JSON.stringify(clientUser.customSections) ||
       JSON.stringify(originalSectionOrder) !== JSON.stringify(clientUser.sectionOrder) ||
       JSON.stringify(originalStatsVisibility) !== JSON.stringify(clientUser.statsVisibility) ||
-      JSON.stringify(originalStatsOrder) !== JSON.stringify(clientUser.statsOrder)
+      JSON.stringify(originalStatsOrder) !== JSON.stringify(clientUser.statsOrder) ||
+      originalStatsStyle !== clientUser.statsStyle
     )
   }, [user, clientUser])
 
@@ -2258,6 +2262,59 @@ function Editor({ user }) {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Stats Display Style */}
+        <div css={css`margin-top: 1.25rem;`}>
+          <StyledLabel>Display Style</StyledLabel>
+          <div css={css`
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+          `}>
+            {[
+              { value: 'separator', label: '12 followers // 15 following', desc: 'With separator' },
+              { value: 'inline', label: '12 followers  15 following', desc: 'Inline' },
+              { value: 'stacked', label: '12 / followers', desc: 'Stacked' },
+            ].map((style) => (
+              <button
+                key={style.value}
+                type="button"
+                onClick={() => setClientUser(prev => ({ ...prev, statsStyle: style.value }))}
+                css={css`
+                  flex: 1;
+                  min-width: 120px;
+                  padding: 0.75rem 0.5rem;
+                  background: ${clientUser.statsStyle === style.value ? 'var(--grey-4)' : 'var(--grey-1)'};
+                  color: ${clientUser.statsStyle === style.value ? 'white' : 'var(--grey-4)'};
+                  border: 1px solid ${clientUser.statsStyle === style.value ? 'var(--grey-4)' : 'var(--grey-2)'};
+                  border-radius: 0.5rem;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  text-align: center;
+
+                  &:hover {
+                    border-color: var(--grey-3);
+                  }
+                `}
+              >
+                <span css={css`
+                  font-size: 0.7rem;
+                  display: block;
+                  opacity: 0.7;
+                  margin-bottom: 0.25rem;
+                `}>
+                  {style.desc}
+                </span>
+                <span css={css`
+                  font-size: 0.75rem;
+                  font-family: monospace;
+                `}>
+                  {style.label}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Layout Order Section */}

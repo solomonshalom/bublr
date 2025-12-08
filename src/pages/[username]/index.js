@@ -380,6 +380,7 @@ export default function Profile({ user }) {
               {(() => {
                 const statsOrder = user.statsOrder || ['followers', 'following', 'subscribers']
                 const statsVisibility = user.statsVisibility || { followers: true, following: true, subscribers: true }
+                const statsStyle = user.statsStyle || 'separator' // 'inline', 'stacked', 'separator'
                 const visibleStats = statsOrder.filter(stat => statsVisibility[stat] !== false)
 
                 if (visibleStats.length === 0) return null
@@ -393,6 +394,106 @@ export default function Profile({ user }) {
                   }
                 }
 
+                // Stacked style (number on top, label below)
+                if (statsStyle === 'stacked') {
+                  return (
+                    <div
+                      css={css`
+                        display: flex;
+                        gap: 24px;
+                        margin-top: 20px;
+                        padding: 16px 0;
+                        border-top: 1px solid ${colors.border};
+                        border-bottom: 1px solid ${colors.border};
+                      `}
+                    >
+                      {visibleStats.map((stat) => (
+                        <div
+                          key={stat}
+                          css={css`
+                            text-align: center;
+                            cursor: default;
+                          `}
+                        >
+                          <p
+                            css={css`
+                              font-size: 1.1rem;
+                              font-weight: 500;
+                              color: ${colors.text};
+                              margin: 0;
+                            `}
+                          >
+                            {getStatValue(stat)}
+                          </p>
+                          <p
+                            css={css`
+                              font-size: 12px;
+                              color: ${colors.muted};
+                              margin: 0;
+                            `}
+                          >
+                            {stat}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                }
+
+                // Separator style (with // between stats)
+                if (statsStyle === 'separator') {
+                  return (
+                    <div
+                      css={css`
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        margin-top: 20px;
+                        padding: 16px 0;
+                        border-top: 1px solid ${colors.border};
+                        border-bottom: 1px solid ${colors.border};
+                      `}
+                    >
+                      {visibleStats.map((stat, index) => (
+                        <div key={stat} css={css`display: flex; align-items: center;`}>
+                          <div css={css`cursor: default;`}>
+                            <span
+                              css={css`
+                                font-size: 1.1rem;
+                                font-weight: 500;
+                                color: ${colors.text};
+                              `}
+                            >
+                              {getStatValue(stat)}
+                            </span>
+                            <span
+                              css={css`
+                                font-size: 12px;
+                                color: ${colors.muted};
+                                margin-left: 6px;
+                              `}
+                            >
+                              {stat}
+                            </span>
+                          </div>
+                          {index < visibleStats.length - 1 && (
+                            <span
+                              css={css`
+                                color: ${colors.mutedLight};
+                                margin-left: 12px;
+                                font-size: 12px;
+                              `}
+                            >
+                              //
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                }
+
+                // Inline style (default - number followed by label)
                 return (
                   <div
                     css={css`
@@ -734,6 +835,11 @@ export async function getServerSideProps({ params, req }) {
     // Ensure statsOrder exists
     if (!user.statsOrder) {
       user.statsOrder = ['followers', 'following', 'subscribers']
+    }
+
+    // Ensure statsStyle exists
+    if (!user.statsStyle) {
+      user.statsStyle = 'separator'
     }
 
     return {
