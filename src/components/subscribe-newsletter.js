@@ -269,7 +269,7 @@ export default function SubscribeNewsletter({
             line-height: 1.5;
           `}
         >
-          Get notified when {authorDisplayName} publishes new posts. No spam, unsubscribe anytime.
+          Get notified when {authorDisplayName} publishes new posts. Please use your account email, not a random one. No spam, unsubscribe anytime.
         </p>
 
         {/* Input and button */}
@@ -290,7 +290,7 @@ export default function SubscribeNewsletter({
                 setErrorMessage('')
               }
             }}
-            placeholder="your@email.com"
+            placeholder="your-account@email.com"
             autoFocus
             css={css`
               flex: 1;
