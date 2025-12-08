@@ -2,7 +2,38 @@
 import { css } from '@emotion/react'
 import React, { useEffect } from 'react'
 
-const PostContainer = props => {
+// RTL language detection - checks if text contains primarily RTL characters
+const detectRTL = (text) => {
+  if (!text) return false
+  // Remove HTML tags and get plain text
+  const plainText = text.replace(/<[^>]*>/g, '').trim()
+  if (!plainText) return false
+
+  // RTL Unicode ranges: Hebrew, Arabic, Persian, Urdu, etc.
+  const rtlRegex = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/
+  const rtlChars = (plainText.match(rtlRegex) || []).length
+
+  // Consider RTL if more than 30% of meaningful characters are RTL
+  const meaningfulChars = plainText.replace(/[\s\d\W]/g, '').length
+  return meaningfulChars > 0 && (rtlChars / meaningfulChars) > 0.3
+}
+
+const PostContainer = ({ textDirection = 'auto', ...props }) => {
+  // Determine actual direction based on setting
+  const getDirection = () => {
+    if (textDirection === 'ltr' || textDirection === 'rtl') {
+      return textDirection
+    }
+    // Auto-detect based on content
+    if (textDirection === 'auto' && props.dangerouslySetInnerHTML?.__html) {
+      return detectRTL(props.dangerouslySetInnerHTML.__html) ? 'rtl' : 'ltr'
+    }
+    return 'ltr'
+  }
+
+  const direction = getDirection()
+  const isRTL = direction === 'rtl'
+
   useEffect(() => {
     // Add SVG elements to all links after component mounts
     const links = document.querySelectorAll('.post-container a');
@@ -11,10 +42,10 @@ const PostContainer = props => {
       if (!link.querySelector('svg')) {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', '0 0 70 36');
-        
+
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', 'M6.9739 30.8153H63.0244C65.5269 30.8152 75.5358 -3.68471 35.4998 2.81531C-16.1598 11.2025 0.894099 33.9766 26.9922 34.3153C104.062 35.3153 54.5169 -6.68469 23.489 9.31527');
-        
+
         svg.appendChild(path);
         link.appendChild(svg);
       }
@@ -24,7 +55,10 @@ const PostContainer = props => {
   return (
   <div
     className="post-container"
+    dir={direction}
     css={css`
+      direction: ${direction};
+      text-align: ${isRTL ? 'right' : 'left'};
       margin-top: 2rem;
       font-size: 1.125rem;
       line-height: 1.5em;
@@ -75,12 +109,21 @@ const PostContainer = props => {
 
       ul,
       ol {
-        margin-left: 1.5rem;
+        margin-left: ${isRTL ? '0' : '1.5rem'};
+        margin-right: ${isRTL ? '1.5rem' : '0'};
       }
 
       blockquote,
       hr {
         margin: 1.5rem 0;
+      }
+
+      blockquote > p {
+        font-family: 'Inter', sans-serif;
+        padding-left: ${isRTL ? '0' : '1.25rem'};
+        padding-right: ${isRTL ? '1.25rem' : '0'};
+        border-left: ${isRTL ? 'none' : '0.15rem solid var(--grey-2)'};
+        border-right: ${isRTL ? '0.15rem solid var(--grey-2)' : 'none'};
       }
 
       h1,
@@ -103,12 +146,6 @@ const PostContainer = props => {
       h3 {
         font-style: italic;
         font-size: 1.15rem;
-      }
-
-      blockquote > p {
-        font-family: 'Inter', sans-serif;
-        padding-left: 1.25rem;
-        border-left: 0.15rem solid var(--grey-2);
       }
 
       pre {

@@ -1506,6 +1506,70 @@ function Editor({ post }) {
               </div>
             </div>
 
+            {/* Text Direction */}
+            <div
+              css={css`
+                margin: 1.5rem 0;
+              `}
+            >
+              <label
+                css={css`
+                  display: block;
+                  margin-bottom: 0.5rem;
+                `}
+              >
+                Text Direction
+              </label>
+              <p
+                css={css`
+                  font-size: 0.8rem;
+                  color: var(--grey-3);
+                  margin-bottom: 0.75rem;
+                `}
+              >
+                Set text direction for RTL languages (Hebrew, Arabic, etc.)
+              </p>
+              <div
+                css={css`
+                  display: flex;
+                  gap: 0.5rem;
+                `}
+              >
+                {[
+                  { value: 'auto', label: 'Auto' },
+                  { value: 'ltr', label: 'LTR' },
+                  { value: 'rtl', label: 'RTL' },
+                ].map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={async () => {
+                      await firestore
+                        .collection('posts')
+                        .doc(post.id)
+                        .update({ textDirection: value })
+                    }}
+                    css={css`
+                      padding: 0.5rem 1rem;
+                      border-radius: 0.375rem;
+                      font-size: 0.85rem;
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                      background: ${(post.textDirection || 'auto') === value ? 'var(--grey-4)' : 'transparent'};
+                      color: ${(post.textDirection || 'auto') === value ? 'var(--grey-1)' : 'var(--grey-4)'};
+                      border: 1px solid ${(post.textDirection || 'auto') === value ? 'var(--grey-4)' : 'var(--grey-2)'};
+
+                      &:hover {
+                        border-color: var(--grey-3);
+                      }
+                    `}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Import Article Button */}
             <Button
               outline
@@ -2014,6 +2078,7 @@ function Editor({ post }) {
       </div>
 
       <PostContainer
+        textDirection={post.textDirection || 'auto'}
         css={css`
           .ProseMirror-focused {
             outline: none;

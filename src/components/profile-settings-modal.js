@@ -3684,12 +3684,24 @@ function Editor({ user }) {
 }
 
 function ProfileEditor({ uid, authEmail }) {
+  // Only create Firestore reference if uid is valid
+  const userRef = uid ? firestore.doc(`users/${uid}`) : null
+
   const [user, userLoading, userError] = useDocumentData(
-    firestore.doc(`users/${uid}`),
+    userRef,
     {
       idField: 'id',
     },
   )
+
+  // If no uid provided, show a message
+  if (!uid) {
+    return (
+      <div css={css`padding: 2rem; text-align: center; color: var(--grey-3);`}>
+        <p>Please sign in to access your profile settings.</p>
+      </div>
+    )
+  }
 
   if (userError) {
     return (
@@ -3698,12 +3710,24 @@ function ProfileEditor({ uid, authEmail }) {
         <pre>{JSON.stringify(userError)}</pre>
       </>
     )
-  } else if (user) {
-    // Pass authEmail to Editor so CustomDomainSection can use it
-    return <Editor user={{ ...user, email: authEmail }} />
   }
 
-  return <Spinner />
+  // Show spinner only while actually loading
+  if (userLoading) {
+    return <Spinner />
+  }
+
+  // If loading is complete but user doesn't exist, show helpful message
+  if (!user) {
+    return (
+      <div css={css`padding: 2rem; text-align: center; color: var(--grey-3);`}>
+        <p>Unable to load profile data. Please try signing out and back in.</p>
+      </div>
+    )
+  }
+
+  // Pass authEmail to Editor so CustomDomainSection can use it
+  return <Editor user={{ ...user, email: authEmail }} />
 }
 
 export default function ProfileSettingsModal(props) {

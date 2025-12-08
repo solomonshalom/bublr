@@ -88,7 +88,7 @@ export default function Dashboard() {
         />
 
         <Link href="/explore">
-        <svg css={css`color: var(--grey-2); &:hover { color: var(--grey-3) }; cursor: pointer;`} width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 9.1a4.9 4.9 0 1 1-9.8 0 4.9 4.9 0 0 1 9.8 0m-.967 4.922a6.3 6.3 0 1 1 .99-.99l3.973 3.972a.7.7 0 0 1-.991.991z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"/></svg>
+        <svg css={css`color: var(--grey-3); &:hover { color: var(--grey-4) }; cursor: pointer; transition: color 0.2s ease;`} width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 9.1a4.9 4.9 0 1 1-9.8 0 4.9 4.9 0 0 1 9.8 0m-.967 4.922a6.3 6.3 0 1 1 .99-.99l3.973 3.972a.7.7 0 0 1-.991.991z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"/></svg>
         </Link>
 
         <ProfileSettingsModal Trigger={() => <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.5 1.225a5.075 5.075 0 0 0-1.408 9.953c-1.672.203-3.105.794-4.186 1.859-1.375 1.354-2.071 3.371-2.071 6.003a.665.665 0 1 0 1.33 0c0-2.408.634-4.032 1.674-5.057 1.042-1.026 2.598-1.558 4.661-1.558s3.619.532 4.662 1.558c1.039 1.026 1.673 2.649 1.673 5.057a.665.665 0 1 0 1.33 0c0-2.632-.696-4.648-2.072-6.003-1.078-1.064-2.513-1.656-4.185-1.859A5.078 5.078 0 0 0 10.5 1.225M6.755 6.3a3.745 3.745 0 1 1 7.49 0 3.745 3.745 0 0 1-7.49 0" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"/></svg>} uid={user?.uid} email={user?.email} />

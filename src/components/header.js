@@ -32,11 +32,15 @@ const Header = props => {
         display: inline-block;
         position: relative;
         text-decoration: none;
-        color: var(--grey-2);
+        color: var(--grey-3);
         cursor: pointer;
         margin-right: 1.5rem;
         margin: 0 var(--spacing, 0px);
-        transition: margin .25s;
+        transition: margin .25s, color .2s ease;
+      }
+
+      a:hover {
+        color: var(--grey-4);
       }
       
       a svg {
@@ -55,21 +59,14 @@ const Header = props => {
         transition: stroke .25s ease var(--stroke-delay, 0s), stroke-dasharray .35s;
       }
       
-      a:hover {
-        --spacing: 4px;
-        --stroke: var(--line-active);
-        --stroke-delay: .1s;
-        --offset: 180px;
-      }
-
       button {
-        color: var(--grey-2);
+        color: var(--grey-3);
         cursor: pointer;
         transition: all 200ms ease;
       }
 
       button:hover {
-        color: var(--grey-3);
+        color: var(--grey-4);
       }
 
       button:last-of-type {

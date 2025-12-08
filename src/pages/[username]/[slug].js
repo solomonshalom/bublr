@@ -323,6 +323,7 @@ export default function Post({ post, seo }) {
 
         <PostContainer
           itemProp="articleBody"
+          textDirection={post.textDirection || 'auto'}
           dangerouslySetInnerHTML={{
             __html: sanitize(post.content, {
               allowedTags: sanitize.defaults.allowedTags.concat(['img']),
