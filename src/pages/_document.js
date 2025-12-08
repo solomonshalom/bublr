@@ -109,6 +109,9 @@ class MyDocument extends Document {
           {/* Alternate links for language versions */}
           <link rel="alternate" hrefLang="en" href="https://bublr.life" />
           <link rel="alternate" hrefLang="x-default" href="https://bublr.life" />
+
+          {/* Umami Analytics */}
+          <script defer src="https://cloud.umami.is/script.js" data-website-id="a5689409-8cdf-475a-8022-d977f83c181e"></script>
         </Head>
         <body>
           {/* Skip to main content for accessibility */}
