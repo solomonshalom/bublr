@@ -757,6 +757,7 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
 
 // Custom Domain Section Component
 function CustomDomainSection({ userId, userName }) {
+  const { t } = useI18n()
   const [subscriptionStatus, setSubscriptionStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [domain, setDomain] = useState('')
@@ -963,7 +964,7 @@ function CustomDomainSection({ userId, userName }) {
   if (loading) {
     return (
       <>
-        <SectionHeader>Custom Domain</SectionHeader>
+        <SectionHeader>{t('profileSettings.customDomain')}</SectionHeader>
         <div css={css`display: flex; justify-content: center; padding: 2rem;`}>
           <Spinner />
         </div>
@@ -977,7 +978,7 @@ function CustomDomainSection({ userId, userName }) {
 
   return (
     <>
-      <SectionHeader>Custom Domain</SectionHeader>
+      <SectionHeader>{t('profileSettings.customDomain')}</SectionHeader>
 
       {/* Subscription promo / status */}
       {!hasAccess ? (
@@ -1517,6 +1518,7 @@ function LanguageSection() {
 const COLOR_PALETTE = ['#cf52f2', '#6BCB77', '#4D96FF', '#A66CFF', '#E23E57', '#ff3e00']
 
 function Editor({ user }) {
+  const { t } = useI18n()
   const [clientUser, setClientUser] = useState({
     name: '',
     displayName: '',
@@ -2005,7 +2007,7 @@ function Editor({ user }) {
         `}
       >
         {/* Basic Info Section */}
-        <SectionHeader>Basic Info</SectionHeader>
+        <SectionHeader>{t('profileSettings.basicInfo')}</SectionHeader>
 
         {/* Profile Picture Upload */}
         <ProfilePictureUpload
@@ -2016,7 +2018,7 @@ function Editor({ user }) {
         />
 
         {/* Banner & Avatar Frame Section */}
-        <SectionHeader>Banner & Avatar Frame</SectionHeader>
+        <SectionHeader>{t('profileSettings.bannerAvatarFrame')}</SectionHeader>
 
         {/* Banner Upload */}
         <div css={css`margin-bottom: 1.5rem;`}>
@@ -2614,7 +2616,7 @@ function Editor({ user }) {
         </div>
 
         {/* Social Links Section */}
-        <SectionHeader>Social Links</SectionHeader>
+        <SectionHeader>{t('profileSettings.socialLinks')}</SectionHeader>
 
         <div css={css`
           display: grid;
@@ -2693,7 +2695,7 @@ function Editor({ user }) {
         </div>
 
         {/* Skills/Tags Section */}
-        <SectionHeader>Skills & Tags</SectionHeader>
+        <SectionHeader>{t('profileSettings.skillsTags')}</SectionHeader>
 
         <div css={css`margin-bottom: 1.25rem;`}>
           <StyledLabel htmlFor="skills-section-title">Section Title</StyledLabel>
@@ -2735,7 +2737,7 @@ function Editor({ user }) {
         </div>
 
         {/* Custom Sections */}
-        <SectionHeader>Custom Sections</SectionHeader>
+        <SectionHeader>{t('profileSettings.customSections')}</SectionHeader>
 
         <p css={css`
           font-size: 0.8rem;
@@ -3019,7 +3021,7 @@ function Editor({ user }) {
               </div>
 
               {/* Profile Stats Section */}
-              <SectionHeader css={css`margin-top: 0;`}>Profile Stats</SectionHeader>
+              <SectionHeader css={css`margin-top: 0;`}>{t('profileSettings.profileStats')}</SectionHeader>
 
               <p css={css`
                 font-size: 0.8rem;
@@ -3271,7 +3273,7 @@ function Editor({ user }) {
         </div>
 
         {/* Profile Buttons Section */}
-        <SectionHeader>Profile Buttons</SectionHeader>
+        <SectionHeader>{t('profileSettings.profileButtons')}</SectionHeader>
 
         <p css={css`
           font-size: 0.8rem;
@@ -3435,7 +3437,7 @@ function Editor({ user }) {
         </div>
 
         {/* Layout Order Section */}
-        <SectionHeader>Layout Order</SectionHeader>
+        <SectionHeader>{t('profileSettings.layoutOrder')}</SectionHeader>
 
         <p css={css`
           font-size: 0.8rem;
@@ -3705,6 +3707,8 @@ function ProfileEditor({ uid, authEmail }) {
 }
 
 export default function ProfileSettingsModal(props) {
+  const { t } = useI18n()
+
   return (
     <Dialog.Root>
       <Dialog.Trigger>
@@ -3734,7 +3738,7 @@ export default function ProfileSettingsModal(props) {
           padding: 1.5rem 1.5rem 1rem 1.5rem;
           flex-shrink: 0;
         `}>
-          <Dialog.Title css={css`margin: 0;`}>Profile Settings</Dialog.Title>
+          <Dialog.Title css={css`margin: 0;`}>{t('profileSettings.title')}</Dialog.Title>
           <Dialog.Description
             css={css`
               margin: 0.5rem 0 0 0;
@@ -3742,7 +3746,7 @@ export default function ProfileSettingsModal(props) {
               font-size: 0.9rem;
             `}
           >
-            Customize your public profile page
+            {t('profileSettings.subtitle')}
           </Dialog.Description>
         </div>
 
