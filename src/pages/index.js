@@ -188,14 +188,25 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
               auth.signInWithPopup(googleAuthProvider).then(async cred => {
                 let userExists = await userWithIDExists(cred.user.uid)
                 if (!userExists) {
+                  // New user - create full profile with email
                   await setUser(cred.user.uid, {
                     name: cred.user.uid,
                     displayName: cred.user.displayName || 'Anonymous',
+                    email: cred.user.email || null,
                     about: 'Nothing to say about you.',
                     posts: [],
                     photo: generateDiceBearAvatar(cred.user.uid),
                     readingList: [],
                   })
+                } else if (cred.user.email) {
+                  // Existing user - update email if available (handles pre-existing users missing email)
+                  const userDoc = await firestore.collection('users').doc(cred.user.uid).get()
+                  const userData = userDoc.data()
+                  if (!userData?.email) {
+                    await firestore.collection('users').doc(cred.user.uid).update({
+                      email: cred.user.email
+                    })
+                  }
                 }
               })
             }
