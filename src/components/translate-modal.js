@@ -219,25 +219,25 @@ export default function TranslateModal({ title, content }) {
 
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
-      <Dialog.Trigger asChild>
-        <button
-          css={css`
-            color: var(--grey-3);
-            cursor: pointer;
-            transition: all 200ms ease;
-            border: none;
-            padding: 0;
-            background: none;
+      <Dialog.Trigger
+        as="button"
+        css={css`
+          color: var(--grey-3);
+          cursor: pointer;
+          transition: all 200ms ease;
+          border: none;
+          padding: 0;
+          background: none;
+          outline: none;
 
-            &:hover {
-              color: var(--grey-4);
-            }
-          `}
-          title="Translate this post"
-          aria-label="Translate this post"
-        >
-          <TranslateIcon />
-        </button>
+          &:hover {
+            color: var(--grey-4);
+          }
+        `}
+        title="Translate this post"
+        aria-label="Translate this post"
+      >
+        <TranslateIcon />
       </Dialog.Trigger>
 
       <ModalOverlay />
