@@ -90,7 +90,16 @@ function AddToReadingListButton({ uid, pid }) {
   }, [pid, user])
 
   return (
-    <IconButton
+    <button
+      css={css`
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `}
       onClick={async () => {
         const arrayAdd = firebase.firestore.FieldValue.arrayUnion
         const arrayRemove = firebase.firestore.FieldValue.arrayRemove
@@ -116,6 +125,7 @@ function AddToReadingListButton({ uid, pid }) {
         height="1.1rem"
         fill="var(--grey-3)"
         viewBox="0 0 256 256"
+        css={css`display: block;`}
       >
         <rect width="256" height="256" fill="none"></rect>
         {inList ? (
@@ -143,7 +153,7 @@ function AddToReadingListButton({ uid, pid }) {
           </>
         )}
       </svg>
-    </IconButton>
+    </button>
   )
 }
 
