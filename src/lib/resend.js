@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 // From email address (must be verified in Resend)
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Bublr <notifications@bublr.life>'
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Bublr <notifications@stuff.bublr.life>'
 
 /**
  * Generate the HTML email template for new post notifications
