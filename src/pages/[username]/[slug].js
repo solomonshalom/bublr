@@ -4,7 +4,7 @@ import Head from 'next/head'
 import { css } from '@emotion/react'
 import sanitize from 'sanitize-html'
 import { htmlToText } from 'html-to-text'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
 import firebase, { firestore, auth } from '../../lib/firebase'
@@ -27,6 +27,52 @@ import PostContainer from '../../components/post-container'
 import ThemeToggle from '../../components/theme-toggle'
 
 const SITE_URL = 'https://bublr.life'
+
+function ViewCounter({ postId, initialViews }) {
+  const [views, setViews] = useState(initialViews || 0)
+  const didLogViewRef = useRef(false)
+
+  useEffect(() => {
+    // Only increment view once per page load
+    if (!didLogViewRef.current) {
+      fetch(`/api/views/${postId}`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.views) setViews(data.views)
+        })
+        .catch(console.error)
+      didLogViewRef.current = true
+    }
+  }, [postId])
+
+  return (
+    <span
+      css={css`
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: var(--grey-3);
+        font-size: 0.85rem;
+      `}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="1.1rem"
+        height="1.1rem"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+      {views}
+    </span>
+  )
+}
 
 function AddToReadingListButton({ uid, pid }) {
   const [user, setUser] = useState({ readingList: [] })
@@ -235,7 +281,7 @@ export default function Post({ post, seo }) {
         />
       </article>
 
-      {/* Footer with theme toggle and bookmark */}
+      {/* Footer with theme toggle, views, and bookmark */}
       <footer
         css={css`
           display: flex;
@@ -246,8 +292,9 @@ export default function Post({ post, seo }) {
           border-top: 1px solid var(--grey-2);
         `}
       >
-        <div css={css`display: flex; align-items: center; gap: 0.5rem;`}>
+        <div css={css`display: flex; align-items: center; gap: 0.75rem;`}>
           <ThemeToggle />
+          <ViewCounter postId={post.id} initialViews={post.views} />
           {user && <AddToReadingListButton uid={user.uid} pid={post.id} />}
         </div>
       </footer>
