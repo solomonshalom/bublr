@@ -168,7 +168,8 @@ function NotificationItem({ notification, onMarkRead }) {
   )
 
   // Wrap in link if we have a destination
-  if (notification.postSlug && notification.postAuthorName) {
+  // For new_post notifications, link to the post
+  if (notification.type === 'new_post' && notification.postSlug && notification.postAuthorName) {
     return (
       <Link href={`/${notification.postAuthorName}/${notification.postSlug}`}>
         <a css={css`text-decoration: none; display: block; color: inherit;`}>
@@ -178,6 +179,22 @@ function NotificationItem({ notification, onMarkRead }) {
     )
   }
 
+  // For follow notifications, link to the follower's profile
+  // (actorUsername for new notifications, postAuthorName as fallback for existing ones)
+  if (notification.type === 'follow') {
+    const username = notification.actorUsername || notification.postAuthorName
+    if (username) {
+      return (
+        <Link href={`/${username}`}>
+          <a css={css`text-decoration: none; display: block; color: inherit;`}>
+            {content}
+          </a>
+        </Link>
+      )
+    }
+  }
+
+  // Subscriber notifications don't link anywhere (they're anonymous email subscribers)
   return content
 }
 

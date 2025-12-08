@@ -89,6 +89,7 @@ export default async function handler(req, res) {
         type: 'follow',
         actorId: currentUserId,
         actorName: currentUserData.displayName || currentUserData.name,
+        actorUsername: currentUserData.name, // Username for profile linking
         actorPhoto: currentUserData.photo || `https://api.dicebear.com/7.x/initials/svg?seed=${currentUserData.name}`,
         postId: null,
         postTitle: null,
