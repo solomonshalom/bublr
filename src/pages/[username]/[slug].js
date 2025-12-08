@@ -50,6 +50,7 @@ import Container from '../../components/container'
 import { IconButton } from '../../components/button'
 import PostContainer from '../../components/post-container'
 import ThemeToggle from '../../components/theme-toggle'
+import TranslateModal from '../../components/translate-modal'
 
 const SITE_URL = 'https://bublr.life'
 
@@ -347,6 +348,7 @@ export default function Post({ post, seo }) {
         <ViewCounter postId={post.id} initialViews={post.views} />
         <div css={css`display: flex; align-items: center; gap: 0.75rem;`}>
           <ThemeToggle />
+          <TranslateModal title={post.title} content={post.content} />
           {user && <AddToReadingListButton uid={user.uid} pid={post.id} />}
         </div>
       </footer>

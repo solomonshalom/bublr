@@ -14,6 +14,7 @@ import Input, { Textarea } from './input'
 import ModalOverlay from './modal-overlay'
 import Button, { IconButton } from './button'
 import ApiKeySection from './api-key-section'
+import { useI18n, SUPPORTED_UI_LANGUAGES } from '../lib/i18n'
 
 // Status badge component for domain status
 const StatusBadge = ({ status }) => {
@@ -1464,6 +1465,57 @@ function CustomDomainSection({ userId, userName }) {
   )
 }
 
+// Language Selector Section Component
+function LanguageSection() {
+  const { language, setLanguage, t } = useI18n()
+
+  return (
+    <div>
+      <SectionHeader>{t('profileSettings.language')}</SectionHeader>
+      <p css={css`
+        font-size: 0.85rem;
+        color: var(--grey-3);
+        margin-bottom: 1rem;
+      `}>
+        {t('profileSettings.languageSubtitle')}
+      </p>
+
+      <div css={css`
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      `}>
+        {SUPPORTED_UI_LANGUAGES.map((lang) => (
+          <button
+            key={lang.code}
+            onClick={() => setLanguage(lang.code)}
+            css={css`
+              cursor: pointer;
+              transition: all 0.2s ease-in-out;
+              font-size: 0.85rem;
+              color: ${language === lang.code ? 'var(--grey-1)' : 'var(--grey-4)'};
+              background: ${language === lang.code ? 'var(--grey-5)' : 'transparent'};
+              border-radius: 0.375rem;
+              padding: 0.4rem 0.75rem;
+              border: 1px solid ${language === lang.code ? 'var(--grey-5)' : 'var(--grey-2)'};
+
+              &:hover {
+                border-color: var(--grey-3);
+                background: ${language === lang.code ? 'var(--grey-5)' : 'var(--grey-2)'};
+              }
+            `}
+          >
+            {lang.native}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Color palette for avatar frames (matching profile page)
+const COLOR_PALETTE = ['#cf52f2', '#6BCB77', '#4D96FF', '#A66CFF', '#E23E57', '#ff3e00']
+
 function Editor({ user }) {
   const [clientUser, setClientUser] = useState({
     name: '',
@@ -1491,6 +1543,15 @@ function Editor({ user }) {
     statsAlignment: 'center',
     buttonsVisibility: { follow: false, newsletter: true },
     buttonsOrder: ['follow', 'newsletter'],
+    banner: null,
+    bannerPosition: 'center',
+    avatarFrame: {
+      type: 'none',
+      color: null,
+      gradientColors: null,
+      customUrl: null,
+      size: 'medium',
+    },
   })
   const [usernameErr, setUsernameErr] = useState(null)
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
@@ -1519,6 +1580,15 @@ function Editor({ user }) {
       buttonsVisibility: user.buttonsVisibility || { follow: false, newsletter: true },
       buttonsOrder: user.buttonsOrder || ['follow', 'newsletter'],
       dividersVisibility: user.dividersVisibility || { skills: true, writing: true, custom: true },
+      banner: user.banner || null,
+      bannerPosition: user.bannerPosition || 'center',
+      avatarFrame: user.avatarFrame || {
+        type: 'none',
+        color: null,
+        gradientColors: null,
+        customUrl: null,
+        size: 'medium',
+      },
     })
   }, [user])
 
@@ -1832,6 +1902,9 @@ function Editor({ user }) {
     const originalButtonsVisibility = user.buttonsVisibility || { follow: false, newsletter: true }
     const originalButtonsOrder = user.buttonsOrder || ['follow', 'newsletter']
     const originalDividersVisibility = user.dividersVisibility || { skills: true, writing: true, custom: true }
+    const originalBanner = user.banner || null
+    const originalBannerPosition = user.bannerPosition || 'center'
+    const originalAvatarFrame = user.avatarFrame || { type: 'none', color: null, gradientColors: null, customUrl: null, size: 'medium' }
 
     return (
       user.name !== clientUser.name ||
@@ -1850,7 +1923,10 @@ function Editor({ user }) {
       originalStatsAlignment !== clientUser.statsAlignment ||
       JSON.stringify(originalButtonsVisibility) !== JSON.stringify(clientUser.buttonsVisibility) ||
       JSON.stringify(originalButtonsOrder) !== JSON.stringify(clientUser.buttonsOrder) ||
-      JSON.stringify(originalDividersVisibility) !== JSON.stringify(clientUser.dividersVisibility)
+      JSON.stringify(originalDividersVisibility) !== JSON.stringify(clientUser.dividersVisibility) ||
+      originalBanner !== clientUser.banner ||
+      originalBannerPosition !== clientUser.bannerPosition ||
+      JSON.stringify(originalAvatarFrame) !== JSON.stringify(clientUser.avatarFrame)
     )
   }, [user, clientUser])
 
@@ -1938,6 +2014,531 @@ function Editor({ user }) {
             setClientUser(prev => ({ ...prev, photo: newPhotoUrl }))
           }}
         />
+
+        {/* Banner & Avatar Frame Section */}
+        <SectionHeader>Banner & Avatar Frame</SectionHeader>
+
+        {/* Banner Upload */}
+        <div css={css`margin-bottom: 1.5rem;`}>
+          <StyledLabel>Profile Banner</StyledLabel>
+          <div css={css`
+            border: 1px solid var(--grey-2);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: var(--grey-1);
+          `}>
+            {/* Banner Preview */}
+            {clientUser.banner ? (
+              <div css={css`
+                position: relative;
+                width: 100%;
+                height: 120px;
+                background: var(--grey-2);
+              `}>
+                <img
+                  src={clientUser.banner}
+                  alt="Profile banner preview"
+                  css={css`
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    object-position: center ${clientUser.bannerPosition || 'center'};
+                  `}
+                />
+                <button
+                  type="button"
+                  onClick={() => setClientUser(prev => ({ ...prev, banner: null }))}
+                  css={css`
+                    position: absolute;
+                    top: 0.5rem;
+                    right: 0.5rem;
+                    background: rgba(0, 0, 0, 0.6);
+                    color: white;
+                    border: none;
+                    border-radius: 50%;
+                    width: 28px;
+                    height: 28px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s ease;
+
+                    &:hover {
+                      background: rgba(0, 0, 0, 0.8);
+                    }
+                  `}
+                >
+                  <Cross2Icon width={14} height={14} />
+                </button>
+              </div>
+            ) : (
+              <div css={css`
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem;
+                gap: 0.75rem;
+                color: var(--grey-3);
+              `}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span css={css`font-size: 0.85rem;`}>No banner uploaded</span>
+              </div>
+            )}
+
+            {/* Banner Controls */}
+            <div css={css`
+              padding: 0.75rem;
+              border-top: 1px solid var(--grey-2);
+              display: flex;
+              gap: 0.5rem;
+              align-items: center;
+              flex-wrap: wrap;
+            `}>
+              <label css={css`
+                background: var(--grey-5);
+                color: var(--grey-1);
+                border: none;
+                padding: 0.5rem 0.75rem;
+                border-radius: 0.5rem;
+                font-size: 0.8rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &:hover {
+                  opacity: 0.8;
+                }
+
+                input {
+                  display: none;
+                }
+              `}>
+                {clientUser.banner ? 'Change Banner' : 'Upload Banner'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    if (file.size > 5 * 1024 * 1024) {
+                      alert('Banner must be less than 5MB')
+                      return
+                    }
+                    try {
+                      const apiKey = process.env.NEXT_PUBLIC_IMGBB_API
+                      if (!apiKey) return
+                      const imageUrl = await uploadToImgBB(file, apiKey)
+                      if (imageUrl) {
+                        setClientUser(prev => ({ ...prev, banner: imageUrl }))
+                      }
+                    } catch (err) {
+                      console.error('Banner upload error:', err)
+                    }
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+
+              {clientUser.banner && (
+                <select
+                  value={clientUser.bannerPosition || 'center'}
+                  onChange={(e) => setClientUser(prev => ({ ...prev, bannerPosition: e.target.value }))}
+                  css={css`
+                    background: var(--grey-1);
+                    color: var(--grey-4);
+                    border: 1px solid var(--grey-2);
+                    padding: 0.5rem 0.75rem;
+                    border-radius: 0.5rem;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                  `}
+                >
+                  <option value="top">Align Top</option>
+                  <option value="center">Align Center</option>
+                  <option value="bottom">Align Bottom</option>
+                </select>
+              )}
+            </div>
+          </div>
+          <p css={css`
+            font-size: 0.75rem;
+            color: var(--grey-3);
+            margin-top: 0.5rem;
+          `}>
+            Recommended: 1500×500px (3:1 ratio). Max 5MB.
+          </p>
+        </div>
+
+        {/* Avatar Frame Selector */}
+        <div css={css`margin-bottom: 1.5rem;`}>
+          <StyledLabel>Avatar Frame</StyledLabel>
+          <p css={css`
+            font-size: 0.75rem;
+            color: var(--grey-3);
+            margin-bottom: 0.75rem;
+          `}>
+            Add a decorative frame around your profile picture
+          </p>
+
+          {/* Frame Type Selector */}
+          <div css={css`
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+          `}>
+            {['none', 'solid', 'gradient', 'custom'].map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setClientUser(prev => ({
+                  ...prev,
+                  avatarFrame: { ...prev.avatarFrame, type }
+                }))}
+                css={css`
+                  padding: 0.5rem;
+                  border: 2px solid ${clientUser.avatarFrame?.type === type ? 'var(--grey-4)' : 'var(--grey-2)'};
+                  border-radius: 0.5rem;
+                  background: ${clientUser.avatarFrame?.type === type ? 'var(--grey-2)' : 'var(--grey-1)'};
+                  color: var(--grey-4);
+                  font-size: 0.75rem;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  text-transform: capitalize;
+
+                  &:hover {
+                    border-color: var(--grey-3);
+                  }
+                `}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+
+          {/* Solid Color Options */}
+          {clientUser.avatarFrame?.type === 'solid' && (
+            <div css={css`margin-bottom: 1rem;`}>
+              <p css={css`font-size: 0.75rem; color: var(--grey-3); margin-bottom: 0.5rem;`}>
+                Select frame color:
+              </p>
+              <div css={css`display: flex; gap: 0.5rem; flex-wrap: wrap;`}>
+                {COLOR_PALETTE.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setClientUser(prev => ({
+                      ...prev,
+                      avatarFrame: { ...prev.avatarFrame, color }
+                    }))}
+                    css={css`
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 50%;
+                      background: ${color};
+                      border: 3px solid ${clientUser.avatarFrame?.color === color ? 'var(--grey-5)' : 'transparent'};
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+
+                      &:hover {
+                        transform: scale(1.1);
+                      }
+                    `}
+                    title={color}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Gradient Color Options */}
+          {clientUser.avatarFrame?.type === 'gradient' && (
+            <div css={css`margin-bottom: 1rem;`}>
+              <p css={css`font-size: 0.75rem; color: var(--grey-3); margin-bottom: 0.5rem;`}>
+                Select gradient colors (pick 2):
+              </p>
+              <div css={css`display: flex; gap: 0.5rem; flex-wrap: wrap;`}>
+                {COLOR_PALETTE.map((color) => {
+                  const gradientColors = clientUser.avatarFrame?.gradientColors || []
+                  const isSelected = gradientColors.includes(color)
+                  const selectionIndex = gradientColors.indexOf(color) + 1
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => {
+                        const currentColors = clientUser.avatarFrame?.gradientColors || []
+                        let newColors
+                        if (isSelected) {
+                          newColors = currentColors.filter(c => c !== color)
+                        } else if (currentColors.length < 2) {
+                          newColors = [...currentColors, color]
+                        } else {
+                          newColors = [currentColors[1], color]
+                        }
+                        setClientUser(prev => ({
+                          ...prev,
+                          avatarFrame: { ...prev.avatarFrame, gradientColors: newColors }
+                        }))
+                      }}
+                      css={css`
+                        position: relative;
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        background: ${color};
+                        border: 3px solid ${isSelected ? 'var(--grey-5)' : 'transparent'};
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+
+                        &:hover {
+                          transform: scale(1.1);
+                        }
+
+                        ${isSelected && `
+                          &::after {
+                            content: '${selectionIndex}';
+                            position: absolute;
+                            top: -6px;
+                            right: -6px;
+                            background: var(--grey-5);
+                            color: var(--grey-1);
+                            width: 16px;
+                            height: 16px;
+                            border-radius: 50%;
+                            font-size: 10px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                          }
+                        `}
+                      `}
+                      title={color}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Custom Frame Upload */}
+          {clientUser.avatarFrame?.type === 'custom' && (
+            <div css={css`margin-bottom: 1rem;`}>
+              <p css={css`font-size: 0.75rem; color: var(--grey-3); margin-bottom: 0.5rem;`}>
+                Upload a transparent PNG frame (64×64px recommended):
+              </p>
+              {clientUser.avatarFrame?.customUrl ? (
+                <div css={css`
+                  display: flex;
+                  align-items: center;
+                  gap: 0.75rem;
+                  padding: 0.75rem;
+                  background: var(--grey-1);
+                  border: 1px solid var(--grey-2);
+                  border-radius: 0.5rem;
+                `}>
+                  <div css={css`
+                    position: relative;
+                    width: 48px;
+                    height: 48px;
+                  `}>
+                    <img
+                      src={clientUser.photo || 'https://api.dicebear.com/7.x/shapes/svg?seed=default'}
+                      alt="Avatar preview"
+                      css={css`
+                        width: 48px;
+                        height: 48px;
+                        border-radius: 50%;
+                        object-fit: cover;
+                      `}
+                    />
+                    <img
+                      src={clientUser.avatarFrame.customUrl}
+                      alt="Frame overlay"
+                      css={css`
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 64px;
+                        height: 64px;
+                        pointer-events: none;
+                      `}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setClientUser(prev => ({
+                      ...prev,
+                      avatarFrame: { ...prev.avatarFrame, customUrl: null }
+                    }))}
+                    css={css`
+                      background: none;
+                      color: var(--grey-3);
+                      border: 1px solid var(--grey-2);
+                      padding: 0.35rem 0.6rem;
+                      border-radius: 0.375rem;
+                      font-size: 0.75rem;
+                      cursor: pointer;
+
+                      &:hover {
+                        color: #dc2626;
+                        border-color: #dc2626;
+                      }
+                    `}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <label css={css`
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  padding: 1.5rem;
+                  background: var(--grey-1);
+                  border: 1px dashed var(--grey-2);
+                  border-radius: 0.5rem;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  color: var(--grey-3);
+                  font-size: 0.8rem;
+
+                  &:hover {
+                    border-color: var(--grey-3);
+                    color: var(--grey-4);
+                  }
+
+                  input {
+                    display: none;
+                  }
+                `}>
+                  <PlusIcon css={css`margin-right: 0.5rem;`} width={14} height={14} />
+                  Upload PNG Frame
+                  <input
+                    type="file"
+                    accept="image/png"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert('Frame must be less than 5MB')
+                        return
+                      }
+                      try {
+                        const apiKey = process.env.NEXT_PUBLIC_IMGBB_API
+                        if (!apiKey) return
+                        const imageUrl = await uploadToImgBB(file, apiKey)
+                        if (imageUrl) {
+                          setClientUser(prev => ({
+                            ...prev,
+                            avatarFrame: { ...prev.avatarFrame, customUrl: imageUrl }
+                          }))
+                        }
+                      } catch (err) {
+                        console.error('Frame upload error:', err)
+                      }
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          )}
+
+          {/* Frame Size Selector */}
+          {clientUser.avatarFrame?.type && clientUser.avatarFrame?.type !== 'none' && clientUser.avatarFrame?.type !== 'custom' && (
+            <div>
+              <p css={css`font-size: 0.75rem; color: var(--grey-3); margin-bottom: 0.5rem;`}>
+                Frame thickness:
+              </p>
+              <div css={css`display: flex; gap: 0.5rem;`}>
+                {['small', 'medium', 'large'].map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => setClientUser(prev => ({
+                      ...prev,
+                      avatarFrame: { ...prev.avatarFrame, size }
+                    }))}
+                    css={css`
+                      padding: 0.35rem 0.75rem;
+                      border: 1px solid ${clientUser.avatarFrame?.size === size ? 'var(--grey-4)' : 'var(--grey-2)'};
+                      border-radius: 0.375rem;
+                      background: ${clientUser.avatarFrame?.size === size ? 'var(--grey-2)' : 'var(--grey-1)'};
+                      color: var(--grey-4);
+                      font-size: 0.75rem;
+                      cursor: pointer;
+                      text-transform: capitalize;
+                      transition: all 0.2s ease;
+
+                      &:hover {
+                        border-color: var(--grey-3);
+                      }
+                    `}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Live Preview */}
+          {clientUser.avatarFrame?.type && clientUser.avatarFrame?.type !== 'none' && (
+            <div css={css`
+              margin-top: 1rem;
+              padding: 1rem;
+              background: var(--grey-1);
+              border: 1px solid var(--grey-2);
+              border-radius: 0.5rem;
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+            `}>
+              <p css={css`font-size: 0.75rem; color: var(--grey-3);`}>Preview:</p>
+              <div css={css`
+                ${clientUser.avatarFrame?.type === 'solid' && `
+                  img {
+                    border: ${clientUser.avatarFrame?.size === 'small' ? '2px' : clientUser.avatarFrame?.size === 'large' ? '4px' : '3px'} solid ${clientUser.avatarFrame?.color || COLOR_PALETTE[0]};
+                    border-radius: 50%;
+                  }
+                `}
+                ${clientUser.avatarFrame?.type === 'gradient' && `
+                  display: inline-block;
+                  padding: ${clientUser.avatarFrame?.size === 'small' ? '2px' : clientUser.avatarFrame?.size === 'large' ? '4px' : '3px'};
+                  border-radius: 50%;
+                  background: linear-gradient(45deg, ${(clientUser.avatarFrame?.gradientColors || [COLOR_PALETTE[0], COLOR_PALETTE[2]])[0]}, ${(clientUser.avatarFrame?.gradientColors || [COLOR_PALETTE[0], COLOR_PALETTE[2]])[1] || COLOR_PALETTE[2]}, ${(clientUser.avatarFrame?.gradientColors || [COLOR_PALETTE[0], COLOR_PALETTE[2]])[0]});
+                  background-size: 200% 200%;
+                  animation: gradient-preview 3s ease infinite;
+
+                  @keyframes gradient-preview {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                  }
+                `}
+              `}>
+                <img
+                  src={clientUser.photo || 'https://api.dicebear.com/7.x/shapes/svg?seed=default'}
+                  alt="Avatar preview"
+                  css={css`
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 50%;
+                    object-fit: cover;
+                    display: block;
+                  `}
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
         <div css={css`margin-bottom: 1.25rem;`}>
           <StyledLabel htmlFor="profile-display-name">Display Name</StyledLabel>
@@ -2954,6 +3555,9 @@ function Editor({ user }) {
           ))}
         </div>
       </div>
+
+      {/* Language Selector Section */}
+      <LanguageSection />
 
       {/* Custom Domain Section */}
       <CustomDomainSection userId={user.id} userName={user.name} />

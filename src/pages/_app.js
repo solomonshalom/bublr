@@ -4,6 +4,7 @@ import { ThemeProvider } from 'next-themes'
 import { Global, css } from '@emotion/react'
 import { IdProvider } from '@radix-ui/react-id'
 import { useRouter } from 'next/router'
+import { I18nProvider } from '../lib/i18n'
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || (page => page)
@@ -116,9 +117,11 @@ const App = ({ Component, pageProps }) => {
         `}
       />
       <IdProvider>
-        <ThemeProvider defaultTheme="system">
-          {getLayout(<Component {...pageProps} />)}
-        </ThemeProvider>
+        <I18nProvider>
+          <ThemeProvider defaultTheme="system">
+            {getLayout(<Component {...pageProps} />)}
+          </ThemeProvider>
+        </I18nProvider>
       </IdProvider>
     </>
   )

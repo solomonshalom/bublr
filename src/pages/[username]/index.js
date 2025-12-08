@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import Link from 'next/link'
 import Head from 'next/head'
-import { css, Global } from '@emotion/react'
+import { css, Global, keyframes } from '@emotion/react'
 import { htmlToText } from 'html-to-text'
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
@@ -133,6 +133,157 @@ const globalStyles = css`
   @import url('https://fonts.bunny.net/css?family=inter:400,500');
 `
 
+// Gradient animation for avatar frames
+const gradientRotate = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`
+
+// Frame size mapping
+const FRAME_SIZES = {
+  small: 2,
+  medium: 3,
+  large: 4,
+}
+
+// Avatar with Frame component
+const AvatarWithFrame = ({ user, size = 48 }) => {
+  const frame = user.avatarFrame || { type: 'none' }
+  const frameSize = FRAME_SIZES[frame.size] || 3
+
+  // No frame - just the avatar
+  if (frame.type === 'none' || !frame.type) {
+    return (
+      <img
+        src={user.photo}
+        alt={`${user.displayName}'s profile picture`}
+        width={size}
+        height={size}
+        loading="eager"
+        css={css`
+          width: ${size}px;
+          height: ${size}px;
+          border-radius: 50%;
+          object-fit: cover;
+        `}
+      />
+    )
+  }
+
+  // Solid color frame
+  if (frame.type === 'solid') {
+    return (
+      <img
+        src={user.photo}
+        alt={`${user.displayName}'s profile picture`}
+        width={size}
+        height={size}
+        loading="eager"
+        css={css`
+          width: ${size}px;
+          height: ${size}px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: ${frameSize}px solid ${frame.color || COLOR_PALETTE[0]};
+        `}
+      />
+    )
+  }
+
+  // Gradient frame
+  if (frame.type === 'gradient') {
+    const colors = frame.gradientColors || [COLOR_PALETTE[0], COLOR_PALETTE[2]]
+    return (
+      <div
+        css={css`
+          display: inline-block;
+          padding: ${frameSize}px;
+          border-radius: 50%;
+          background: linear-gradient(45deg, ${colors[0]}, ${colors[1]}, ${colors[0]});
+          background-size: 200% 200%;
+          animation: ${gradientRotate} 3s ease infinite;
+        `}
+      >
+        <img
+          src={user.photo}
+          alt={`${user.displayName}'s profile picture`}
+          width={size}
+          height={size}
+          loading="eager"
+          css={css`
+            width: ${size}px;
+            height: ${size}px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+          `}
+        />
+      </div>
+    )
+  }
+
+  // Custom PNG overlay frame
+  if (frame.type === 'custom' && frame.customUrl) {
+    const frameOverlaySize = size + 16 // 8px overflow on each side
+    return (
+      <div
+        css={css`
+          position: relative;
+          display: inline-block;
+          width: ${size}px;
+          height: ${size}px;
+        `}
+      >
+        <img
+          src={user.photo}
+          alt={`${user.displayName}'s profile picture`}
+          width={size}
+          height={size}
+          loading="eager"
+          css={css`
+            width: ${size}px;
+            height: ${size}px;
+            border-radius: 50%;
+            object-fit: cover;
+          `}
+        />
+        <img
+          src={frame.customUrl}
+          alt=""
+          aria-hidden="true"
+          css={css`
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: ${frameOverlaySize}px;
+            height: ${frameOverlaySize}px;
+            pointer-events: none;
+          `}
+        />
+      </div>
+    )
+  }
+
+  // Fallback - no frame
+  return (
+    <img
+      src={user.photo}
+      alt={`${user.displayName}'s profile picture`}
+      width={size}
+      height={size}
+      loading="eager"
+      css={css`
+        width: ${size}px;
+        height: ${size}px;
+        border-radius: 50%;
+        object-fit: cover;
+      `}
+    />
+  )
+}
+
 export default function Profile({ user, organizationSchema, profilePageSchema }) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -230,18 +381,73 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
           }
         `}
       >
+        {/* Profile Banner */}
+        {user.banner && (
+          <div
+            css={css`
+              width: 100%;
+              max-width: 550px;
+              margin: 0 auto;
+              padding: 0 0.75rem;
+
+              @media (min-width: 992px) {
+                padding: 0;
+              }
+            `}
+          >
+            <div
+              css={css`
+                width: 100%;
+                height: 150px;
+                border-radius: 12px;
+                overflow: hidden;
+                position: relative;
+                margin-top: 1.5rem;
+
+                @media (min-width: 992px) {
+                  height: 200px;
+                  margin-top: 3rem;
+                }
+              `}
+            >
+              <img
+                src={user.banner}
+                alt={`${user.displayName}'s banner`}
+                css={css`
+                  width: 100%;
+                  height: 100%;
+                  object-fit: cover;
+                  object-position: center ${user.bannerPosition || 'center'};
+                `}
+              />
+              {/* Subtle gradient overlay at bottom for smooth transition */}
+              <div
+                css={css`
+                  position: absolute;
+                  bottom: 0;
+                  left: 0;
+                  right: 0;
+                  height: 60px;
+                  background: linear-gradient(to top, ${colors.bg}, transparent);
+                  pointer-events: none;
+                `}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Section */}
         <section
           css={css`
-            padding-top: 1.5rem;
+            padding-top: ${user.banner ? '0.5rem' : '1.5rem'};
             padding-bottom: 1.5rem;
 
             @media (min-width: 992px) {
-              padding: 3rem;
+              padding: ${user.banner ? '0.5rem 3rem 3rem 3rem' : '3rem'};
             }
 
             @media (min-width: 1200px) {
-              padding-top: 3rem;
+              padding-top: ${user.banner ? '0.5rem' : '3rem'};
               padding-bottom: 3rem;
             }
           `}
@@ -267,20 +473,8 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
                 }
               `}
             >
-              {/* Avatar */}
-              <img
-                src={user.photo}
-                alt={`${user.displayName}'s profile picture`}
-                width="48"
-                height="48"
-                loading="eager"
-                css={css`
-                  width: 48px;
-                  height: 48px;
-                  border-radius: 50%;
-                  object-fit: cover;
-                `}
-              />
+              {/* Avatar with optional frame */}
+              <AvatarWithFrame user={user} size={48} />
 
               {/* Name */}
               <h1
@@ -897,6 +1091,25 @@ export async function getServerSideProps({ params, req }) {
     // Ensure dividersVisibility exists
     if (!user.dividersVisibility) {
       user.dividersVisibility = { skills: true, writing: true, custom: true }
+    }
+
+    // Banner defaults
+    if (!user.banner) {
+      user.banner = null
+    }
+    if (!user.bannerPosition) {
+      user.bannerPosition = 'center'
+    }
+
+    // Avatar frame defaults
+    if (!user.avatarFrame) {
+      user.avatarFrame = {
+        type: 'none',
+        color: null,
+        gradientColors: null,
+        customUrl: null,
+        size: 'medium'
+      }
     }
 
     // Generate schemas server-side for SSR compatibility
