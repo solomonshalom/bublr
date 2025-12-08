@@ -67,15 +67,26 @@ export default async function handler(req, res) {
     // Determine verification status
     // "verified" from Vercel = TXT ownership verification passed (or not required)
     // "misconfigured" from config = DNS (CNAME/A) not pointing correctly
-    const ownershipVerified = verifyData.verified === true || domainData.verified === true
     const dnsConfigured = configData.misconfigured === false
+
+    // Check if TXT verification is actually required
+    // Use verification array from POST /verify response (most up-to-date) or fall back to GET /domains
+    const pendingVerification = verifyData.verification || domainData.verification || []
+    const hasPendingTxtVerification = pendingVerification.some(v => v.type === 'TXT')
+
+    // Ownership is verified if:
+    // 1. Vercel explicitly says verified: true, OR
+    // 2. No TXT verification requirements exist (domain doesn't need ownership verification)
+    const ownershipVerified = verifyData?.verified === true ||
+                              domainData?.verified === true ||
+                              !hasPendingTxtVerification
 
     // Build verification requirements array
     let verificationRequirements = []
 
-    // Add TXT verification requirements if ownership not verified
-    if (!ownershipVerified && domainData.verification?.length > 0) {
-      verificationRequirements = [...domainData.verification]
+    // Add TXT verification requirements only if ownership not verified AND TXT is required
+    if (!ownershipVerified && hasPendingTxtVerification) {
+      verificationRequirements = pendingVerification.filter(v => v.type === 'TXT')
     }
 
     // Add DNS config requirements if not properly configured
@@ -148,9 +159,20 @@ export default async function handler(req, res) {
       verification: verificationRequirements,
       message,
       debug: {
-        vercelVerified: verifyData.verified,
-        domainVerified: domainData.verified,
-        misconfigured: configData.misconfigured,
+        verifyResponse: {
+          verified: verifyData?.verified,
+          verification: verifyData?.verification,
+          error: verifyData?.error,
+        },
+        domainResponse: {
+          verified: domainData?.verified,
+          verification: domainData?.verification,
+        },
+        configResponse: {
+          misconfigured: configData?.misconfigured,
+          configured: configData?.configured,
+        },
+        hasPendingTxtVerification,
       },
     })
   } catch (error) {

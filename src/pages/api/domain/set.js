@@ -94,14 +94,22 @@ export default async function handler(req, res) {
         const configData = await configResponse.json()
 
         // Determine if domain is fully verified
-        const ownershipVerified = domainData.verified === true
         const dnsConfigured = configData.misconfigured === false
+
+        // Check if TXT verification is actually required
+        const pendingVerification = domainData.verification || []
+        const hasPendingTxtVerification = pendingVerification.some(v => v.type === 'TXT')
+
+        // Ownership is verified if:
+        // 1. Vercel explicitly says verified: true, OR
+        // 2. No TXT verification requirements exist
+        const ownershipVerified = domainData?.verified === true || !hasPendingTxtVerification
         isVerified = ownershipVerified && dnsConfigured
 
         // Build verification requirements
-        // Add TXT verification requirements if ownership not verified
-        if (!ownershipVerified && domainData.verification?.length > 0) {
-          verificationRequirements = [...domainData.verification]
+        // Add TXT verification requirements only if ownership not verified AND TXT is required
+        if (!ownershipVerified && hasPendingTxtVerification) {
+          verificationRequirements = pendingVerification.filter(v => v.type === 'TXT')
         }
 
         // Add DNS config requirements if not properly configured
