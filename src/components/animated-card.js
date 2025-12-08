@@ -33,7 +33,7 @@ const cardStyles = css`
   --card-hover-icon-background-color: rgba(52, 211, 153, 0.1);
   --card-hover-icon-border-color: rgba(52, 211, 153, 0.2);
 
-  @media (prefers-color-scheme: light) {
+  [data-theme='light'] & {
     --background-color: #FAFAFA;
     --text-color: #52525B;
     --card-background-color: transparent;

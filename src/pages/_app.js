@@ -118,7 +118,7 @@ const App = ({ Component, pageProps }) => {
       />
       <IdProvider>
         <I18nProvider>
-          <ThemeProvider defaultTheme="system">
+          <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme">
             {getLayout(<Component {...pageProps} />, pageProps)}
           </ThemeProvider>
         </I18nProvider>

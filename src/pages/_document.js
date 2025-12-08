@@ -114,6 +114,25 @@ class MyDocument extends Document {
           <script defer src="https://cloud.umami.is/script.js" data-website-id="a5689409-8cdf-475a-8022-d977f83c181e"></script>
         </Head>
         <body>
+          {/* Blocking script to prevent theme flash (FOUC) */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  try {
+                    var theme = localStorage.getItem('theme');
+                    var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+                    if (theme === 'dark' || (theme === 'system' && systemDark) || (!theme && systemDark)) {
+                      document.documentElement.setAttribute('data-theme', 'dark');
+                    } else {
+                      document.documentElement.setAttribute('data-theme', 'light');
+                    }
+                  } catch (e) {}
+                })();
+              `,
+            }}
+          />
           {/* Skip to main content for accessibility */}
           <a
             href="#main-content"
