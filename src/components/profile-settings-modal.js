@@ -12,6 +12,7 @@ import Spinner from './spinner'
 import Input, { Textarea } from './input'
 import ModalOverlay from './modal-overlay'
 import Button, { IconButton } from './button'
+import AdvancedSettingsModal from './advanced-settings-modal'
 
 // Status badge component for domain status
 const StatusBadge = ({ status }) => {
@@ -175,6 +176,395 @@ const TagInput = ({ tags, onChange, placeholder }) => {
           }
         `}
       />
+    </div>
+  )
+}
+
+// Default email template for reference
+const DEFAULT_EMAIL_TEMPLATE = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New post from {{authorName}}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.6; color: #2e2e2e; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+          <!-- Color bar -->
+          <tr>
+            <td style="height: 4px; background-color: {{postColor}};"></td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px;">
+              <!-- Author info -->
+              <table cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td style="width: 40px; vertical-align: middle;">
+                    <img src="{{authorPhoto}}" alt="{{authorName}}" width="40" height="40" style="border-radius: 50%; display: block;">
+                  </td>
+                  <td style="padding-left: 12px; vertical-align: middle;">
+                    <span style="font-weight: 500; color: #2e2e2e;">{{authorName}}</span>
+                    <span style="color: #6f6f6f;"> published a new post</span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Post title -->
+              <h1 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 500; color: #2e2e2e; line-height: 1.3;">
+                <a href="{{postUrl}}" style="color: inherit; text-decoration: none;">{{title}}</a>
+              </h1>
+
+              <!-- Excerpt/Preview -->
+              <p style="margin: 0 0 20px 0; color: #6f6f6f; font-size: 14px; line-height: 1.6;">
+                {{excerpt}}
+              </p>
+
+              <!-- Content preview -->
+              <p style="margin: 0 0 24px 0; color: #6f6f6f; font-size: 14px; line-height: 1.7;">
+                {{content}}
+              </p>
+
+              <!-- CTA Button -->
+              <table cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+                <tr>
+                  <td style="background-color: #2e2e2e; border-radius: 6px;">
+                    <a href="{{postUrl}}" style="display: inline-block; padding: 12px 24px; color: #ffffff; text-decoration: none; font-weight: 500; font-size: 14px;">
+                      Read Full Post
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Footer -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-top: 1px solid #e5e5e5; padding-top: 24px;">
+                <tr>
+                  <td>
+                    <p style="margin: 0 0 8px 0; font-size: 12px; color: #9a9a9a;">
+                      You're receiving this because you subscribed to {{authorName}}'s newsletter on Bublr.
+                    </p>
+                    <p style="margin: 0; font-size: 12px;">
+                      <a href="{{unsubscribeUrl}}" style="color: #6f6f6f; text-decoration: underline;">Unsubscribe</a>
+                      <span style="color: #c7c7c7; margin: 0 8px;">|</span>
+                      <a href="https://bublr.life" style="color: #6f6f6f; text-decoration: underline;">Visit Bublr</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+// Newsletter Template Section Component (for paid users)
+function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError, onSuccess }) {
+  const [template, setTemplate] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+
+  // Initialize template from current value or default
+  useEffect(() => {
+    if (currentTemplate?.html) {
+      setTemplate(currentTemplate.html)
+    }
+  }, [currentTemplate])
+
+  const handleSaveTemplate = async () => {
+    setSaving(true)
+    onError(null)
+    onSuccess(null)
+
+    try {
+      const res = await fetch('/api/newsletter/template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, htmlTemplate: template }),
+      })
+      const data = await res.json()
+
+      if (res.ok) {
+        onSuccess(data.message || 'Newsletter template saved successfully!')
+      } else {
+        onError(data.error || 'Failed to save template')
+      }
+    } catch (err) {
+      onError('Failed to save template')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleResetTemplate = async () => {
+    if (!confirm('Reset to the default newsletter template? Your custom template will be deleted.')) return
+
+    setSaving(true)
+    onError(null)
+    onSuccess(null)
+
+    try {
+      const res = await fetch('/api/newsletter/template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, htmlTemplate: null }),
+      })
+      const data = await res.json()
+
+      if (res.ok) {
+        setTemplate('')
+        onSuccess('Newsletter template reset to default')
+      } else {
+        onError(data.error || 'Failed to reset template')
+      }
+    } catch (err) {
+      onError('Failed to reset template')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleLoadDefault = () => {
+    setTemplate(DEFAULT_EMAIL_TEMPLATE)
+  }
+
+  if (!hasAccess) return null
+
+  return (
+    <div css={css`margin-bottom: 1.5rem; margin-top: 1.5rem;`}>
+      <div css={css`
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+      `}>
+        <StyledLabel css={css`margin-bottom: 0;`}>Newsletter Email Template</StyledLabel>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          css={css`
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: var(--grey-3);
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+
+            &:hover {
+              color: var(--grey-4);
+            }
+          `}
+        >
+          {expanded ? (
+            <>
+              <ChevronUpIcon width={14} height={14} />
+              Collapse
+            </>
+          ) : (
+            <>
+              <ChevronDownIcon width={14} height={14} />
+              {currentTemplate?.html ? 'Edit template' : 'Customize'}
+            </>
+          )}
+        </button>
+      </div>
+
+      {!expanded && currentTemplate?.html && (
+        <p css={css`font-size: 0.75rem; color: var(--grey-3); margin: 0;`}>
+          Using custom template (last updated: {new Date(currentTemplate.updatedAt).toLocaleDateString()})
+        </p>
+      )}
+
+      {!expanded && !currentTemplate?.html && (
+        <p css={css`font-size: 0.75rem; color: var(--grey-3); margin: 0;`}>
+          Using default Bublr template. Click to customize the HTML email sent to your subscribers.
+        </p>
+      )}
+
+      {expanded && (
+        <div css={css`
+          background: var(--grey-1);
+          border: 1px solid var(--grey-2);
+          border-radius: 0.5rem;
+          padding: 1rem;
+        `}>
+          {/* Available Tags Reference */}
+          <div css={css`margin-bottom: 1rem;`}>
+            <p css={css`
+              font-size: 0.75rem;
+              font-weight: 500;
+              color: var(--grey-4);
+              margin: 0 0 0.5rem 0;
+            `}>
+              Available placeholder tags:
+            </p>
+            <div css={css`
+              display: flex;
+              flex-wrap: wrap;
+              gap: 0.375rem;
+            `}>
+              {[
+                { tag: '{{title}}', desc: 'Post title' },
+                { tag: '{{excerpt}}', desc: 'Post excerpt' },
+                { tag: '{{content}}', desc: 'Content preview' },
+                { tag: '{{authorName}}', desc: 'Your name' },
+                { tag: '{{authorPhoto}}', desc: 'Your photo URL' },
+                { tag: '{{postUrl}}', desc: 'Link to post' },
+                { tag: '{{postColor}}', desc: 'Post color' },
+                { tag: '{{unsubscribeUrl}}', desc: 'Unsubscribe link (required)' },
+              ].map(({ tag, desc }) => (
+                <span
+                  key={tag}
+                  title={desc}
+                  css={css`
+                    background: var(--grey-2);
+                    padding: 0.2rem 0.4rem;
+                    border-radius: 0.25rem;
+                    font-size: 0.7rem;
+                    font-family: monospace;
+                    color: var(--grey-4);
+                    cursor: help;
+                  `}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Warning about unsubscribe link */}
+          <div css={css`
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.75rem;
+            color: #92400e;
+          `}>
+            <strong>Important:</strong> Your template must include <code css={css`background: rgba(0,0,0,0.1); padding: 0.1rem 0.25rem; border-radius: 2px;`}>{'{{unsubscribeUrl}}'}</code> for email compliance. This link allows subscribers to opt out.
+          </div>
+
+          {/* Template Editor */}
+          <div css={css`margin-bottom: 0.75rem;`}>
+            <textarea
+              value={template}
+              onChange={e => setTemplate(e.target.value)}
+              placeholder="Paste your custom HTML email template here..."
+              css={css`
+                width: 100%;
+                min-height: 200px;
+                padding: 0.75rem;
+                border: 1px solid var(--grey-2);
+                border-radius: 0.375rem;
+                font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+                font-size: 0.75rem;
+                line-height: 1.5;
+                resize: vertical;
+                background: white;
+                color: var(--grey-4);
+
+                &:focus {
+                  outline: none;
+                  border-color: var(--grey-3);
+                }
+
+                &::placeholder {
+                  color: var(--grey-3);
+                }
+              `}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div css={css`
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+          `}>
+            <button
+              onClick={handleSaveTemplate}
+              disabled={saving || !template.trim()}
+              css={css`
+                background: var(--grey-5);
+                color: var(--grey-1);
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 0.5rem;
+                font-size: 0.8rem;
+                cursor: pointer;
+                opacity: ${saving || !template.trim() ? 0.5 : 1};
+
+                &:hover:not(:disabled) {
+                  opacity: 0.8;
+                }
+              `}
+            >
+              {saving ? 'Saving...' : 'Save Template'}
+            </button>
+
+            <button
+              onClick={handleLoadDefault}
+              disabled={saving}
+              css={css`
+                background: var(--grey-2);
+                color: var(--grey-4);
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 0.5rem;
+                font-size: 0.8rem;
+                cursor: pointer;
+
+                &:hover:not(:disabled) {
+                  background: var(--grey-3);
+                  color: var(--grey-1);
+                }
+              `}
+            >
+              Load Default Template
+            </button>
+
+            {currentTemplate?.html && (
+              <button
+                onClick={handleResetTemplate}
+                disabled={saving}
+                css={css`
+                  background: none;
+                  color: #dc2626;
+                  border: 1px solid #dc2626;
+                  padding: 0.5rem 1rem;
+                  border-radius: 0.5rem;
+                  font-size: 0.8rem;
+                  cursor: pointer;
+
+                  &:hover {
+                    background: #fef2f2;
+                  }
+                `}
+              >
+                Reset to Default
+              </button>
+            )}
+          </div>
+
+          <p css={css`
+            font-size: 0.7rem;
+            color: var(--grey-3);
+            margin: 0.75rem 0 0 0;
+            line-height: 1.5;
+          `}>
+            Tip: Click &quot;Load Default Template&quot; to start with our template and customize from there.
+            The template uses HTML table-based layouts for best email client compatibility.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -788,6 +1178,15 @@ function CustomDomainSection({ userId, userName }) {
               Replace &quot;Made with Bublr&quot; in your profile and post footers. Leave empty to hide it entirely.
             </p>
           </div>
+
+          {/* Newsletter Template Section */}
+          <NewsletterTemplateSection
+            userId={userId}
+            hasAccess={hasAccess}
+            currentTemplate={subscriptionStatus?.newsletterTemplate}
+            onError={setDomainError}
+            onSuccess={setDomainSuccess}
+          />
 
           {/* Subscription info */}
           <div css={css`
@@ -1500,8 +1899,55 @@ function Editor({ user }) {
       {/* Custom Domain Section */}
       <CustomDomainSection userId={user.id} userName={user.name} />
 
+      {/* Advanced Settings Link */}
       <div css={css`
         margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--grey-2);
+      `}>
+        <AdvancedSettingsModal
+          uid={user.id}
+          Trigger={() => (
+            <button
+              css={css`
+                background: none;
+                border: none;
+                padding: 0;
+                font-size: 0.85rem;
+                color: var(--grey-3);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: color 0.15s ease;
+
+                &:hover {
+                  color: var(--grey-4);
+                }
+              `}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 15 15"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M7.07095 0.650238C6.67391 0.650238 6.32977 0.925096 6.24198 1.31231L6.0039 2.36247C5.6249 2.47269 5.26335 2.62363 4.92436 2.81013L4.01335 2.23585C3.67748 2.02413 3.23978 2.07312 2.95903 2.35386L2.35294 2.95996C2.0722 3.24071 2.0232 3.67841 2.23493 4.01427L2.80942 4.92561C2.62307 5.2645 2.47227 5.62594 2.36216 6.00481L1.31209 6.24287C0.924883 6.33065 0.650024 6.6748 0.650024 7.07183V7.92817C0.650024 8.32521 0.924883 8.66935 1.31209 8.75714L2.36228 8.99521C2.47246 9.37417 2.62335 9.7357 2.80979 10.0747L2.2354 10.9857C2.02367 11.3215 2.07267 11.7592 2.35341 12.04L2.95951 12.6461C3.24025 12.9268 3.67795 12.9758 4.01382 12.7641L4.92506 12.1897C5.26384 12.376 5.62516 12.5268 6.0039 12.6369L6.24198 13.6877C6.32977 14.0749 6.67391 14.3498 7.07095 14.3498H7.92729C8.32433 14.3498 8.66847 14.0749 8.75626 13.6877L8.99429 12.6371C9.37342 12.5269 9.73512 12.3759 10.0743 12.1894L10.9853 12.7639C11.3212 12.9756 11.7589 12.9266 12.0396 12.6459L12.6457 12.0398C12.9265 11.759 12.9755 11.3213 12.7637 10.9854L12.1893 10.0745C12.3758 9.73536 12.5268 9.37378 12.637 8.99487L13.6879 8.75714C14.0751 8.66935 14.35 8.32521 14.35 7.92817V7.07183C14.35 6.6748 14.0751 6.33065 13.6879 6.24287L12.6366 6.00433C12.5264 5.62576 12.3755 5.26433 12.1892 4.92548L12.7635 4.01474C12.9753 3.67887 12.9263 3.24117 12.6455 2.96043L12.0394 2.35433C11.7587 2.07359 11.321 2.0246 10.9851 2.23632L10.0745 2.81064C9.73556 2.62419 9.37392 2.47328 8.99496 2.36307L8.75626 1.31231C8.66847 0.925096 8.32433 0.650238 7.92729 0.650238H7.07095ZM4.92053 3.81251C5.44724 3.44339 6.05665 3.18424 6.71543 3.06839L7.07095 1.50024H7.92729L8.28281 3.06839C8.94159 3.18424 9.551 3.44339 10.0777 3.81251L11.4809 2.98193L12.0194 3.52041L11.1889 4.92381C11.558 5.45052 11.8171 6.05992 11.933 6.71869L13.5011 7.07419V7.93014L11.933 8.28566C11.8171 8.94443 11.558 9.55383 11.1889 10.0805L12.0194 11.4839L11.4809 12.0224L10.0777 11.1919C9.551 11.561 8.94159 11.8201 8.28281 11.936L7.92729 13.5041H7.07095L6.71543 11.936C6.05665 11.8201 5.44724 11.561 4.92053 11.1919L3.51713 12.0224L2.97865 11.4839L3.80922 10.0805C3.4401 9.55383 3.18095 8.94443 3.0651 8.28566L1.49694 7.93014V7.07419L3.0651 6.71869C3.18095 6.05992 3.4401 5.45052 3.80922 4.92381L2.97865 3.52041L3.51713 2.98193L4.92053 3.81251ZM7.49912 10.5C9.15578 10.5 10.4991 9.15664 10.4991 7.49998C10.4991 5.84332 9.15578 4.49998 7.49912 4.49998C5.84246 4.49998 4.49912 5.84332 4.49912 7.49998C4.49912 9.15664 5.84246 10.5 7.49912 10.5ZM7.49912 9.5C8.60369 9.5 9.49912 8.60456 9.49912 7.49998C9.49912 6.39541 8.60369 5.49998 7.49912 5.49998C6.39455 5.49998 5.49912 6.39541 5.49912 7.49998C5.49912 8.60456 6.39455 9.5 7.49912 9.5Z"
+                  fill="currentColor"
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Advanced
+            </button>
+          )}
+        />
+      </div>
+
+      <div css={css`
+        margin-top: 1.5rem;
         padding-top: 1rem;
         border-top: 1px solid var(--grey-2);
         display: flex;

@@ -47,6 +47,11 @@ export default async function handler(req, res) {
       })
     }
 
+    // Get custom newsletter template if user has one and has subscription
+    const customTemplate = (author.hasCustomDomainAccess && author.newsletterTemplate?.html)
+      ? author.newsletterTemplate.html
+      : null
+
     // Send batch notifications
     const result = await sendBatchNotifications({
       subscribers,
@@ -58,6 +63,7 @@ export default async function handler(req, res) {
       postContent: post.content,
       postSlug: post.slug,
       postColor: post.dotColor,
+      customTemplate,
     })
 
     // Log notification result

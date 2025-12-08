@@ -26,6 +26,7 @@ export default async function handler(req, res) {
       subscription: userData.subscription || null,
       customDomain: userData.customDomain || null,
       customBranding: userData.customBranding || null,
+      newsletterTemplate: userData.newsletterTemplate || null,
     })
   } catch (error) {
     console.error('Error fetching subscription status:', error)

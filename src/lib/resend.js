@@ -7,6 +7,106 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Bublr <notifications@stuff.bublr.life>'
 
 /**
+ * Available placeholder tags for custom templates:
+ * {{title}} - Post title (plain text)
+ * {{excerpt}} - Post excerpt (plain text, max 300 chars)
+ * {{content}} - Post content preview (plain text, max 500 chars)
+ * {{authorName}} - Author's display name
+ * {{authorPhoto}} - Author's profile photo URL
+ * {{postUrl}} - Full URL to the post
+ * {{postColor}} - Post's custom color (or default #4D96FF)
+ * {{unsubscribeUrl}} - REQUIRED: Unsubscribe link for email compliance
+ */
+
+/**
+ * Replace placeholders in a custom email template
+ */
+function replaceTemplatePlaceholders(template, data) {
+  const {
+    authorName,
+    authorPhoto,
+    postTitle,
+    postExcerpt,
+    postContent,
+    postUrl,
+    postColor,
+    unsubscribeUrl,
+  } = data
+
+  // Clean HTML content for email (basic sanitization)
+  const cleanTitle = postTitle
+    ? postTitle.replace(/<[^>]*>/g, '')
+    : 'New Post'
+
+  const cleanExcerpt = postExcerpt
+    ? postExcerpt.replace(/<[^>]*>/g, '').substring(0, 300)
+    : ''
+
+  const cleanContent = postContent
+    ? postContent.replace(/<[^>]*>/g, '').substring(0, 500)
+    : ''
+
+  // Replace all placeholders (case-insensitive matching for flexibility)
+  let result = template
+    .replace(/\{\{title\}\}/gi, cleanTitle)
+    .replace(/\{\{excerpt\}\}/gi, cleanExcerpt)
+    .replace(/\{\{content\}\}/gi, cleanContent)
+    .replace(/\{\{authorName\}\}/gi, authorName || '')
+    .replace(/\{\{authorPhoto\}\}/gi, authorPhoto || '')
+    .replace(/\{\{postUrl\}\}/gi, postUrl || '')
+    .replace(/\{\{postColor\}\}/gi, postColor || '#4D96FF')
+    .replace(/\{\{unsubscribeUrl\}\}/gi, unsubscribeUrl || '')
+    // Also support snake_case versions for flexibility
+    .replace(/\{\{post_url\}\}/gi, postUrl || '')
+    .replace(/\{\{post_color\}\}/gi, postColor || '#4D96FF')
+    .replace(/\{\{unsubscribe_url\}\}/gi, unsubscribeUrl || '')
+    .replace(/\{\{author_name\}\}/gi, authorName || '')
+    .replace(/\{\{author_photo\}\}/gi, authorPhoto || '')
+
+  return result
+}
+
+/**
+ * Generate plain text version from custom HTML template
+ */
+function generatePlainTextFromCustomTemplate(data) {
+  const {
+    authorName,
+    postTitle,
+    postExcerpt,
+    postContent,
+    postUrl,
+    unsubscribeUrl,
+  } = data
+
+  const cleanTitle = postTitle
+    ? postTitle.replace(/<[^>]*>/g, '')
+    : 'New Post'
+
+  const cleanExcerpt = postExcerpt
+    ? postExcerpt.replace(/<[^>]*>/g, '').substring(0, 300)
+    : ''
+
+  const cleanContent = postContent
+    ? postContent.replace(/<[^>]*>/g, '').substring(0, 500)
+    : ''
+
+  return `
+${authorName} published a new post
+
+${cleanTitle}
+
+${cleanExcerpt || cleanContent}
+
+Read the full post: ${postUrl}
+
+---
+You're receiving this because you subscribed to ${authorName}'s newsletter on Bublr.
+Unsubscribe: ${unsubscribeUrl}
+`
+}
+
+/**
  * Generate the HTML email template for new post notifications
  */
 function generateNewPostEmailHTML({ authorName, authorPhoto, postTitle, postExcerpt, postContent, postUrl, postColor, unsubscribeUrl }) {
@@ -136,6 +236,17 @@ Unsubscribe: ${unsubscribeUrl}
 
 /**
  * Send a new post notification email to a subscriber
+ * @param {Object} options - Email options
+ * @param {string} options.subscriberEmail - Subscriber's email address
+ * @param {string} options.authorName - Author's display name
+ * @param {string} options.authorPhoto - Author's profile photo URL
+ * @param {string} options.authorUsername - Author's username
+ * @param {string} options.postTitle - Post title
+ * @param {string} options.postExcerpt - Post excerpt
+ * @param {string} options.postContent - Post content
+ * @param {string} options.postSlug - Post URL slug
+ * @param {string} options.postColor - Post's custom color
+ * @param {string} [options.customTemplate] - Optional custom HTML template
  */
 export async function sendNewPostNotification({
   subscriberEmail,
@@ -147,6 +258,7 @@ export async function sendNewPostNotification({
   postContent,
   postSlug,
   postColor,
+  customTemplate,
 }) {
   if (!process.env.RESEND_API_KEY) {
     console.error('RESEND_API_KEY not configured')
@@ -156,29 +268,40 @@ export async function sendNewPostNotification({
   const postUrl = `https://bublr.life/${authorUsername}/${postSlug}`
   const unsubscribeUrl = `https://bublr.life/api/newsletter/unsubscribe?email=${encodeURIComponent(subscriberEmail)}&author=${encodeURIComponent(authorUsername)}`
 
+  const templateData = {
+    authorName,
+    authorPhoto,
+    postTitle,
+    postExcerpt,
+    postContent,
+    postUrl,
+    postColor,
+    unsubscribeUrl,
+  }
+
+  // Use custom template if provided, otherwise use default
+  let htmlContent
+  if (customTemplate) {
+    htmlContent = replaceTemplatePlaceholders(customTemplate, templateData)
+  } else {
+    htmlContent = generateNewPostEmailHTML(templateData)
+  }
+
+  // Generate plain text (always use standard format for accessibility)
+  const textContent = customTemplate
+    ? generatePlainTextFromCustomTemplate(templateData)
+    : generateNewPostEmailText(templateData)
+
+  // Clean post title for subject line
+  const cleanTitle = postTitle ? postTitle.replace(/<[^>]*>/g, '') : 'New Post'
+
   try {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: subscriberEmail,
-      subject: `New post from ${authorName}: ${postTitle}`,
-      html: generateNewPostEmailHTML({
-        authorName,
-        authorPhoto,
-        postTitle,
-        postExcerpt,
-        postContent,
-        postUrl,
-        postColor,
-        unsubscribeUrl,
-      }),
-      text: generateNewPostEmailText({
-        authorName,
-        postTitle,
-        postExcerpt,
-        postContent,
-        postUrl,
-        unsubscribeUrl,
-      }),
+      subject: `New post from ${authorName}: ${cleanTitle}`,
+      html: htmlContent,
+      text: textContent,
     })
 
     if (error) {
@@ -196,6 +319,17 @@ export async function sendNewPostNotification({
 /**
  * Send batch notifications to all subscribers
  * Resend allows up to 100 emails per batch
+ * @param {Object} options - Batch notification options
+ * @param {Array} options.subscribers - Array of subscriber objects or email strings
+ * @param {string} options.authorName - Author's display name
+ * @param {string} options.authorPhoto - Author's profile photo URL
+ * @param {string} options.authorUsername - Author's username
+ * @param {string} options.postTitle - Post title
+ * @param {string} options.postExcerpt - Post excerpt
+ * @param {string} options.postContent - Post content
+ * @param {string} options.postSlug - Post URL slug
+ * @param {string} options.postColor - Post's custom color
+ * @param {string} [options.customTemplate] - Optional custom HTML template
  */
 export async function sendBatchNotifications({
   subscribers,
@@ -207,6 +341,7 @@ export async function sendBatchNotifications({
   postContent,
   postSlug,
   postColor,
+  customTemplate,
 }) {
   if (!process.env.RESEND_API_KEY) {
     console.error('RESEND_API_KEY not configured')
@@ -218,6 +353,9 @@ export async function sendBatchNotifications({
   }
 
   const postUrl = `https://bublr.life/${authorUsername}/${postSlug}`
+
+  // Clean post title for subject line
+  const cleanTitle = postTitle ? postTitle.replace(/<[^>]*>/g, '') : 'New Post'
 
   // Send emails in batches of 50 (to stay well under limits)
   const batchSize = 50
@@ -232,29 +370,37 @@ export async function sendBatchNotifications({
       const email = typeof subscriber === 'string' ? subscriber : subscriber.email
       const unsubscribeUrl = `https://bublr.life/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}&author=${encodeURIComponent(authorUsername)}`
 
+      const templateData = {
+        authorName,
+        authorPhoto,
+        postTitle,
+        postExcerpt,
+        postContent,
+        postUrl,
+        postColor,
+        unsubscribeUrl,
+      }
+
+      // Use custom template if provided, otherwise use default
+      let htmlContent
+      if (customTemplate) {
+        htmlContent = replaceTemplatePlaceholders(customTemplate, templateData)
+      } else {
+        htmlContent = generateNewPostEmailHTML(templateData)
+      }
+
+      // Generate plain text (always use standard format for accessibility)
+      const textContent = customTemplate
+        ? generatePlainTextFromCustomTemplate(templateData)
+        : generateNewPostEmailText(templateData)
+
       try {
         const { error } = await resend.emails.send({
           from: FROM_EMAIL,
           to: email,
-          subject: `New post from ${authorName}: ${postTitle}`,
-          html: generateNewPostEmailHTML({
-            authorName,
-            authorPhoto,
-            postTitle,
-            postExcerpt,
-            postContent,
-            postUrl,
-            postColor,
-            unsubscribeUrl,
-          }),
-          text: generateNewPostEmailText({
-            authorName,
-            postTitle,
-            postExcerpt,
-            postContent,
-            postUrl,
-            unsubscribeUrl,
-          }),
+          subject: `New post from ${authorName}: ${cleanTitle}`,
+          html: htmlContent,
+          text: textContent,
         })
 
         if (error) {
