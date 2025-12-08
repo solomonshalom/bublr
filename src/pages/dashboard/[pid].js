@@ -1255,15 +1255,12 @@ function Editor({ post }) {
               min-width: 320px;
               max-width: 420px;
               overflow: hidden;
+              z-index: 100;
             `}
           >
             {/* Settings View */}
-            <div
-              css={css`
-                transition: all 0.3s ease;
-                ${settingsView === 'import' ? 'display: none;' : ''}
-              `}
-            >
+            {settingsView === 'settings' && (
+            <div>
             <Dialog.Title>Post Settings</Dialog.Title>
             <Dialog.Description
               css={css`
@@ -1535,14 +1532,11 @@ function Editor({ post }) {
               ''
             )}
             </div>
+            )}
 
             {/* Platform Selection View */}
-            <div
-              css={css`
-                transition: all 0.3s ease;
-                ${settingsView !== 'import' ? 'display: none;' : ''}
-              `}
-            >
+            {settingsView === 'import' && (
+            <div>
               <div
                 css={css`
                   display: flex;
@@ -1638,14 +1632,11 @@ function Editor({ post }) {
                 GYD (Get Your Data) - Import your content from other platforms
               </p>
             </div>
+            )}
 
             {/* Import Articles View */}
-            <div
-              css={css`
-                transition: all 0.3s ease;
-                ${settingsView !== 'import-articles' ? 'display: none;' : ''}
-              `}
-            >
+            {settingsView === 'import-articles' && (
+            <div>
               <div
                 css={css`
                   display: flex;
@@ -1850,6 +1841,7 @@ function Editor({ post }) {
                 </Button>
               )}
             </div>
+            )}
 
             <Dialog.Close
               as={IconButton}
