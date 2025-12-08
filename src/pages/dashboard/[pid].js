@@ -10,7 +10,6 @@ import { useAuthState } from 'react-firebase-hooks/auth'
 import { useDocumentData } from 'react-firebase-hooks/firestore'
 import {
   ArrowLeftIcon,
-  CheckIcon,
   Cross2Icon,
   DotsVerticalIcon,
   FontBoldIcon,
@@ -800,6 +799,7 @@ function Editor({ post }) {
   })
 
   const [slugErr, setSlugErr] = useState(false)
+  const [slugValidating, setSlugValidating] = useState(false)
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
   const [spamPopup, setSpamPopup] = useState({ isOpen: false, reason: '', category: '' })
   const [mediumImportOpen, setMediumImportOpen] = useState(false)
@@ -823,6 +823,7 @@ function Editor({ post }) {
     { id: 'devto', name: 'DEV.to', color: '#0A0A0A', placeholder: 'username', description: 'Import DEV.to articles' },
   ]
   const saveTimeoutRef = useRef(null)
+  const slugSaveTimeoutRef = useRef(null)
   const isInitialMount = useRef(true)
 
   useEffect(() => {
@@ -860,7 +861,74 @@ function Editor({ post }) {
     }
   }, [clientPost, post.id, hasChanges])
 
-  // Auto-save effect
+  // Validate and save slug with debouncing
+  const validateAndSaveSlug = useCallback(async (newSlug) => {
+    // Skip if slug hasn't changed from saved version
+    if (newSlug === post.slug) {
+      setSlugErr(false)
+      setSlugValidating(false)
+      return
+    }
+
+    // Quick validation for format
+    if (!newSlug || !newSlug.match(/^[a-z0-9-]+$/i)) {
+      setSlugErr(true)
+      setSlugValidating(false)
+      return
+    }
+
+    setSlugValidating(true)
+    setSlugErr(false)
+
+    try {
+      // Check for duplicate slugs
+      const slugClashing = await postWithUserIDAndSlugExists(post.author, newSlug)
+
+      if (slugClashing) {
+        setSlugErr(true)
+        setSlugValidating(false)
+        return
+      }
+
+      // Slug is valid, save it
+      setSaveStatus('saving')
+      await firestore.collection('posts').doc(post.id).update({
+        slug: newSlug,
+        lastEdited: firebase.firestore.Timestamp.now(),
+      })
+      setSaveStatus('saved')
+      setSlugValidating(false)
+    } catch (err) {
+      console.error('Slug save error:', err)
+      setSlugErr(true)
+      setSlugValidating(false)
+      setSaveStatus('unsaved')
+    }
+  }, [post.slug, post.author, post.id])
+
+  // Auto-save effect for slug changes
+  useEffect(() => {
+    // Skip if slug hasn't changed
+    if (clientPost.slug === post.slug) return
+
+    // Clear existing slug timeout
+    if (slugSaveTimeoutRef.current) {
+      clearTimeout(slugSaveTimeoutRef.current)
+    }
+
+    // Debounce slug validation and save (800ms for faster feedback)
+    slugSaveTimeoutRef.current = setTimeout(() => {
+      validateAndSaveSlug(clientPost.slug)
+    }, 800)
+
+    return () => {
+      if (slugSaveTimeoutRef.current) {
+        clearTimeout(slugSaveTimeoutRef.current)
+      }
+    }
+  }, [clientPost.slug, post.slug, validateAndSaveSlug])
+
+  // Auto-save effect for non-slug changes
   useEffect(() => {
     // Skip initial mount
     if (isInitialMount.current) {
@@ -868,14 +936,15 @@ function Editor({ post }) {
       return
     }
 
-    // Don't auto-save if there are no changes
-    if (!hasChanges()) return
+    // Check for non-slug changes only
+    const hasNonSlugChanges =
+      post.title !== clientPost.title ||
+      post.content !== clientPost.content ||
+      post.excerpt !== clientPost.excerpt ||
+      post.published !== clientPost.published ||
+      post.dotColor !== clientPost.dotColor
 
-    // Don't auto-save slug changes (requires validation)
-    if (post.slug !== clientPost.slug) {
-      setSaveStatus('unsaved')
-      return
-    }
+    if (!hasNonSlugChanges) return
 
     setSaveStatus('unsaved')
 
@@ -894,7 +963,7 @@ function Editor({ post }) {
         clearTimeout(saveTimeoutRef.current)
       }
     }
-  }, [clientPost, post.slug, hasChanges, saveChanges])
+  }, [clientPost, post, saveChanges])
 
   useEffect(() => {
     let unsubscribe = tinykeys(window, {
@@ -1277,80 +1346,106 @@ function Editor({ post }) {
                 margin: 1.5rem 0;
               `}
             >
-              <form>
-                <label
-                  htmlFor="post-slug"
+              <label
+                htmlFor="post-slug"
+                css={css`
+                  display: block;
+                  margin-bottom: 0.5rem;
+                `}
+              >
+                Slug
+              </label>
+              <div
+                css={css`
+                  position: relative;
+                `}
+              >
+                <input
+                  type="text"
+                  id="post-slug"
+                  value={clientPost.slug}
+                  onChange={e => {
+                    setSlugErr(false)
+                    setClientPost(prevPost => ({
+                      ...prevPost,
+                      slug: e.target.value,
+                    }))
+                  }}
                   css={css`
                     display: block;
-                    margin-bottom: 0.5rem;
+                    width: 100%;
+                    padding: 0.75em 1em;
+                    padding-right: ${slugValidating ? '5.5rem' : '1em'};
+                    background: none;
+                    border: 1px solid ${slugErr ? '#e55050' : 'var(--grey-2)'};
+                    outline: none;
+                    border-radius: 0.5rem;
+                    color: var(--grey-4);
+                    font-size: inherit;
+                    font-family: inherit;
+                    transition: border-color 0.2s ease;
+
+                    &::placeholder {
+                      color: var(--grey-3);
+                    }
+
+                    &:focus {
+                      border-color: ${slugErr ? '#e55050' : 'var(--grey-3)'};
+                    }
                   `}
-                >
-                  Slug
-                </label>
-                <div
-                  css={css`
-                    display: flex;
-                    align-items: center;
-                  `}
-                >
-                  <div>
-                    <Input
-                      type="text"
-                      id="post-slug"
-                      value={clientPost.slug}
-                      onChange={e => {
-                        setSlugErr(false)
-                        setClientPost(prevPost => ({
-                          ...prevPost,
-                          slug: e.target.value,
-                        }))
-                      }}
-                    />
-                    {slugErr && (
-                      <p
-                        css={css`
-                          margin-top: 1rem;
-                          font-size: 0.9rem;
-                        `}
-                      >
-                        Invalid slug. That slug is already in use or contains
-                        special characters.
-                      </p>
-                    )}
-                  </div>
-                  <IconButton
-                    type="submit"
-                    disabled={clientPost.slug === post.slug || !clientPost.slug}
-                    onClick={async e => {
-                      e.preventDefault()
-
-                      let slugClashing = await postWithUserIDAndSlugExists(
-                        post.author,
-                        clientPost.slug,
-                      )
-
-                      if (
-                        slugClashing ||
-                        !clientPost.slug.match(/^[a-z0-9-]+$/i)
-                      ) {
-                        setSlugErr(true)
-                        return
-                      }
-
-                      let postCopy = { ...post }
-                      delete postCopy.id
-                      postCopy.slug = clientPost.slug
-                      await firestore
-                        .collection('posts')
-                        .doc(post.id)
-                        .update(postCopy)
-                      setSlugErr(false)
-                    }}
+                />
+                {/* Validation status indicator */}
+                {slugValidating && (
+                  <span
+                    css={css`
+                      position: absolute;
+                      right: 10px;
+                      top: 50%;
+                      transform: translateY(-50%);
+                      display: flex;
+                      align-items: center;
+                      gap: 0.4rem;
+                      font-size: 0.75rem;
+                      color: var(--grey-3);
+                    `}
                   >
-                    <CheckIcon />
-                  </IconButton>
-                </div>
-              </form>
+                    <span
+                      css={css`
+                        width: 10px;
+                        height: 10px;
+                        border: 1.5px solid var(--grey-3);
+                        border-bottom-color: transparent;
+                        border-radius: 50%;
+                        animation: spin 0.8s linear infinite;
+                        @keyframes spin {
+                          to { transform: rotate(360deg); }
+                        }
+                      `}
+                    />
+                    Checking...
+                  </span>
+                )}
+              </div>
+              {slugErr && (
+                <p
+                  css={css`
+                    margin-top: 0.5rem;
+                    font-size: 0.8rem;
+                    color: #e55050;
+                  `}
+                >
+                  Invalid slug. Already in use or contains special characters.
+                </p>
+              )}
+              <p
+                css={css`
+                  margin-top: 0.5rem;
+                  font-size: 0.75rem;
+                  color: var(--grey-3);
+                `}
+              >
+                Only lowercase letters, numbers, and hyphens allowed.
+              </p>
             </div>
 
             <div
