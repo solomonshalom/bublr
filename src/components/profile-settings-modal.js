@@ -1169,10 +1169,54 @@ function CustomDomainSection({ userId, userName }) {
             color: var(--grey-4);
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 0.5rem;
           `}>
-            <CheckCircledIcon css={css`color: #22c55e; flex-shrink: 0;`} />
-            <span>Custom Domain subscription active</span>
+            <div css={css`display: flex; align-items: center; gap: 0.5rem;`}>
+              <CheckCircledIcon css={css`color: #22c55e; flex-shrink: 0;`} />
+              <span>Subscription is active</span>
+            </div>
+            <button
+              onClick={async () => {
+                setActionLoading(true)
+                setDomainError(null)
+                try {
+                  const res = await fetch('/api/subscription/portal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId }),
+                  })
+                  const data = await res.json()
+                  if (data.portalUrl) {
+                    window.open(data.portalUrl, '_blank')
+                  } else {
+                    setDomainError(data.error || 'Failed to open billing portal')
+                  }
+                } catch (err) {
+                  setDomainError('Failed to open billing portal')
+                } finally {
+                  setActionLoading(false)
+                }
+              }}
+              disabled={actionLoading}
+              css={css`
+                background: none;
+                color: var(--grey-3);
+                border: 1px solid var(--grey-2);
+                padding: 0.35rem 0.6rem;
+                border-radius: 0.375rem;
+                font-size: 0.75rem;
+                cursor: pointer;
+                white-space: nowrap;
+
+                &:hover:not(:disabled) {
+                  border-color: var(--grey-3);
+                  color: var(--grey-4);
+                }
+              `}
+            >
+              Manage Billing
+            </button>
           </div>
         </>
       )}
