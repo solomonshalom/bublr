@@ -11,6 +11,19 @@ const buildVercelUrl = (path) => {
   return VERCEL_TEAM_ID ? `${base}${path.includes('?') ? '&' : '?'}teamId=${VERCEL_TEAM_ID}` : base
 }
 
+// Fetch with no caching - CRITICAL for domain operations
+// Next.js caches fetch by default which causes stale data
+const fetchNoCache = async (url, options = {}) => {
+  return fetch(url, {
+    ...options,
+    cache: 'no-store',
+    headers: {
+      ...options.headers,
+      'Cache-Control': 'no-cache',
+    },
+  })
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -66,7 +79,7 @@ export default async function handler(req, res) {
       try {
         // Step 1: Add domain to Vercel project
         const addUrl = buildVercelUrl(`/v10/projects/${VERCEL_PROJECT_ID}/domains`)
-        const addResponse = await fetch(addUrl, {
+        const addResponse = await fetchNoCache(addUrl, {
           method: 'POST',
           headers,
           body: JSON.stringify({ name: normalizedDomain }),
@@ -85,31 +98,29 @@ export default async function handler(req, res) {
 
         // Step 2: Get domain status (includes verification requirements)
         const domainUrl = buildVercelUrl(`/v9/projects/${VERCEL_PROJECT_ID}/domains/${normalizedDomain}`)
-        const domainResponse = await fetch(domainUrl, { headers })
+        const domainResponse = await fetchNoCache(domainUrl, { headers })
         const domainData = await domainResponse.json()
 
         // Step 3: Check DNS configuration status
         const configUrl = buildVercelUrl(`/v6/domains/${normalizedDomain}/config`)
-        const configResponse = await fetch(configUrl, { headers })
+        const configResponse = await fetchNoCache(configUrl, { headers })
         const configData = await configResponse.json()
 
         // Determine if domain is fully verified
-        const dnsConfigured = configData.misconfigured === false
+        const dnsConfigured = configData?.misconfigured === false
 
-        // Check if TXT verification is actually required
-        const pendingVerification = domainData.verification || []
-        const hasPendingTxtVerification = pendingVerification.some(v => v.type === 'TXT')
+        // Check if TXT verification is required
+        const pendingVerification = domainData?.verification || []
+        const txtRequirements = pendingVerification.filter(v => v.type === 'TXT')
+        const hasPendingTxtVerification = txtRequirements.length > 0
 
-        // Ownership is verified if:
-        // 1. Vercel explicitly says verified: true, OR
-        // 2. No TXT verification requirements exist
+        // Ownership is verified if verified: true OR no TXT requirements
         const ownershipVerified = domainData?.verified === true || !hasPendingTxtVerification
         isVerified = ownershipVerified && dnsConfigured
 
         // Build verification requirements
-        // Add TXT verification requirements only if ownership not verified AND TXT is required
         if (!ownershipVerified && hasPendingTxtVerification) {
-          verificationRequirements = pendingVerification.filter(v => v.type === 'TXT')
+          verificationRequirements.push(...txtRequirements)
         }
 
         // Add DNS config requirements if not properly configured
@@ -118,21 +129,23 @@ export default async function handler(req, res) {
 
           if (isSubdomain) {
             const subdomain = normalizedDomain.split('.')[0]
+            const recommendedCname = configData?.cnames?.[0]?.value || 'cname.vercel-dns.com'
             const hasCnameReq = verificationRequirements.some(v => v.type === 'CNAME')
             if (!hasCnameReq) {
               verificationRequirements.push({
                 type: 'CNAME',
                 domain: subdomain,
-                value: configData.cnames?.[0] || 'cname.vercel-dns.com',
+                value: recommendedCname,
               })
             }
           } else {
+            const recommendedA = configData?.aValues?.[0] || '76.76.21.21'
             const hasAReq = verificationRequirements.some(v => v.type === 'A')
             if (!hasAReq) {
               verificationRequirements.push({
                 type: 'A',
                 domain: '@',
-                value: configData.aValues?.[0] || '76.76.21.21',
+                value: recommendedA,
               })
             }
           }

@@ -11,6 +11,19 @@ const buildVercelUrl = (path) => {
   return VERCEL_TEAM_ID ? `${base}${path.includes('?') ? '&' : '?'}teamId=${VERCEL_TEAM_ID}` : base
 }
 
+// Fetch with no caching - CRITICAL for domain verification
+// Next.js caches fetch by default which causes stale verification data
+const fetchNoCache = async (url, options = {}) => {
+  return fetch(url, {
+    ...options,
+    cache: 'no-store',
+    headers: {
+      ...options.headers,
+      'Cache-Control': 'no-cache',
+    },
+  })
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -45,80 +58,126 @@ export default async function handler(req, res) {
       'Content-Type': 'application/json',
     }
 
-    // Step 1: Call Vercel API to trigger verification check (for TXT ownership)
+    // Step 1: Trigger verification check via POST /verify
+    // This tells Vercel to re-check DNS records NOW
     const verifyUrl = buildVercelUrl(`/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain}/verify`)
-    const verifyResponse = await fetch(verifyUrl, {
-      method: 'POST',
-      headers,
-    })
-    const verifyData = await verifyResponse.json()
+    let verifyData = null
+    let verifyError = null
 
-    // Step 2: Get domain status from project (includes verification requirements)
+    try {
+      const verifyResponse = await fetchNoCache(verifyUrl, {
+        method: 'POST',
+        headers,
+      })
+      verifyData = await verifyResponse.json()
+
+      if (!verifyResponse.ok) {
+        verifyError = verifyData.error?.message || `HTTP ${verifyResponse.status}`
+      }
+    } catch (err) {
+      verifyError = err.message
+    }
+
+    // Step 2: Get domain status from project
+    // Use no-cache to get fresh data after verification trigger
     const domainUrl = buildVercelUrl(`/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain}`)
-    const domainResponse = await fetch(domainUrl, { headers })
-    const domainData = await domainResponse.json()
+    let domainData = null
+    let domainError = null
 
-    // Step 3: Check DNS configuration status (CNAME/A records)
-    // This is separate from ownership verification (TXT)
+    try {
+      const domainResponse = await fetchNoCache(domainUrl, { headers })
+      domainData = await domainResponse.json()
+
+      if (!domainResponse.ok) {
+        domainError = domainData.error?.message || `HTTP ${domainResponse.status}`
+      }
+    } catch (err) {
+      domainError = err.message
+    }
+
+    // Step 3: Check DNS configuration status
+    // This tells us if CNAME/A records are pointing to Vercel
     const configUrl = buildVercelUrl(`/v6/domains/${domain}/config`)
-    const configResponse = await fetch(configUrl, { headers })
-    const configData = await configResponse.json()
+    let configData = null
+    let configError = null
+
+    try {
+      const configResponse = await fetchNoCache(configUrl, { headers })
+      configData = await configResponse.json()
+
+      if (!configResponse.ok) {
+        configError = configData.error?.message || `HTTP ${configResponse.status}`
+      }
+    } catch (err) {
+      configError = err.message
+    }
 
     // Determine verification status
-    // "verified" from Vercel = TXT ownership verification passed (or not required)
-    // "misconfigured" from config = DNS (CNAME/A) not pointing correctly
-    const dnsConfigured = configData.misconfigured === false
+    // DNS is configured if misconfigured is explicitly false
+    const dnsConfigured = configData?.misconfigured === false
 
-    // Check if TXT verification is actually required
-    // Use verification array from POST /verify response (most up-to-date) or fall back to GET /domains
-    const pendingVerification = verifyData.verification || domainData.verification || []
-    const hasPendingTxtVerification = pendingVerification.some(v => v.type === 'TXT')
+    // Get verification requirements from Vercel's response
+    const verificationFromVerify = verifyData?.verification || []
+    const verificationFromDomain = domainData?.verification || []
+    const pendingVerification = verificationFromVerify.length > 0
+      ? verificationFromVerify
+      : verificationFromDomain
 
-    // Ownership is verified if:
-    // 1. Vercel explicitly says verified: true, OR
-    // 2. No TXT verification requirements exist (domain doesn't need ownership verification)
-    const ownershipVerified = verifyData?.verified === true ||
-                              domainData?.verified === true ||
-                              !hasPendingTxtVerification
+    // Check if TXT verification is required
+    const txtRequirements = pendingVerification.filter(v => v.type === 'TXT')
+    const hasPendingTxtVerification = txtRequirements.length > 0
 
-    // Build verification requirements array
+    // Ownership verification status
+    // verified: true means TXT ownership check passed (or not needed)
+    const vercelSaysVerified = verifyData?.verified === true
+    const domainSaysVerified = domainData?.verified === true
+
+    // Domain is ownership-verified if:
+    // 1. Either API endpoint returns verified: true, OR
+    // 2. There are NO TXT verification requirements
+    const ownershipVerified = vercelSaysVerified || domainSaysVerified || !hasPendingTxtVerification
+
+    // Build the complete verification requirements array
     let verificationRequirements = []
 
-    // Add TXT verification requirements only if ownership not verified AND TXT is required
+    // Add TXT requirements if ownership not verified
     if (!ownershipVerified && hasPendingTxtVerification) {
-      verificationRequirements = pendingVerification.filter(v => v.type === 'TXT')
+      verificationRequirements.push(...txtRequirements)
     }
 
     // Add DNS config requirements if not properly configured
     if (!dnsConfigured) {
-      // Check if it's a subdomain or apex domain
       const isSubdomain = domain.split('.').length > 2
 
       if (isSubdomain) {
-        // Add CNAME requirement for subdomains
+        // CNAME for subdomains
         const subdomain = domain.split('.')[0]
+        const recommendedCname = configData?.cnames?.[0]?.value || 'cname.vercel-dns.com'
         const hasCnameReq = verificationRequirements.some(v => v.type === 'CNAME')
         if (!hasCnameReq) {
           verificationRequirements.push({
             type: 'CNAME',
             domain: subdomain,
-            value: configData.cnames?.[0] || 'cname.vercel-dns.com',
+            value: recommendedCname,
           })
         }
       } else {
-        // Add A record requirement for apex domains
+        // A record for apex domains
+        const recommendedA = configData?.aValues?.[0] || '76.76.21.21'
         const hasAReq = verificationRequirements.some(v => v.type === 'A')
         if (!hasAReq) {
           verificationRequirements.push({
             type: 'A',
             domain: '@',
-            value: configData.aValues?.[0] || '76.76.21.21',
+            value: recommendedA,
           })
         }
       }
     }
 
-    // Domain is fully verified only when both ownership AND DNS are good
+    // Domain is FULLY verified when:
+    // 1. Ownership is verified (TXT passed or not needed), AND
+    // 2. DNS is configured (CNAME/A points to Vercel)
     const isFullyVerified = ownershipVerified && dnsConfigured
 
     if (isFullyVerified) {
@@ -146,7 +205,7 @@ export default async function handler(req, res) {
     if (!ownershipVerified && !dnsConfigured) {
       message += 'Please configure both your DNS records (CNAME/A) and TXT verification record.'
     } else if (!ownershipVerified) {
-      message += 'DNS records look good, but TXT ownership verification is pending.'
+      message += 'DNS records look good, but TXT ownership verification is pending. Please ensure your TXT record is set correctly at _vercel.' + domain
     } else if (!dnsConfigured) {
       message += 'TXT verification passed, but DNS records (CNAME/A) are not configured correctly.'
     }
@@ -159,24 +218,30 @@ export default async function handler(req, res) {
       verification: verificationRequirements,
       message,
       debug: {
-        verifyResponse: {
+        verifyEndpoint: {
           verified: verifyData?.verified,
           verification: verifyData?.verification,
-          error: verifyData?.error,
+          error: verifyError,
         },
-        domainResponse: {
+        domainEndpoint: {
           verified: domainData?.verified,
           verification: domainData?.verification,
+          error: domainError,
         },
-        configResponse: {
+        configEndpoint: {
           misconfigured: configData?.misconfigured,
-          configured: configData?.configured,
+          configuredBy: configData?.configuredBy,
+          error: configError,
         },
-        hasPendingTxtVerification,
+        analysis: {
+          hasPendingTxtVerification,
+          vercelSaysVerified,
+          domainSaysVerified,
+        },
       },
     })
   } catch (error) {
     console.error('Error verifying domain:', error)
-    return res.status(500).json({ error: 'Failed to verify domain' })
+    return res.status(500).json({ error: 'Failed to verify domain', details: error.message })
   }
 }
