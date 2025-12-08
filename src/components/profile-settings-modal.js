@@ -1485,6 +1485,8 @@ function Editor({ user }) {
     skillsSectionTitle: '',
     customSections: [],
     sectionOrder: ['skills', 'writing', 'custom'],
+    statsVisibility: { followers: true, following: true, subscribers: true },
+    statsOrder: ['followers', 'following', 'subscribers'],
   })
   const [usernameErr, setUsernameErr] = useState(null)
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
@@ -1506,6 +1508,8 @@ function Editor({ user }) {
       skillsSectionTitle: user.skillsSectionTitle || '',
       customSections: user.customSections || [],
       sectionOrder: user.sectionOrder || ['skills', 'writing', 'custom'],
+      statsVisibility: user.statsVisibility || { followers: true, following: true, subscribers: true },
+      statsOrder: user.statsOrder || ['followers', 'following', 'subscribers'],
     })
   }, [user])
 
@@ -1515,6 +1519,14 @@ function Editor({ user }) {
     skills: 'Skills & Tags',
     writing: 'Writing',
     custom: 'Custom Sections',
+  }
+
+  const DEFAULT_STATS_ORDER = ['followers', 'following', 'subscribers']
+
+  const STATS_LABELS = {
+    followers: 'Followers',
+    following: 'Following',
+    subscribers: 'Subscribers',
   }
 
   const moveSectionUp = (index) => {
@@ -1579,6 +1591,77 @@ function Editor({ user }) {
     setDragOverSection(null)
   }
 
+  // Stats visibility and ordering functions
+  const toggleStatVisibility = (stat) => {
+    setClientUser(prev => ({
+      ...prev,
+      statsVisibility: {
+        ...prev.statsVisibility,
+        [stat]: !prev.statsVisibility[stat],
+      },
+    }))
+  }
+
+  const moveStatUp = (index) => {
+    if (index === 0) return
+    const newOrder = [...(clientUser.statsOrder || DEFAULT_STATS_ORDER)]
+    ;[newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]]
+    setClientUser(prev => ({ ...prev, statsOrder: newOrder }))
+  }
+
+  const moveStatDown = (index) => {
+    const order = clientUser.statsOrder || DEFAULT_STATS_ORDER
+    if (index === order.length - 1) return
+    const newOrder = [...order]
+    ;[newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]]
+    setClientUser(prev => ({ ...prev, statsOrder: newOrder }))
+  }
+
+  // Drag and drop state for stats
+  const [draggedStat, setDraggedStat] = useState(null)
+  const [dragOverStat, setDragOverStat] = useState(null)
+
+  const handleStatDragStart = (e, stat) => {
+    setDraggedStat(stat)
+    e.dataTransfer.effectAllowed = 'move'
+    e.target.style.opacity = '0.5'
+  }
+
+  const handleStatDragEnd = (e) => {
+    e.target.style.opacity = '1'
+    setDraggedStat(null)
+    setDragOverStat(null)
+  }
+
+  const handleStatDragOver = (e, stat) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (stat !== draggedStat) {
+      setDragOverStat(stat)
+    }
+  }
+
+  const handleStatDragLeave = () => {
+    setDragOverStat(null)
+  }
+
+  const handleStatDrop = (e, targetStat) => {
+    e.preventDefault()
+    if (!draggedStat || draggedStat === targetStat) return
+
+    const order = clientUser.statsOrder || DEFAULT_STATS_ORDER
+    const newOrder = [...order]
+    const draggedIndex = newOrder.indexOf(draggedStat)
+    const targetIndex = newOrder.indexOf(targetStat)
+
+    newOrder.splice(draggedIndex, 1)
+    newOrder.splice(targetIndex, 0, draggedStat)
+
+    setClientUser(prev => ({ ...prev, statsOrder: newOrder }))
+    setDraggedStat(null)
+    setDragOverStat(null)
+  }
+
   const updateSocialLink = (platform, value) => {
     setClientUser(prev => ({
       ...prev,
@@ -1621,6 +1704,8 @@ function Editor({ user }) {
     const originalSkillsSectionTitle = user.skillsSectionTitle || ''
     const originalCustomSections = user.customSections || []
     const originalSectionOrder = user.sectionOrder || ['skills', 'writing', 'custom']
+    const originalStatsVisibility = user.statsVisibility || { followers: true, following: true, subscribers: true }
+    const originalStatsOrder = user.statsOrder || ['followers', 'following', 'subscribers']
 
     return (
       user.name !== clientUser.name ||
@@ -1632,7 +1717,9 @@ function Editor({ user }) {
       JSON.stringify(originalSkills) !== JSON.stringify(clientUser.skills) ||
       originalSkillsSectionTitle !== clientUser.skillsSectionTitle ||
       JSON.stringify(originalCustomSections) !== JSON.stringify(clientUser.customSections) ||
-      JSON.stringify(originalSectionOrder) !== JSON.stringify(clientUser.sectionOrder)
+      JSON.stringify(originalSectionOrder) !== JSON.stringify(clientUser.sectionOrder) ||
+      JSON.stringify(originalStatsVisibility) !== JSON.stringify(clientUser.statsVisibility) ||
+      JSON.stringify(originalStatsOrder) !== JSON.stringify(clientUser.statsOrder)
     )
   }, [user, clientUser])
 
@@ -2011,6 +2098,167 @@ function Editor({ user }) {
           <PlusIcon width={14} height={14} />
           Add Section
         </button>
+
+        {/* Profile Stats Section */}
+        <SectionHeader>Profile Stats</SectionHeader>
+
+        <p css={css`
+          font-size: 0.8rem;
+          color: var(--grey-3);
+          margin-bottom: 1rem;
+        `}>
+          Choose which stats to show on your profile and their order
+        </p>
+
+        <div css={css`
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        `}>
+          {(clientUser.statsOrder || DEFAULT_STATS_ORDER).map((stat, index) => (
+            <div
+              key={stat}
+              draggable
+              onDragStart={(e) => handleStatDragStart(e, stat)}
+              onDragEnd={handleStatDragEnd}
+              onDragOver={(e) => handleStatDragOver(e, stat)}
+              onDragLeave={handleStatDragLeave}
+              onDrop={(e) => handleStatDrop(e, stat)}
+              css={css`
+                display: flex;
+                align-items: center;
+                background: ${dragOverStat === stat ? 'var(--grey-2)' : 'var(--grey-1)'};
+                border: 1px solid ${dragOverStat === stat ? 'var(--grey-3)' : 'var(--grey-2)'};
+                border-radius: 0.5rem;
+                padding: 0.5rem 0.75rem;
+                transition: all 0.15s ease;
+                cursor: grab;
+                user-select: none;
+                opacity: ${clientUser.statsVisibility?.[stat] === false ? 0.5 : 1};
+
+                &:hover {
+                  border-color: var(--grey-3);
+                  background: var(--grey-2);
+                }
+
+                &:active {
+                  cursor: grabbing;
+                }
+              `}
+            >
+              {/* Drag handle */}
+              <span css={css`
+                color: var(--grey-3);
+                margin-right: 0.75rem;
+                display: flex;
+                align-items: center;
+              `}>
+                <DragHandleDots2Icon width={16} height={16} />
+              </span>
+
+              {/* Stat label */}
+              <span css={css`
+                font-size: 0.85rem;
+                color: var(--grey-4);
+                flex: 1;
+              `}>
+                {STATS_LABELS[stat]}
+              </span>
+
+              {/* Visibility toggle */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleStatVisibility(stat)
+                }}
+                css={css`
+                  background: ${clientUser.statsVisibility?.[stat] !== false ? 'var(--grey-4)' : 'var(--grey-2)'};
+                  border: none;
+                  border-radius: 10px;
+                  width: 36px;
+                  height: 20px;
+                  cursor: pointer;
+                  position: relative;
+                  transition: all 0.2s ease;
+                  margin-right: 0.5rem;
+
+                  &::after {
+                    content: '';
+                    position: absolute;
+                    top: 2px;
+                    left: ${clientUser.statsVisibility?.[stat] !== false ? '18px' : '2px'};
+                    width: 16px;
+                    height: 16px;
+                    background: white;
+                    border-radius: 50%;
+                    transition: left 0.2s ease;
+                  }
+                `}
+                title={clientUser.statsVisibility?.[stat] !== false ? 'Click to hide' : 'Click to show'}
+              />
+
+              {/* Move buttons */}
+              <div css={css`
+                display: flex;
+                gap: 0.125rem;
+              `}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    moveStatUp(index)
+                  }}
+                  disabled={index === 0}
+                  css={css`
+                    background: ${index === 0 ? 'none' : 'var(--grey-2)'};
+                    border: none;
+                    border-radius: 0.25rem;
+                    cursor: ${index === 0 ? 'not-allowed' : 'pointer'};
+                    padding: 0.35rem;
+                    color: ${index === 0 ? 'var(--grey-2)' : 'var(--grey-3)'};
+                    display: flex;
+                    align-items: center;
+                    transition: all 0.15s ease;
+
+                    &:hover:not(:disabled) {
+                      background: var(--grey-3);
+                      color: var(--grey-1);
+                    }
+                  `}
+                >
+                  <ChevronUpIcon width={14} height={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    moveStatDown(index)
+                  }}
+                  disabled={index === (clientUser.statsOrder || DEFAULT_STATS_ORDER).length - 1}
+                  css={css`
+                    background: ${index === (clientUser.statsOrder || DEFAULT_STATS_ORDER).length - 1 ? 'none' : 'var(--grey-2)'};
+                    border: none;
+                    border-radius: 0.25rem;
+                    cursor: ${index === (clientUser.statsOrder || DEFAULT_STATS_ORDER).length - 1 ? 'not-allowed' : 'pointer'};
+                    padding: 0.35rem;
+                    color: ${index === (clientUser.statsOrder || DEFAULT_STATS_ORDER).length - 1 ? 'var(--grey-2)' : 'var(--grey-3)'};
+                    display: flex;
+                    align-items: center;
+                    transition: all 0.15s ease;
+
+                    &:hover:not(:disabled) {
+                      background: var(--grey-3);
+                      color: var(--grey-1);
+                    }
+                  `}
+                >
+                  <ChevronDownIcon width={14} height={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Layout Order Section */}
         <SectionHeader>Layout Order</SectionHeader>

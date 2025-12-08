@@ -376,97 +376,64 @@ export default function Profile({ user }) {
                 )}
               </p>
 
-              {/* Stats: Followers, Following, Subscribers */}
-              <div
-                css={css`
-                  display: flex;
-                  justify-content: flex-start;
-                  gap: 24px;
-                  margin-top: 20px;
-                  padding: 16px 0;
-                  border-top: 1px solid ${colors.border};
-                  border-bottom: 1px solid ${colors.border};
-                `}
-              >
-                <div
-                  css={css`
-                    text-align: center;
-                    cursor: default;
-                  `}
-                >
-                  <p
+              {/* Stats: Followers, Following, Subscribers - customizable */}
+              {(() => {
+                const statsOrder = user.statsOrder || ['followers', 'following', 'subscribers']
+                const statsVisibility = user.statsVisibility || { followers: true, following: true, subscribers: true }
+                const visibleStats = statsOrder.filter(stat => statsVisibility[stat] !== false)
+
+                if (visibleStats.length === 0) return null
+
+                const getStatValue = (stat) => {
+                  switch (stat) {
+                    case 'followers': return user.followers?.length || 0
+                    case 'following': return user.following?.length || 0
+                    case 'subscribers': return user.subscribers?.length || 0
+                    default: return 0
+                  }
+                }
+
+                return (
+                  <div
                     css={css`
-                      font-size: 1.1rem;
-                      font-weight: 500;
-                      color: ${colors.text};
-                      margin: 0;
+                      display: flex;
+                      gap: 24px;
+                      margin-top: 20px;
+                      padding: 16px 0;
+                      border-top: 1px solid ${colors.border};
+                      border-bottom: 1px solid ${colors.border};
                     `}
                   >
-                    {user.followers?.length || 0}
-                  </p>
-                  <p
-                    css={css`
-                      font-size: 12px;
-                      color: ${colors.muted};
-                      margin: 0;
-                    `}
-                  >
-                    followers
-                  </p>
-                </div>
-                <div
-                  css={css`
-                    text-align: center;
-                    cursor: default;
-                  `}
-                >
-                  <p
-                    css={css`
-                      font-size: 1.1rem;
-                      font-weight: 500;
-                      color: ${colors.text};
-                      margin: 0;
-                    `}
-                  >
-                    {user.following?.length || 0}
-                  </p>
-                  <p
-                    css={css`
-                      font-size: 12px;
-                      color: ${colors.muted};
-                      margin: 0;
-                    `}
-                  >
-                    following
-                  </p>
-                </div>
-                <div
-                  css={css`
-                    text-align: center;
-                    cursor: default;
-                  `}
-                >
-                  <p
-                    css={css`
-                      font-size: 1.1rem;
-                      font-weight: 500;
-                      color: ${colors.text};
-                      margin: 0;
-                    `}
-                  >
-                    {user.subscribers?.length || 0}
-                  </p>
-                  <p
-                    css={css`
-                      font-size: 12px;
-                      color: ${colors.muted};
-                      margin: 0;
-                    `}
-                  >
-                    subscribers
-                  </p>
-                </div>
-              </div>
+                    {visibleStats.map((stat) => (
+                      <div
+                        key={stat}
+                        css={css`
+                          cursor: default;
+                        `}
+                      >
+                        <span
+                          css={css`
+                            font-size: 1.1rem;
+                            font-weight: 500;
+                            color: ${colors.text};
+                          `}
+                        >
+                          {getStatValue(stat)}
+                        </span>
+                        <span
+                          css={css`
+                            font-size: 12px;
+                            color: ${colors.muted};
+                            margin-left: 6px;
+                          `}
+                        >
+                          {stat}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
 
               {/* Follow Button and Newsletter Subscription */}
               <div css={css`margin-top: 16px; display: flex; flex-direction: column; gap: 10px;`}>
@@ -757,6 +724,16 @@ export async function getServerSideProps({ params, req }) {
     // Ensure subscribers exists (only pass count, not actual emails for privacy)
     if (!user.subscribers) {
       user.subscribers = []
+    }
+
+    // Ensure statsVisibility exists
+    if (!user.statsVisibility) {
+      user.statsVisibility = { followers: true, following: true, subscribers: true }
+    }
+
+    // Ensure statsOrder exists
+    if (!user.statsOrder) {
+      user.statsOrder = ['followers', 'following', 'subscribers']
     }
 
     return {
