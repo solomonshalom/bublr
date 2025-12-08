@@ -609,58 +609,133 @@ function CustomDomainSection({ userId, userName }) {
               </div>
             )}
 
-            {/* DNS verification instructions */}
+            {/* DNS verification instructions (from Vercel API) */}
             {currentDomain?.status === 'pending' && verification.length > 0 && (
               <div
                 css={css`
                   margin-top: 1rem;
-                  background: #fffbeb;
-                  border: 1px solid #fde68a;
+                  background: var(--grey-1);
+                  border: 1px solid var(--grey-2);
                   border-radius: 0.5rem;
                   padding: 1rem;
                   font-size: 0.8rem;
                 `}
               >
-                <p css={css`margin: 0 0 0.75rem 0; font-weight: 500; color: #92400e;`}>
-                  Configure your DNS to verify your domain:
+                <p css={css`margin: 0 0 1rem 0; font-weight: 500; color: var(--grey-4);`}>
+                  Configure your DNS settings
                 </p>
                 {verification.map((v, i) => (
-                  <div key={i} css={css`margin-bottom: 0.5rem; background: white; padding: 0.5rem; border-radius: 0.25rem;`}>
-                    <p css={css`margin: 0; color: #78716c;`}>
-                      <strong>Type:</strong> {v.type} <br />
-                      <strong>Name/Host:</strong> {v.domain} <br />
-                      <strong>Value:</strong> <code css={css`background: #f5f5f4; padding: 0.1rem 0.25rem; border-radius: 0.2rem; font-size: 0.75rem; word-break: break-all;`}>{v.value}</code>
-                    </p>
+                  <div key={i} css={css`
+                    background: var(--grey-2);
+                    border-radius: 0.375rem;
+                    padding: 0.75rem;
+                    margin-bottom: 0.75rem;
+                    font-family: monospace;
+                  `}>
+                    <div css={css`display: grid; grid-template-columns: 80px 1fr; gap: 0.5rem; color: var(--grey-4);`}>
+                      <span css={css`color: var(--grey-3);`}>Type:</span>
+                      <span>{v.type}</span>
+                      <span css={css`color: var(--grey-3);`}>Name:</span>
+                      <span>{v.domain}</span>
+                      <span css={css`color: var(--grey-3);`}>Value:</span>
+                      <span css={css`word-break: break-all;`}>{v.value}</span>
+                    </div>
                   </div>
                 ))}
-                <p css={css`margin: 0.75rem 0 0 0; font-size: 0.75rem; color: #a8a29e;`}>
-                  DNS changes can take up to 48 hours to propagate. Click &quot;Verify&quot; after updating your DNS.
+                <p css={css`margin: 0; font-size: 0.75rem; color: var(--grey-3);`}>
+                  DNS changes typically take 5-30 minutes but can take up to 48 hours. Click &quot;Verify&quot; after updating your DNS.
                 </p>
               </div>
             )}
 
-            {/* A Record instruction for apex domains */}
+            {/* DNS instructions for pending domains */}
             {currentDomain?.status === 'pending' && verification.length === 0 && (
               <div
                 css={css`
                   margin-top: 1rem;
-                  background: #fffbeb;
-                  border: 1px solid #fde68a;
+                  background: var(--grey-1);
+                  border: 1px solid var(--grey-2);
                   border-radius: 0.5rem;
                   padding: 1rem;
                   font-size: 0.8rem;
                 `}
               >
-                <p css={css`margin: 0 0 0.75rem 0; font-weight: 500; color: #92400e;`}>
-                  Point your domain to Bublr:
+                <p css={css`margin: 0 0 1rem 0; font-weight: 500; color: var(--grey-4);`}>
+                  Configure your DNS settings
                 </p>
-                <div css={css`background: white; padding: 0.5rem; border-radius: 0.25rem;`}>
-                  <p css={css`margin: 0; color: #78716c;`}>
-                    Add a <strong>CNAME</strong> record pointing to <code css={css`background: #f5f5f4; padding: 0.1rem 0.25rem; border-radius: 0.2rem;`}>cname.vercel-dns.com</code>
+
+                {/* Check if it's a subdomain or apex domain */}
+                {currentDomain.domain.split('.').length > 2 ? (
+                  /* Subdomain instructions */
+                  <div css={css`margin-bottom: 1rem;`}>
+                    <p css={css`margin: 0 0 0.5rem 0; color: var(--grey-3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;`}>
+                      For subdomains (e.g., blog.yoursite.com)
+                    </p>
+                    <div css={css`
+                      background: var(--grey-2);
+                      border-radius: 0.375rem;
+                      padding: 0.75rem;
+                      font-family: monospace;
+                    `}>
+                      <div css={css`display: grid; grid-template-columns: 80px 1fr; gap: 0.5rem; color: var(--grey-4);`}>
+                        <span css={css`color: var(--grey-3);`}>Type:</span>
+                        <span>CNAME</span>
+                        <span css={css`color: var(--grey-3);`}>Name:</span>
+                        <span>{currentDomain.domain.split('.')[0]}</span>
+                        <span css={css`color: var(--grey-3);`}>Value:</span>
+                        <span css={css`word-break: break-all;`}>cname.vercel-dns.com</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Apex domain instructions */
+                  <div css={css`margin-bottom: 1rem;`}>
+                    <p css={css`margin: 0 0 0.5rem 0; color: var(--grey-3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;`}>
+                      For apex domains (e.g., yoursite.com)
+                    </p>
+                    <div css={css`
+                      background: var(--grey-2);
+                      border-radius: 0.375rem;
+                      padding: 0.75rem;
+                      font-family: monospace;
+                    `}>
+                      <div css={css`display: grid; grid-template-columns: 80px 1fr; gap: 0.5rem; color: var(--grey-4);`}>
+                        <span css={css`color: var(--grey-3);`}>Type:</span>
+                        <span>A</span>
+                        <span css={css`color: var(--grey-3);`}>Name:</span>
+                        <span>@</span>
+                        <span css={css`color: var(--grey-3);`}>Value:</span>
+                        <span>76.76.21.21</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div css={css`
+                  background: var(--grey-2);
+                  border-radius: 0.375rem;
+                  padding: 0.75rem;
+                  margin-bottom: 1rem;
+                `}>
+                  <p css={css`margin: 0 0 0.5rem 0; color: var(--grey-3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;`}>
+                    Where to add this
                   </p>
+                  <ol css={css`
+                    margin: 0;
+                    padding-left: 1.25rem;
+                    color: var(--grey-4);
+                    font-size: 0.8rem;
+                    line-height: 1.6;
+                  `}>
+                    <li>Go to your domain registrar (Namecheap, GoDaddy, Cloudflare, etc.)</li>
+                    <li>Find the DNS settings or DNS management page</li>
+                    <li>Add a new record with the values above</li>
+                    <li>Save and wait for propagation (usually 5-30 minutes)</li>
+                  </ol>
                 </div>
-                <p css={css`margin: 0.75rem 0 0 0; font-size: 0.75rem; color: #a8a29e;`}>
-                  DNS changes can take up to 48 hours. Click &quot;Verify&quot; when ready.
+
+                <p css={css`margin: 0; font-size: 0.75rem; color: var(--grey-3);`}>
+                  DNS changes typically take 5-30 minutes but can take up to 48 hours. Click &quot;Verify&quot; after updating your DNS.
                 </p>
               </div>
             )}
@@ -711,17 +786,18 @@ function CustomDomainSection({ userId, userName }) {
 
           {/* Subscription info */}
           <div css={css`
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
+            background: var(--grey-1);
+            border: 1px solid var(--grey-2);
             border-radius: 0.5rem;
             padding: 0.75rem;
             font-size: 0.8rem;
-            color: #166534;
+            color: var(--grey-4);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
           `}>
-            <p css={css`margin: 0;`}>
-              <CheckCircledIcon css={css`vertical-align: middle; margin-right: 0.25rem;`} />
-              Custom Domain subscription active
-            </p>
+            <CheckCircledIcon css={css`color: #22c55e; flex-shrink: 0;`} />
+            <span>Custom Domain subscription active</span>
           </div>
         </>
       )}
