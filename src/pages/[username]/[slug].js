@@ -217,6 +217,7 @@ export default function Post({ post, seo }) {
               </Link>
             </span>{' '}
             / <time itemProp="datePublished" dateTime={seo.publishedTime}>{formattedDate}</time>
+            {' '} / {seo.readingTime} min read
           </p>
           <meta itemProp="dateModified" content={seo.modifiedTime} />
         </div>
