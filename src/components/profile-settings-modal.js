@@ -389,18 +389,12 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
       )}
 
       {expanded && (
-        <div css={css`
-          background: var(--grey-1);
-          border: 1px solid var(--grey-2);
-          border-radius: 0.5rem;
-          padding: 1rem;
-        `}>
+        <>
           {/* Available Tags Reference */}
           <div css={css`margin-bottom: 1rem;`}>
             <p css={css`
-              font-size: 0.75rem;
-              font-weight: 500;
-              color: var(--grey-4);
+              font-size: 0.8rem;
+              color: var(--grey-3);
               margin: 0 0 0.5rem 0;
             `}>
               Available placeholder tags:
@@ -408,7 +402,7 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
             <div css={css`
               display: flex;
               flex-wrap: wrap;
-              gap: 0.375rem;
+              gap: 0.5rem;
             `}>
               {[
                 { tag: '{{title}}', desc: 'Post title' },
@@ -425,10 +419,10 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
                   title={desc}
                   css={css`
                     background: var(--grey-2);
-                    padding: 0.2rem 0.4rem;
+                    padding: 0.25rem 0.5rem;
                     border-radius: 0.25rem;
-                    font-size: 0.7rem;
-                    font-family: monospace;
+                    font-size: 0.75rem;
+                    font-family: inherit;
                     color: var(--grey-4);
                     cursor: help;
                   `}
@@ -440,45 +434,24 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
           </div>
 
           {/* Warning about unsubscribe link */}
-          <div css={css`
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 0.375rem;
-            padding: 0.5rem 0.75rem;
-            margin-bottom: 1rem;
+          <p css={css`
             font-size: 0.75rem;
-            color: #92400e;
+            color: var(--grey-3);
+            margin: 0 0 1rem 0;
           `}>
-            <strong>Important:</strong> Your template must include <code css={css`background: rgba(0,0,0,0.1); padding: 0.1rem 0.25rem; border-radius: 2px;`}>{'{{unsubscribeUrl}}'}</code> for email compliance. This link allows subscribers to opt out.
-          </div>
+            Your template must include <code css={css`background: var(--grey-2); padding: 0.15rem 0.35rem; border-radius: 0.25rem;`}>{'{{unsubscribeUrl}}'}</code> for email compliance.
+          </p>
 
           {/* Template Editor */}
-          <div css={css`margin-bottom: 0.75rem;`}>
-            <textarea
+          <div css={css`margin-bottom: 1rem;`}>
+            <Textarea
               value={template}
               onChange={e => setTemplate(e.target.value)}
               placeholder="Paste your custom HTML email template here..."
               css={css`
                 width: 100%;
-                min-height: 200px;
-                padding: 0.75rem;
-                border: 1px solid var(--grey-2);
-                border-radius: 0.375rem;
-                font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-                font-size: 0.75rem;
-                line-height: 1.5;
-                resize: vertical;
-                background: white;
-                color: var(--grey-4);
-
-                &:focus {
-                  outline: none;
-                  border-color: var(--grey-3);
-                }
-
-                &::placeholder {
-                  color: var(--grey-3);
-                }
+                min-height: 12em;
+                font-size: 0.85rem;
               `}
             />
           </div>
@@ -496,7 +469,7 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
                 background: var(--grey-5);
                 color: var(--grey-1);
                 border: none;
-                padding: 0.5rem 1rem;
+                padding: 0.5rem 0.75rem;
                 border-radius: 0.5rem;
                 font-size: 0.8rem;
                 cursor: pointer;
@@ -514,21 +487,20 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
               onClick={handleLoadDefault}
               disabled={saving}
               css={css`
-                background: var(--grey-2);
+                background: none;
                 color: var(--grey-4);
-                border: none;
-                padding: 0.5rem 1rem;
+                border: 1px solid var(--grey-2);
+                padding: 0.5rem 0.75rem;
                 border-radius: 0.5rem;
                 font-size: 0.8rem;
                 cursor: pointer;
 
                 &:hover:not(:disabled) {
-                  background: var(--grey-3);
-                  color: var(--grey-1);
+                  border-color: var(--grey-3);
                 }
               `}
             >
-              Load Default Template
+              Load Default
             </button>
 
             {currentTemplate?.html && (
@@ -537,33 +509,32 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
                 disabled={saving}
                 css={css`
                   background: none;
-                  color: #dc2626;
-                  border: 1px solid #dc2626;
-                  padding: 0.5rem 1rem;
+                  color: var(--grey-3);
+                  border: 1px solid var(--grey-2);
+                  padding: 0.5rem 0.75rem;
                   border-radius: 0.5rem;
                   font-size: 0.8rem;
                   cursor: pointer;
 
                   &:hover {
-                    background: #fef2f2;
+                    color: #dc2626;
+                    border-color: #dc2626;
                   }
                 `}
               >
-                Reset to Default
+                Reset
               </button>
             )}
           </div>
 
           <p css={css`
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: var(--grey-3);
             margin: 0.75rem 0 0 0;
-            line-height: 1.5;
           `}>
-            Tip: Click &quot;Load Default Template&quot; to start with our template and customize from there.
-            The template uses HTML table-based layouts for best email client compatibility.
+            Click &quot;Load Default&quot; to start with our template and customize from there.
           </p>
-        </div>
+        </>
       )}
     </div>
   )
