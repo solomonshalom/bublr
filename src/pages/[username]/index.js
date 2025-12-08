@@ -6,10 +6,13 @@ import { htmlToText } from 'html-to-text'
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
 
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { auth, firestore } from '../../lib/firebase'
 import { getUserByName } from '../../lib/db'
 
 import meta from '../../components/meta'
 import SubscribeNewsletter from '../../components/subscribe-newsletter'
+import FollowButton from '../../components/follow-button'
 
 // Color palette for dots (same as berrysauce)
 const COLOR_PALETTE = ['#cf52f2', '#6BCB77', '#4D96FF', '#A66CFF', '#E23E57', '#ff3e00']
@@ -132,12 +135,35 @@ const globalStyles = css`
 export default function Profile({ user }) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [currentUser] = useAuthState(auth)
+  const [isFollowing, setIsFollowing] = useState(false)
   const currentYear = new Date().getFullYear()
 
   // Ensure we only render theme-dependent UI after mount
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Check if current user is following this profile
+  useEffect(() => {
+    async function checkFollowStatus() {
+      if (!currentUser || currentUser.uid === user.id) return
+
+      try {
+        const userDoc = await firestore.collection('users').doc(currentUser.uid).get()
+        if (userDoc.exists) {
+          const following = userDoc.data().following || []
+          setIsFollowing(following.includes(user.id))
+        }
+      } catch (err) {
+        console.error('Error checking follow status:', err)
+      }
+    }
+
+    if (mounted && currentUser) {
+      checkFollowStatus()
+    }
+  }, [mounted, currentUser, user.id])
 
   const isDark = mounted ? resolvedTheme === 'dark' : false
 
@@ -350,8 +376,110 @@ export default function Profile({ user }) {
                 )}
               </p>
 
-              {/* Newsletter Subscription */}
-              <div css={css`margin-top: 24px;`}>
+              {/* Stats: Followers, Following, Subscribers */}
+              <div
+                css={css`
+                  display: flex;
+                  justify-content: flex-start;
+                  gap: 24px;
+                  margin-top: 20px;
+                  padding: 16px 0;
+                  border-top: 1px solid ${colors.border};
+                  border-bottom: 1px solid ${colors.border};
+                `}
+              >
+                <div
+                  css={css`
+                    text-align: center;
+                    cursor: default;
+                  `}
+                >
+                  <p
+                    css={css`
+                      font-size: 1.1rem;
+                      font-weight: 500;
+                      color: ${colors.text};
+                      margin: 0;
+                    `}
+                  >
+                    {user.followers?.length || 0}
+                  </p>
+                  <p
+                    css={css`
+                      font-size: 12px;
+                      color: ${colors.muted};
+                      margin: 0;
+                    `}
+                  >
+                    followers
+                  </p>
+                </div>
+                <div
+                  css={css`
+                    text-align: center;
+                    cursor: default;
+                  `}
+                >
+                  <p
+                    css={css`
+                      font-size: 1.1rem;
+                      font-weight: 500;
+                      color: ${colors.text};
+                      margin: 0;
+                    `}
+                  >
+                    {user.following?.length || 0}
+                  </p>
+                  <p
+                    css={css`
+                      font-size: 12px;
+                      color: ${colors.muted};
+                      margin: 0;
+                    `}
+                  >
+                    following
+                  </p>
+                </div>
+                <div
+                  css={css`
+                    text-align: center;
+                    cursor: default;
+                  `}
+                >
+                  <p
+                    css={css`
+                      font-size: 1.1rem;
+                      font-weight: 500;
+                      color: ${colors.text};
+                      margin: 0;
+                    `}
+                  >
+                    {user.subscribers?.length || 0}
+                  </p>
+                  <p
+                    css={css`
+                      font-size: 12px;
+                      color: ${colors.muted};
+                      margin: 0;
+                    `}
+                  >
+                    subscribers
+                  </p>
+                </div>
+              </div>
+
+              {/* Follow Button and Newsletter Subscription */}
+              <div css={css`margin-top: 16px; display: flex; flex-direction: column; gap: 10px;`}>
+                {mounted && (
+                  <FollowButton
+                    targetUserId={user.id}
+                    targetUsername={user.name}
+                    targetDisplayName={user.displayName}
+                    currentUserId={currentUser?.uid}
+                    initialIsFollowing={isFollowing}
+                    colors={colors}
+                  />
+                )}
                 <SubscribeNewsletter
                   authorUsername={user.name}
                   authorDisplayName={user.displayName}
@@ -615,6 +743,20 @@ export async function getServerSideProps({ params, req }) {
     // Include customBranding if it exists (for premium users)
     if (!user.customBranding) {
       user.customBranding = null
+    }
+
+    // Ensure followers and following arrays exist for stats display
+    if (!user.followers) {
+      user.followers = []
+    }
+
+    if (!user.following) {
+      user.following = []
+    }
+
+    // Ensure subscribers exists (only pass count, not actual emails for privacy)
+    if (!user.subscribers) {
+      user.subscribers = []
     }
 
     return {

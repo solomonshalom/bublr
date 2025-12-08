@@ -10,6 +10,8 @@ import { htmlToText } from 'html-to-text'
 // Notification type colors
 const NOTIFICATION_COLORS = {
   subscriber: '#2ECC71', // Green - new subscriber
+  follow: '#4D96FF', // Blue - new follower
+  new_post: '#cf52f2', // Purple - new post from followed user
 }
 
 // Icons
@@ -61,6 +63,10 @@ function getNotificationMessage(notification) {
   switch (notification.type) {
     case 'subscriber':
       return `subscribed to your newsletter`
+    case 'follow':
+      return `started following you`
+    case 'new_post':
+      return `published a new post: "${notification.postTitle || 'Untitled'}"`
     default:
       return notification.message || 'New notification'
   }

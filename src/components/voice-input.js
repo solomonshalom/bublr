@@ -220,9 +220,27 @@ export default function VoiceInput({ onTranscript, disabled }) {
             Processing...
           </span>
         ) : isRecording ? (
-          `Stop (${formatTime(recordingTime)})`
+          <span
+            css={css`
+              display: inline-flex;
+              align-items: center;
+              gap: 0.5rem;
+            `}
+          >
+            <StopIcon />
+            Stop ({formatTime(recordingTime)})
+          </span>
         ) : (
-          '+ Voice'
+          <span
+            css={css`
+              display: inline-flex;
+              align-items: center;
+              gap: 0.5rem;
+            `}
+          >
+            <MicIcon />
+            Voice
+          </span>
         )}
       </button>
 

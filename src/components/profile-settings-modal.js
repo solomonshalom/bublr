@@ -7,6 +7,7 @@ import { useDocumentData } from 'react-firebase-hooks/firestore'
 
 import { firestore, auth } from '../lib/firebase'
 import { userWithNameExists } from '../lib/db'
+import { uploadToImgBB } from '../lib/utils'
 
 import Spinner from './spinner'
 import Input, { Textarea } from './input'
@@ -89,6 +90,219 @@ const SmallInput = props => (
     `}
   />
 )
+
+// Camera icon for overlay
+const CameraIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+)
+
+// Profile Picture Upload Component
+const ProfilePictureUpload = ({ currentPhoto, onPhotoChange }) => {
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState(null)
+  const fileInputRef = useRef(null)
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be less than 5MB')
+      return
+    }
+
+    setError(null)
+    setUploading(true)
+
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_IMGBB_API
+      if (!apiKey) {
+        setError('Image upload not configured')
+        return
+      }
+
+      const imageUrl = await uploadToImgBB(file, apiKey)
+
+      if (imageUrl) {
+        onPhotoChange(imageUrl)
+      } else {
+        setError('Failed to upload image')
+      }
+    } catch (err) {
+      console.error('Profile picture upload error:', err)
+      setError('Failed to upload image')
+    } finally {
+      setUploading(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  return (
+    <div css={css`margin-bottom: 1.5rem;`}>
+      <StyledLabel>Profile Picture</StyledLabel>
+      <div
+        css={css`
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        `}
+      >
+        {/* Avatar Preview with Overlay */}
+        <div
+          css={css`
+            position: relative;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            flex-shrink: 0;
+
+            &:hover .overlay {
+              opacity: 1;
+            }
+          `}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <img
+            src={currentPhoto || 'https://api.dicebear.com/7.x/shapes/svg?seed=default'}
+            alt="Profile"
+            css={css`
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+              background: var(--grey-2);
+            `}
+          />
+          <div
+            className="overlay"
+            css={css`
+              position: absolute;
+              inset: 0;
+              background: rgba(0, 0, 0, 0.5);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              opacity: 0;
+              transition: opacity 0.2s ease;
+              color: white;
+            `}
+          >
+            {uploading ? (
+              <span
+                css={css`
+                  width: 20px;
+                  height: 20px;
+                  border: 2px solid white;
+                  border-bottom-color: transparent;
+                  border-radius: 50%;
+                  animation: spin 0.8s linear infinite;
+                  @keyframes spin {
+                    to { transform: rotate(360deg); }
+                  }
+                `}
+              />
+            ) : (
+              <CameraIcon />
+            )}
+          </div>
+        </div>
+
+        {/* Upload button and info */}
+        <div css={css`flex: 1;`}>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            css={css`
+              background: none;
+              color: var(--grey-4);
+              border: 1px solid var(--grey-2);
+              padding: 0.5rem 0.75rem;
+              border-radius: 0.5rem;
+              font-size: 0.8rem;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              display: flex;
+              align-items: center;
+              gap: 0.4rem;
+
+              &:hover:not(:disabled) {
+                border-color: var(--grey-3);
+                color: var(--grey-5);
+              }
+
+              &:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+              }
+            `}
+          >
+            {uploading ? (
+              <>
+                <span
+                  css={css`
+                    width: 12px;
+                    height: 12px;
+                    border: 1.5px solid currentColor;
+                    border-bottom-color: transparent;
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                  `}
+                />
+                Uploading...
+              </>
+            ) : (
+              'Change Photo'
+            )}
+          </button>
+          <p
+            css={css`
+              font-size: 0.7rem;
+              color: var(--grey-3);
+              margin: 0.5rem 0 0 0;
+            `}
+          >
+            JPG, PNG or GIF. Max 5MB.
+          </p>
+          {error && (
+            <p
+              css={css`
+                font-size: 0.75rem;
+                color: #dc2626;
+                margin: 0.5rem 0 0 0;
+              `}
+            >
+              {error}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        css={css`display: none;`}
+      />
+    </div>
+  )
+}
 
 const TagInput = ({ tags, onChange, placeholder }) => {
   const [inputValue, setInputValue] = useState('')
@@ -1413,6 +1627,7 @@ function Editor({ user }) {
       user.displayName !== clientUser.displayName ||
       user.about !== clientUser.about ||
       user.link !== clientUser.link ||
+      user.photo !== clientUser.photo ||
       JSON.stringify(originalSocialLinks) !== JSON.stringify(clientUser.socialLinks) ||
       JSON.stringify(originalSkills) !== JSON.stringify(clientUser.skills) ||
       originalSkillsSectionTitle !== clientUser.skillsSectionTitle ||
@@ -1497,6 +1712,14 @@ function Editor({ user }) {
       >
         {/* Basic Info Section */}
         <SectionHeader>Basic Info</SectionHeader>
+
+        {/* Profile Picture Upload */}
+        <ProfilePictureUpload
+          currentPhoto={clientUser.photo}
+          onPhotoChange={(newPhotoUrl) => {
+            setClientUser(prev => ({ ...prev, photo: newPhotoUrl }))
+          }}
+        />
 
         <div css={css`margin-bottom: 1.25rem;`}>
           <StyledLabel htmlFor="profile-display-name">Display Name</StyledLabel>

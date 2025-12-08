@@ -4,14 +4,20 @@ import { firestore } from '../../../lib/firebase'
 /**
  * Notification types and their importance colors:
  * - subscriber: New newsletter subscriber (green: #2ECC71)
+ * - follow: New follower (blue: #4D96FF)
+ * - new_post: New post from followed user (purple: #cf52f2)
  */
 
 export const NOTIFICATION_TYPES = {
   SUBSCRIBER: 'subscriber',
+  FOLLOW: 'follow',
+  NEW_POST: 'new_post',
 }
 
 export const NOTIFICATION_COLORS = {
   subscriber: '#2ECC71', // Green - new subscriber
+  follow: '#4D96FF', // Blue - new follower
+  new_post: '#cf52f2', // Purple - new post from followed user
 }
 
 export default async function handler(req, res) {

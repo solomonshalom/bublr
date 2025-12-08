@@ -148,6 +148,55 @@ export default async function handler(req, res) {
       console.error('Newsletter notification setup error:', notifyError)
     }
 
+    // Notify all followers about the new post (fire and forget)
+    try {
+      const authorId = post.author
+      const authorDoc = await firestore.collection('users').doc(authorId).get()
+
+      if (authorDoc.exists) {
+        const authorData = authorDoc.data()
+        const followers = authorData.followers || []
+
+        if (followers.length > 0) {
+          // Get post slug for linking
+          const postDoc = await firestore.collection('posts').doc(postId).get()
+          const postData = postDoc.data()
+
+          const notificationData = {
+            type: 'new_post',
+            actorId: authorId,
+            actorName: authorData.displayName || authorData.name,
+            actorPhoto: authorData.photo || `https://api.dicebear.com/7.x/initials/svg?seed=${authorData.name}`,
+            postId: postId,
+            postTitle: postData.title ? htmlToText(postData.title).substring(0, 100) : 'Untitled',
+            postSlug: postData.slug,
+            postAuthorName: authorData.name,
+            message: `${authorData.displayName || authorData.name} published a new post`,
+            metadata: {},
+            read: false,
+            createdAt: new Date(),
+          }
+
+          // Use batched writes for efficiency (max 500 per batch)
+          const BATCH_SIZE = 500
+          for (let i = 0; i < followers.length; i += BATCH_SIZE) {
+            const batch = firestore.batch()
+            const batchFollowers = followers.slice(i, i + BATCH_SIZE)
+
+            batchFollowers.forEach(followerId => {
+              const notifRef = firestore.collection('notifications').doc()
+              batch.set(notifRef, { ...notificationData, recipientId: followerId })
+            })
+
+            await batch.commit()
+          }
+        }
+      }
+    } catch (followerNotifyError) {
+      // Don't fail the publish if follower notification fails
+      console.error('Follower notification error:', followerNotifyError)
+    }
+
     return res.status(200).json({
       success: true,
       published: true,
