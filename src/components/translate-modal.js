@@ -37,19 +37,18 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `
 
-// Translate icon SVG component
-const TranslateIcon = ({ size = '1.1rem', color = 'var(--grey-3)' }) => (
+// Translate icon SVG component - uses currentColor to inherit from parent
+const TranslateIcon = ({ size = '18' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
     height={size}
     viewBox="0 0 24 24"
     fill="none"
-    stroke={color}
+    stroke="currentColor"
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    css={css`display: block;`}
   >
     <path d="m5 8 6 6" />
     <path d="m4 14 6-6 2-3" />
@@ -105,7 +104,7 @@ function TranslatedContent({ title, content, targetLanguage, onClose }) {
           align-items: center;
           gap: 0.5rem;
         `}>
-          <TranslateIcon size="1rem" />
+          <TranslateIcon size="16" />
           Translated to {targetLanguage}
         </span>
         <button
@@ -223,17 +222,15 @@ export default function TranslateModal({ title, content }) {
       <Dialog.Trigger asChild>
         <button
           css={css`
-            background: none;
+            color: var(--grey-3);
+            cursor: pointer;
+            transition: all 200ms ease;
             border: none;
             padding: 0;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.2s ease;
+            background: none;
 
             &:hover {
-              opacity: 0.6;
+              color: var(--grey-4);
             }
           `}
           title="Translate this post"
@@ -275,7 +272,7 @@ export default function TranslateModal({ title, content }) {
             align-items: center;
             gap: 0.5rem;
           `}>
-            <TranslateIcon size="1.25rem" color="var(--grey-4)" />
+            <span css={css`color: var(--grey-4); display: flex;`}><TranslateIcon size="20" /></span>
             Translate Post
           </Dialog.Title>
           <Dialog.Description css={css`
