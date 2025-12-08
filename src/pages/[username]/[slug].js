@@ -91,9 +91,6 @@ function AddToReadingListButton({ uid, pid }) {
 
   return (
     <IconButton
-      css={css`
-        margin-left: auto;
-      `}
       onClick={async () => {
         const arrayAdd = firebase.firestore.FieldValue.arrayUnion
         const arrayRemove = firebase.firestore.FieldValue.arrayRemove
@@ -115,8 +112,8 @@ function AddToReadingListButton({ uid, pid }) {
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="1.5rem"
-        height="1.5rem"
+        width="1.1rem"
+        height="1.1rem"
         fill="var(--grey-3)"
         viewBox="0 0 256 256"
       >
@@ -281,20 +278,20 @@ export default function Post({ post, seo }) {
         />
       </article>
 
-      {/* Footer with theme toggle, views, and bookmark */}
+      {/* Footer with views on left, theme toggle and bookmark on right */}
       <footer
         css={css`
           display: flex;
           align-items: center;
-          justify-content: flex-end;
+          justify-content: space-between;
           margin-bottom: 1rem;
           padding-top: 1rem;
           border-top: 1px solid var(--grey-2);
         `}
       >
+        <ViewCounter postId={post.id} initialViews={post.views} />
         <div css={css`display: flex; align-items: center; gap: 0.75rem;`}>
           <ThemeToggle />
-          <ViewCounter postId={post.id} initialViews={post.views} />
           {user && <AddToReadingListButton uid={user.uid} pid={post.id} />}
         </div>
       </footer>
