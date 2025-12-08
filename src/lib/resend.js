@@ -66,11 +66,9 @@ function generateNewPostEmailHTML({ authorName, authorPhoto, postTitle, postExce
               ` : ''}
 
               <!-- Content preview -->
-              <div style="padding: 16px; background-color: #fafafa; border-radius: 6px; border-left: 3px solid ${postColor || '#4D96FF'}; margin-bottom: 24px;">
-                <p style="margin: 0; color: #4a4a4a; font-size: 14px; line-height: 1.7;">
-                  ${cleanContent}${cleanContent.length >= 500 ? '...' : ''}
-                </p>
-              </div>
+              <p style="margin: 0 0 24px 0; color: #6f6f6f; font-size: 14px; line-height: 1.7;">
+                ${cleanContent}${cleanContent.length >= 500 ? '...' : ''}
+              </p>
 
               <!-- CTA Button -->
               <table cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
