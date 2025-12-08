@@ -536,24 +536,45 @@ export default function Profile({ user }) {
                 )
               })()}
 
-              {/* Follow Button and Newsletter Subscription */}
-              <div css={css`margin-top: 16px; display: flex; flex-direction: column; gap: 10px;`}>
-                {mounted && (
-                  <FollowButton
-                    targetUserId={user.id}
-                    targetUsername={user.name}
-                    targetDisplayName={user.displayName}
-                    currentUserId={currentUser?.uid}
-                    initialIsFollowing={isFollowing}
-                    colors={colors}
-                  />
-                )}
-                <SubscribeNewsletter
-                  authorUsername={user.name}
-                  authorDisplayName={user.displayName}
-                  colors={colors}
-                />
-              </div>
+              {/* Follow Button and Newsletter Subscription - customizable */}
+              {(() => {
+                const buttonsOrder = user.buttonsOrder || ['follow', 'newsletter']
+                const buttonsVisibility = user.buttonsVisibility || { follow: true, newsletter: true }
+                const visibleButtons = buttonsOrder.filter(btn => buttonsVisibility[btn] !== false)
+
+                if (visibleButtons.length === 0) return null
+
+                return (
+                  <div css={css`margin-top: 16px; display: flex; flex-direction: column; gap: 10px;`}>
+                    {visibleButtons.map((btn) => {
+                      if (btn === 'follow') {
+                        return mounted ? (
+                          <FollowButton
+                            key="follow"
+                            targetUserId={user.id}
+                            targetUsername={user.name}
+                            targetDisplayName={user.displayName}
+                            currentUserId={currentUser?.uid}
+                            initialIsFollowing={isFollowing}
+                            colors={colors}
+                          />
+                        ) : null
+                      }
+                      if (btn === 'newsletter') {
+                        return (
+                          <SubscribeNewsletter
+                            key="newsletter"
+                            authorUsername={user.name}
+                            authorDisplayName={user.displayName}
+                            colors={colors}
+                          />
+                        )
+                      }
+                      return null
+                    })}
+                  </div>
+                )
+              })()}
 
               {/* Render sections based on sectionOrder */}
               {(user.sectionOrder || ['skills', 'writing', 'custom']).map((sectionType) => {
@@ -840,6 +861,16 @@ export async function getServerSideProps({ params, req }) {
     // Ensure statsStyle exists
     if (!user.statsStyle) {
       user.statsStyle = 'separator'
+    }
+
+    // Ensure buttonsVisibility exists
+    if (!user.buttonsVisibility) {
+      user.buttonsVisibility = { follow: true, newsletter: true }
+    }
+
+    // Ensure buttonsOrder exists
+    if (!user.buttonsOrder) {
+      user.buttonsOrder = ['follow', 'newsletter']
     }
 
     return {
