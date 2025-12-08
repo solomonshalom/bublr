@@ -205,7 +205,15 @@ export default async function handler(req, res) {
     if (!ownershipVerified && !dnsConfigured) {
       message += 'Please configure both your DNS records (CNAME/A) and TXT verification record.'
     } else if (!ownershipVerified) {
-      message += 'DNS records look good, but TXT ownership verification is pending. Please ensure your TXT record is set correctly at _vercel.' + domain
+      // Use the TXT domain from Vercel's API response - this is the authoritative source
+      // txtRequirements is guaranteed to have entries here (see ownershipVerified logic on line 138)
+      const txtDomain = txtRequirements[0]?.domain
+      if (txtDomain) {
+        message += `DNS records look good, but TXT ownership verification is pending. Please ensure your TXT record is set correctly at ${txtDomain}`
+      } else {
+        // Fallback: should never happen, but if Vercel returns malformed data, show generic message
+        message += 'DNS records look good, but TXT ownership verification is pending. Please check the verification requirements below.'
+      }
     } else if (!dnsConfigured) {
       message += 'TXT verification passed, but DNS records (CNAME/A) are not configured correctly.'
     }
