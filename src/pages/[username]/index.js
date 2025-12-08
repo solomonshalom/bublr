@@ -379,8 +379,9 @@ export default function Profile({ user }) {
               {/* Stats: Followers, Following, Subscribers - customizable */}
               {(() => {
                 const statsOrder = user.statsOrder || ['followers', 'following', 'subscribers']
-                const statsVisibility = user.statsVisibility || { followers: true, following: true, subscribers: true }
+                const statsVisibility = user.statsVisibility || { followers: false, following: false, subscribers: false }
                 const statsStyle = user.statsStyle || 'separator' // 'inline', 'stacked', 'separator'
+                const statsAlignment = user.statsAlignment || 'center' // 'left', 'center', 'right'
                 const visibleStats = statsOrder.filter(stat => statsVisibility[stat] !== false)
 
                 if (visibleStats.length === 0) return null
@@ -394,6 +395,12 @@ export default function Profile({ user }) {
                   }
                 }
 
+                const alignmentStyle = statsAlignment === 'center'
+                  ? 'justify-content: center;'
+                  : statsAlignment === 'right'
+                    ? 'justify-content: flex-end;'
+                    : 'justify-content: flex-start;'
+
                 // Stacked style (number on top, label below)
                 if (statsStyle === 'stacked') {
                   return (
@@ -405,6 +412,7 @@ export default function Profile({ user }) {
                         padding: 16px 0;
                         border-top: 1px solid ${colors.border};
                         border-bottom: 1px solid ${colors.border};
+                        ${alignmentStyle}
                       `}
                     >
                       {visibleStats.map((stat) => (
@@ -452,6 +460,7 @@ export default function Profile({ user }) {
                         padding: 16px 0;
                         border-top: 1px solid ${colors.border};
                         border-bottom: 1px solid ${colors.border};
+                        ${alignmentStyle}
                       `}
                     >
                       {visibleStats.map((stat, index) => (
@@ -503,6 +512,7 @@ export default function Profile({ user }) {
                       padding: 16px 0;
                       border-top: 1px solid ${colors.border};
                       border-bottom: 1px solid ${colors.border};
+                      ${alignmentStyle}
                     `}
                   >
                     {visibleStats.map((stat) => (
@@ -539,7 +549,7 @@ export default function Profile({ user }) {
               {/* Follow Button and Newsletter Subscription - customizable */}
               {(() => {
                 const buttonsOrder = user.buttonsOrder || ['follow', 'newsletter']
-                const buttonsVisibility = user.buttonsVisibility || { follow: true, newsletter: true }
+                const buttonsVisibility = user.buttonsVisibility || { follow: false, newsletter: true }
                 const visibleButtons = buttonsOrder.filter(btn => buttonsVisibility[btn] !== false)
 
                 if (visibleButtons.length === 0) return null
@@ -850,7 +860,7 @@ export async function getServerSideProps({ params, req }) {
 
     // Ensure statsVisibility exists
     if (!user.statsVisibility) {
-      user.statsVisibility = { followers: true, following: true, subscribers: true }
+      user.statsVisibility = { followers: false, following: false, subscribers: false }
     }
 
     // Ensure statsOrder exists
@@ -863,9 +873,14 @@ export async function getServerSideProps({ params, req }) {
       user.statsStyle = 'separator'
     }
 
+    // Ensure statsAlignment exists
+    if (!user.statsAlignment) {
+      user.statsAlignment = 'center'
+    }
+
     // Ensure buttonsVisibility exists
     if (!user.buttonsVisibility) {
-      user.buttonsVisibility = { follow: true, newsletter: true }
+      user.buttonsVisibility = { follow: false, newsletter: true }
     }
 
     // Ensure buttonsOrder exists

@@ -1485,10 +1485,11 @@ function Editor({ user }) {
     skillsSectionTitle: '',
     customSections: [],
     sectionOrder: ['skills', 'writing', 'custom'],
-    statsVisibility: { followers: true, following: true, subscribers: true },
+    statsVisibility: { followers: false, following: false, subscribers: false },
     statsOrder: ['followers', 'following', 'subscribers'],
     statsStyle: 'separator',
-    buttonsVisibility: { follow: true, newsletter: true },
+    statsAlignment: 'center',
+    buttonsVisibility: { follow: false, newsletter: true },
     buttonsOrder: ['follow', 'newsletter'],
   })
   const [usernameErr, setUsernameErr] = useState(null)
@@ -1511,10 +1512,11 @@ function Editor({ user }) {
       skillsSectionTitle: user.skillsSectionTitle || '',
       customSections: user.customSections || [],
       sectionOrder: user.sectionOrder || ['skills', 'writing', 'custom'],
-      statsVisibility: user.statsVisibility || { followers: true, following: true, subscribers: true },
+      statsVisibility: user.statsVisibility || { followers: false, following: false, subscribers: false },
       statsOrder: user.statsOrder || ['followers', 'following', 'subscribers'],
       statsStyle: user.statsStyle || 'separator',
-      buttonsVisibility: user.buttonsVisibility || { follow: true, newsletter: true },
+      statsAlignment: user.statsAlignment || 'center',
+      buttonsVisibility: user.buttonsVisibility || { follow: false, newsletter: true },
       buttonsOrder: user.buttonsOrder || ['follow', 'newsletter'],
     })
   }, [user])
@@ -1788,10 +1790,11 @@ function Editor({ user }) {
     const originalSkillsSectionTitle = user.skillsSectionTitle || ''
     const originalCustomSections = user.customSections || []
     const originalSectionOrder = user.sectionOrder || ['skills', 'writing', 'custom']
-    const originalStatsVisibility = user.statsVisibility || { followers: true, following: true, subscribers: true }
+    const originalStatsVisibility = user.statsVisibility || { followers: false, following: false, subscribers: false }
     const originalStatsOrder = user.statsOrder || ['followers', 'following', 'subscribers']
     const originalStatsStyle = user.statsStyle || 'separator'
-    const originalButtonsVisibility = user.buttonsVisibility || { follow: true, newsletter: true }
+    const originalStatsAlignment = user.statsAlignment || 'center'
+    const originalButtonsVisibility = user.buttonsVisibility || { follow: false, newsletter: true }
     const originalButtonsOrder = user.buttonsOrder || ['follow', 'newsletter']
 
     return (
@@ -1808,6 +1811,7 @@ function Editor({ user }) {
       JSON.stringify(originalStatsVisibility) !== JSON.stringify(clientUser.statsVisibility) ||
       JSON.stringify(originalStatsOrder) !== JSON.stringify(clientUser.statsOrder) ||
       originalStatsStyle !== clientUser.statsStyle ||
+      originalStatsAlignment !== clientUser.statsAlignment ||
       JSON.stringify(originalButtonsVisibility) !== JSON.stringify(clientUser.buttonsVisibility) ||
       JSON.stringify(originalButtonsOrder) !== JSON.stringify(clientUser.buttonsOrder)
     )
@@ -2398,6 +2402,44 @@ function Editor({ user }) {
                 `}>
                   {style.label}
                 </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats Alignment */}
+        <div css={css`margin-top: 1.25rem;`}>
+          <StyledLabel>Alignment</StyledLabel>
+          <div css={css`
+            display: flex;
+            gap: 0.5rem;
+          `}>
+            {[
+              { value: 'left', label: 'Left' },
+              { value: 'center', label: 'Center' },
+              { value: 'right', label: 'Right' },
+            ].map((align) => (
+              <button
+                key={align.value}
+                type="button"
+                onClick={() => setClientUser(prev => ({ ...prev, statsAlignment: align.value }))}
+                css={css`
+                  flex: 1;
+                  padding: 0.5rem 0.75rem;
+                  background: ${clientUser.statsAlignment === align.value ? 'var(--grey-4)' : 'var(--grey-1)'};
+                  color: ${clientUser.statsAlignment === align.value ? 'white' : 'var(--grey-4)'};
+                  border: 1px solid ${clientUser.statsAlignment === align.value ? 'var(--grey-4)' : 'var(--grey-2)'};
+                  border-radius: 0.5rem;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  font-size: 0.8rem;
+
+                  &:hover {
+                    border-color: var(--grey-3);
+                  }
+                `}
+              >
+                {align.label}
               </button>
             ))}
           </div>
