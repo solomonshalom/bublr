@@ -182,6 +182,9 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
             // Check if click was on the arrow element
             if (e.target.closest('.arrow')) {
               const googleAuthProvider = new firebase.auth.GoogleAuthProvider()
+              // Explicitly request email and profile scopes to ensure email is captured
+              googleAuthProvider.addScope('email')
+              googleAuthProvider.addScope('profile')
               auth.signInWithPopup(googleAuthProvider).then(async cred => {
                 let userExists = await userWithIDExists(cred.user.uid)
                 if (!userExists) {
