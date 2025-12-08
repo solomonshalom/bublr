@@ -528,6 +528,21 @@ async function createPost(title, content) {
   "message": "Post created but not published due to content moderation"
 }`}</CodeBlock>
 
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+
+              {/* Other Docs */}
+              <p css={css`font-weight: 500; margin-bottom: 8px;`}>
+                Other Documentation
+              </p>
+              <ul css={css`color: ${colors.muted}; margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
+                <li>
+                  <Link href="/docs/newsletter">
+                    <a css={css`border-bottom: 1px dotted ${colors.muted};`}>Newsletter Email Templates</a>
+                  </Link>
+                  {' — Customize the emails sent to your subscribers'}
+                </li>
+              </ul>
+
               {/* Footer */}
               <div css={css`font-size: 12px; margin-top: 64px;`}>
                 <p css={css`color: ${colors.muted}; a { color: inherit; }`}>
