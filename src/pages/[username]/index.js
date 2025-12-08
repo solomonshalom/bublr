@@ -11,6 +11,7 @@ import { auth, firestore } from '../../lib/firebase'
 import { getUserByName } from '../../lib/db'
 
 import meta from '../../components/meta'
+import { generateProfilePageSchema, generateOrganizationSchema } from '../../lib/seo-utils'
 import SubscribeNewsletter from '../../components/subscribe-newsletter'
 import FollowButton from '../../components/follow-button'
 
@@ -592,7 +593,7 @@ export default function Profile({ user }) {
                 if (sectionType === 'skills' && hasSkills) {
                   return (
                     <div key="skills">
-                      <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
                       <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                         {user.skillsSectionTitle || 'What I work with'}
                       </p>
@@ -630,7 +631,7 @@ export default function Profile({ user }) {
                 if (sectionType === 'writing' && user.posts.length > 0) {
                   return (
                     <div key="writing">
-                      <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
                       <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                         Writing
                       </p>
@@ -692,7 +693,7 @@ export default function Profile({ user }) {
                     <div key="custom">
                       {user.customSections.map((section, index) => (
                         <div key={index}>
-                          <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                          <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
                           <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                             {section.title}
                           </p>
@@ -764,24 +765,24 @@ export default function Profile({ user }) {
         </section>
       </div>
 
-      {/* Person structured data */}
+      {/* Organization schema - critical for E-E-A-T */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{
-        __html: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Person",
-          "name": user.displayName,
-          "url": `https://bublr.life/${user.name}`,
-          "image": user.photo,
-          "description": user.about,
-          "sameAs": [
-            user.socialLinks?.github ? `https://github.com/${user.socialLinks.github}` : null,
-            user.socialLinks?.twitter ? `https://twitter.com/${user.socialLinks.twitter}` : null,
-            user.socialLinks?.instagram ? `https://instagram.com/${user.socialLinks.instagram}` : null,
-            user.socialLinks?.linkedin ? `https://linkedin.com/in/${user.socialLinks.linkedin}` : null,
-            user.socialLinks?.youtube ? `https://youtube.com/@${user.socialLinks.youtube}` : null,
-            user.link ? (user.link.startsWith('http') ? user.link : `https://${user.link}`) : null,
-          ].filter(Boolean)
-        })
+        __html: JSON.stringify(generateOrganizationSchema())
+      }} />
+
+      {/* ProfilePage structured data with E-E-A-T signals */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify(generateProfilePageSchema({
+          name: user.displayName,
+          username: user.name,
+          photo: user.photo,
+          about: user.about,
+          socialLinks: user.socialLinks,
+          website: user.link,
+          postCount: user.posts?.length || 0,
+          followerCount: user.followers?.length || 0,
+          subscriberCount: user.subscribers?.length || 0
+        }))
       }} />
     </>
   )
