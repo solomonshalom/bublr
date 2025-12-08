@@ -5,6 +5,12 @@ const VERCEL_TOKEN = process.env.VERCEL_TOKEN
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID
 const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID
 
+// Helper to build Vercel API URLs with optional team ID
+const buildVercelUrl = (path) => {
+  const base = `https://api.vercel.com${path}`
+  return VERCEL_TEAM_ID ? `${base}${path.includes('?') ? '&' : '?'}teamId=${VERCEL_TEAM_ID}` : base
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -23,6 +29,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid domain format' })
     }
 
+    const normalizedDomain = domain.toLowerCase()
+
     // Check if user has subscription access
     const userDoc = await firestore.collection('users').doc(userId).get()
     if (!userDoc.exists) {
@@ -37,7 +45,7 @@ export default async function handler(req, res) {
     // Check if domain is already in use by another user
     const existingDomainQuery = await firestore
       .collection('users')
-      .where('customDomain.domain', '==', domain.toLowerCase())
+      .where('customDomain.domain', '==', normalizedDomain)
       .limit(1)
       .get()
 
@@ -46,39 +54,81 @@ export default async function handler(req, res) {
     }
 
     // Add domain to Vercel project (if configured)
-    let vercelResponse = null
-    let verification = []
+    let verificationRequirements = []
     let isVerified = false
 
     if (VERCEL_TOKEN && VERCEL_PROJECT_ID) {
-      try {
-        const url = VERCEL_TEAM_ID
-          ? `https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/domains?teamId=${VERCEL_TEAM_ID}`
-          : `https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/domains`
+      const headers = {
+        Authorization: `Bearer ${VERCEL_TOKEN}`,
+        'Content-Type': 'application/json',
+      }
 
-        const response = await fetch(url, {
+      try {
+        // Step 1: Add domain to Vercel project
+        const addUrl = buildVercelUrl(`/v10/projects/${VERCEL_PROJECT_ID}/domains`)
+        const addResponse = await fetch(addUrl, {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${VERCEL_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name: domain.toLowerCase() }),
+          headers,
+          body: JSON.stringify({ name: normalizedDomain }),
         })
 
-        vercelResponse = await response.json()
+        const addData = await addResponse.json()
 
-        if (!response.ok && response.status !== 409) {
+        if (!addResponse.ok && addResponse.status !== 409) {
           // 409 means domain already exists on project, which is fine
-          console.error('Vercel API error:', vercelResponse)
+          console.error('Vercel API error:', addData)
           return res.status(500).json({
             error: 'Failed to add domain to Vercel',
-            details: vercelResponse.error?.message || 'Unknown error',
+            details: addData.error?.message || 'Unknown error',
           })
         }
 
-        // Get verification requirements from response
-        verification = vercelResponse?.verification || []
-        isVerified = vercelResponse?.verified || false
+        // Step 2: Get domain status (includes verification requirements)
+        const domainUrl = buildVercelUrl(`/v9/projects/${VERCEL_PROJECT_ID}/domains/${normalizedDomain}`)
+        const domainResponse = await fetch(domainUrl, { headers })
+        const domainData = await domainResponse.json()
+
+        // Step 3: Check DNS configuration status
+        const configUrl = buildVercelUrl(`/v6/domains/${normalizedDomain}/config`)
+        const configResponse = await fetch(configUrl, { headers })
+        const configData = await configResponse.json()
+
+        // Determine if domain is fully verified
+        const ownershipVerified = domainData.verified === true
+        const dnsConfigured = configData.misconfigured === false
+        isVerified = ownershipVerified && dnsConfigured
+
+        // Build verification requirements
+        // Add TXT verification requirements if ownership not verified
+        if (!ownershipVerified && domainData.verification?.length > 0) {
+          verificationRequirements = [...domainData.verification]
+        }
+
+        // Add DNS config requirements if not properly configured
+        if (!dnsConfigured) {
+          const isSubdomain = normalizedDomain.split('.').length > 2
+
+          if (isSubdomain) {
+            const subdomain = normalizedDomain.split('.')[0]
+            const hasCnameReq = verificationRequirements.some(v => v.type === 'CNAME')
+            if (!hasCnameReq) {
+              verificationRequirements.push({
+                type: 'CNAME',
+                domain: subdomain,
+                value: configData.cnames?.[0] || 'cname.vercel-dns.com',
+              })
+            }
+          } else {
+            const hasAReq = verificationRequirements.some(v => v.type === 'A')
+            if (!hasAReq) {
+              verificationRequirements.push({
+                type: 'A',
+                domain: '@',
+                value: configData.aValues?.[0] || '76.76.21.21',
+              })
+            }
+          }
+        }
       } catch (vercelError) {
         console.error('Vercel API error:', vercelError)
         return res.status(500).json({ error: 'Failed to communicate with Vercel API' })
@@ -90,9 +140,9 @@ export default async function handler(req, res) {
     // Save domain configuration to user document
     await firestore.collection('users').doc(userId).update({
       customDomain: {
-        domain: domain.toLowerCase(),
+        domain: normalizedDomain,
         status: isVerified ? 'verified' : 'pending',
-        verification: verification,
+        verification: verificationRequirements,
         addedAt: new Date().toISOString(),
         verifiedAt: isVerified ? new Date().toISOString() : null,
       },
@@ -100,9 +150,9 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      domain: domain.toLowerCase(),
+      domain: normalizedDomain,
       status: isVerified ? 'verified' : 'pending',
-      verification: verification,
+      verification: verificationRequirements,
       message: isVerified
         ? 'Domain has been verified and is ready to use!'
         : 'Domain added. Please configure your DNS records to verify.',

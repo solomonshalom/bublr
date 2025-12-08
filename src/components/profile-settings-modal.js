@@ -314,7 +314,12 @@ function CustomDomainSection({ userId, userName }) {
         const statusData = await statusRes.json()
         setSubscriptionStatus(statusData)
       } else {
-        setDomainError('Domain not yet verified. Please check your DNS settings.')
+        // Use the detailed message from the API
+        setDomainError(data.message || 'Domain not yet verified. Please check your DNS settings.')
+        // Refresh status to get updated verification requirements
+        const statusRes = await fetch(`/api/subscription/status?userId=${userId}`)
+        const statusData = await statusRes.json()
+        setSubscriptionStatus(statusData)
       }
     } catch (err) {
       setDomainError('Failed to verify domain')
