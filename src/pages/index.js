@@ -27,7 +27,7 @@ const organizationSchema = {
   },
   'description': 'An open-source, ultra-minimal community for writers to share their thoughts, stories, and ideas without ads or paywalls.',
   'foundingDate': '2024',
-  'sameAs': ['https://github.com/bublr'],
+  'sameAs': ['https://github.com/solomonshalom/bublr'],
   'contactPoint': {
     '@type': 'ContactPoint',
     'contactType': 'customer support',

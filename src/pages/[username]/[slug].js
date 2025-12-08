@@ -37,7 +37,7 @@ const organizationSchema = {
   },
   'description': 'An open-source, ultra-minimal community for writers to share their thoughts, stories, and ideas without ads or paywalls.',
   'foundingDate': '2024',
-  'sameAs': ['https://github.com/bublr'],
+  'sameAs': ['https://github.com/solomonshalom/bublr'],
   'contactPoint': {
     '@type': 'ContactPoint',
     'contactType': 'customer support',
@@ -97,6 +97,131 @@ function ViewCounter({ postId, initialViews }) {
       </svg>
       {views}
     </span>
+  )
+}
+
+function LikeButton({ postId, postTitle, postSlug, authorId, authorUsername, userId, userInfo, initialLikes, initialLiked }) {
+  const [likes, setLikes] = useState(initialLikes || 0)
+  const [liked, setLiked] = useState(initialLiked || false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Fetch initial like state on mount if user is logged in
+  useEffect(() => {
+    if (userId) {
+      fetch(`/api/likes/${postId}?userId=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          setLikes(data.likes || 0)
+          setLiked(data.liked || false)
+        })
+        .catch(console.error)
+    }
+  }, [postId, userId])
+
+  const handleLike = async () => {
+    if (!userId || isLoading) return
+
+    setIsLoading(true)
+    const wasLiked = liked
+
+    // Optimistic update
+    setLiked(!liked)
+    setLikes(prev => liked ? prev - 1 : prev + 1)
+
+    try {
+      const response = await fetch(`/api/likes/${postId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        // Revert on error
+        setLiked(wasLiked)
+        setLikes(prev => wasLiked ? prev + 1 : prev - 1)
+        throw new Error(data.error || 'Failed to update like')
+      }
+
+      setLikes(data.likes)
+      setLiked(data.liked)
+
+      // Send notification if user just liked (not unliked) and it's not their own post
+      if (data.liked && authorId && authorId !== userId && userInfo) {
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipientId: authorId,
+            type: 'like',
+            actorId: userId,
+            actorName: userInfo.displayName || 'Someone',
+            actorUsername: userInfo.name,
+            actorPhoto: userInfo.photo || '',
+            postId: postId,
+            postTitle: postTitle,
+            postSlug: postSlug,
+            postAuthorName: authorUsername,
+          }),
+        }).catch(console.error)
+      }
+    } catch (err) {
+      console.error('Like error:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const likeColor = '#E53E3E'
+
+  return (
+    <button
+      onClick={handleLike}
+      disabled={!userId || isLoading}
+      css={css`
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: ${liked ? likeColor : 'var(--grey-3)'};
+        font-size: 0.85rem;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: ${userId ? 'pointer' : 'default'};
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          color: ${liked ? likeColor : 'var(--grey-4)'};
+        }
+
+        &:disabled {
+          opacity: ${userId ? 0.6 : 1};
+        }
+      `}
+      title={userId ? (liked ? 'Unlike' : 'Like') : 'Sign in to like'}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="1.1rem"
+        height="1.1rem"
+        viewBox="0 0 24 24"
+        fill={liked ? likeColor : 'none'}
+        stroke={liked ? likeColor : 'currentColor'}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        css={css`
+          transition: all 0.2s ease;
+          ${liked && `
+            transform: scale(1.1);
+          `}
+        `}
+      >
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+      </svg>
+      {likes}
+    </button>
   )
 }
 
@@ -185,6 +310,14 @@ function AddToReadingListButton({ uid, pid }) {
 
 export default function Post({ post, seo }) {
   const [user, _loading, _error] = useAuthState(auth)
+  const [userInfo, setUserInfo] = useState(null)
+
+  // Fetch current user info for notifications
+  useEffect(() => {
+    if (user) {
+      getUserByID(user.uid).then(setUserInfo).catch(console.error)
+    }
+  }, [user])
 
   const formattedDate = new Date(post.lastEdited).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -335,7 +468,7 @@ export default function Post({ post, seo }) {
         />
       </article>
 
-      {/* Footer with views on left, theme toggle and bookmark on right */}
+      {/* Footer with views and likes on left, theme toggle and bookmark on right */}
       <footer
         css={css`
           display: flex;
@@ -346,7 +479,20 @@ export default function Post({ post, seo }) {
           border-top: 1px solid var(--grey-2);
         `}
       >
-        <ViewCounter postId={post.id} initialViews={post.views} />
+        <div css={css`display: flex; align-items: center; gap: 1rem;`}>
+          <ViewCounter postId={post.id} initialViews={post.views} />
+          <LikeButton
+            postId={post.id}
+            postTitle={post.title}
+            postSlug={post.slug}
+            authorId={post.authorId}
+            authorUsername={post.author.name}
+            userId={user?.uid}
+            userInfo={userInfo}
+            initialLikes={post.likes || 0}
+            initialLiked={false}
+          />
+        </div>
         <div css={css`display: flex; align-items: center; gap: 0.75rem;`}>
           <ThemeToggle />
           <TranslateModal title={post.title} content={post.content} />
@@ -372,8 +518,11 @@ export async function getStaticProps({ params }) {
     if (!post.published) {
       return { notFound: true }
     }
-    const userDoc = await firestore.collection('users').doc(post.author).get()
+    // Preserve author ID before overwriting with full author data
+    const authorId = post.author
+    const userDoc = await firestore.collection('users').doc(authorId).get()
     post.author = userDoc.data()
+    post.authorId = authorId
     const lastEditedTime = post.lastEdited.toDate().getTime()
     post.lastEdited = lastEditedTime
 

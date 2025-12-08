@@ -201,7 +201,22 @@ export default function About() {
                 Open Source
               </p>
               <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
-                Bublr is open source. We believe in transparency and community. Check out the code, contribute, or fork it to build your own.
+                Bublr is open source. We believe in transparency and community.{' '}
+                <a
+                  href="https://github.com/solomonshalom/bublr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  css={css`
+                    text-decoration: underline;
+                    text-underline-offset: 2px;
+                    &:hover {
+                      opacity: 0.8;
+                    }
+                  `}
+                >
+                  Check out the code
+                </a>
+                , contribute, or fork it to build your own.
               </p>
 
               {/* Footer */}

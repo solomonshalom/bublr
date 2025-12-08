@@ -12,12 +12,14 @@ export const NOTIFICATION_TYPES = {
   SUBSCRIBER: 'subscriber',
   FOLLOW: 'follow',
   NEW_POST: 'new_post',
+  LIKE: 'like',
 }
 
 export const NOTIFICATION_COLORS = {
   subscriber: '#2ECC71', // Green - new subscriber
   follow: '#4D96FF', // Blue - new follower
   new_post: '#cf52f2', // Purple - new post from followed user
+  like: '#E53E3E', // Red - post like
 }
 
 export default async function handler(req, res) {

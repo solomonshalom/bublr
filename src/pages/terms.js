@@ -203,7 +203,22 @@ export default function Terms() {
                 Open Source
               </p>
               <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
-                Bublr is open-source software. The source code is available on GitHub. Contributions are welcome under the project&apos;s license terms.
+                Bublr is open-source software. The source code is available on{' '}
+                <a
+                  href="https://github.com/solomonshalom/bublr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  css={css`
+                    text-decoration: underline;
+                    text-underline-offset: 2px;
+                    &:hover {
+                      opacity: 0.8;
+                    }
+                  `}
+                >
+                  GitHub
+                </a>
+                . Contributions are welcome under the project&apos;s license terms.
               </p>
 
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />

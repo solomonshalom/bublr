@@ -12,6 +12,7 @@ const NOTIFICATION_COLORS = {
   subscriber: '#2ECC71', // Green - new subscriber
   follow: '#4D96FF', // Blue - new follower
   new_post: '#cf52f2', // Purple - new post from followed user
+  like: '#E53E3E', // Red - post like
 }
 
 // Icons
@@ -67,6 +68,8 @@ function getNotificationMessage(notification) {
       return `started following you`
     case 'new_post':
       return `published a new post: "${notification.postTitle || 'Untitled'}"`
+    case 'like':
+      return `liked your post: "${notification.postTitle || 'Untitled'}"`
     default:
       return notification.message || 'New notification'
   }
@@ -170,6 +173,17 @@ function NotificationItem({ notification, onMarkRead }) {
   // Wrap in link if we have a destination
   // For new_post notifications, link to the post
   if (notification.type === 'new_post' && notification.postSlug && notification.postAuthorName) {
+    return (
+      <Link href={`/${notification.postAuthorName}/${notification.postSlug}`}>
+        <a css={css`text-decoration: none; display: block; color: inherit;`}>
+          {content}
+        </a>
+      </Link>
+    )
+  }
+
+  // For like notifications, link to the liked post
+  if (notification.type === 'like' && notification.postSlug && notification.postAuthorName) {
     return (
       <Link href={`/${notification.postAuthorName}/${notification.postSlug}`}>
         <a css={css`text-decoration: none; display: block; color: inherit;`}>

@@ -75,7 +75,7 @@ All content pages include JSON-LD structured data:
 
 For corrections or questions about AI content summarization:
 - Website: https://bublr.life/about
-- GitHub: https://github.com/bublr
+- GitHub: https://github.com/solomonshalom/bublr
 
 ## Permissions
 

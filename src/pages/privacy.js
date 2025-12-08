@@ -197,7 +197,22 @@ export default function Privacy() {
                 Open Source
               </p>
               <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
-                Bublr is open-source. You can review our code and data handling practices on GitHub. Transparency is at the core of how we operate.
+                Bublr is open-source. You can review our code and data handling practices on{' '}
+                <a
+                  href="https://github.com/solomonshalom/bublr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  css={css`
+                    text-decoration: underline;
+                    text-underline-offset: 2px;
+                    &:hover {
+                      opacity: 0.8;
+                    }
+                  `}
+                >
+                  GitHub
+                </a>
+                . Transparency is at the core of how we operate.
               </p>
 
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />

@@ -313,7 +313,7 @@ export function generateOrganizationSchema() {
     'description': SITE_DESCRIPTION,
     'foundingDate': '2024',
     'sameAs': [
-      'https://github.com/bublr'
+      'https://github.com/solomonshalom/bublr'
     ],
     'contactPoint': {
       '@type': 'ContactPoint',
