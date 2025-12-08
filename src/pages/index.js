@@ -4,10 +4,12 @@ import { css } from '@emotion/react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
 import firebase, { auth } from '../lib/firebase'
-import { setUser, userWithIDExists } from '../lib/db'
+import { setUser, userWithIDExists, getUserByName } from '../lib/db'
+import { generateProfilePageSchema, generateOrganizationSchema } from '../lib/seo-utils'
 
 import meta from '../components/meta'
 import Spinner from '../components/spinner'
+import Profile from './[username]/index'
 
 // Static schema objects for homepage (defined at module level for SSR compatibility)
 const SITE_URL = 'https://bublr.life'
@@ -85,8 +87,13 @@ function generateDiceBearAvatar(uid) {
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${uid}`
 }
 
-export default function Home() {
+export default function Home({ customDomainUser, organizationSchema: orgSchema, profilePageSchema }) {
   const [user, loading, error] = useAuthState(auth)
+
+  // If this is a custom domain request, render the Profile component directly
+  if (customDomainUser) {
+    return <Profile user={customDomainUser} organizationSchema={orgSchema} profilePageSchema={profilePageSchema} />
+  }
 
   if (error) {
     return (
@@ -209,7 +216,12 @@ export default function Home() {
   )
 }
 
-Home.getLayout = function HomeLayout(page) {
+Home.getLayout = function HomeLayout(page, pageProps) {
+  // For custom domain requests, don't wrap in Container (Profile has its own layout)
+  if (pageProps?.customDomainUser) {
+    return page
+  }
+
   return (
     <Container maxWidth="420px">
       <Head>
@@ -242,7 +254,7 @@ Home.getLayout = function HomeLayout(page) {
   )
 }
 
-// Check for custom domain and redirect to user's profile
+// Check for custom domain and render profile directly (no redirect)
 export async function getServerSideProps({ req }) {
   const host = req.headers.host || ''
 
@@ -262,19 +274,72 @@ export async function getServerSideProps({ req }) {
     return { props: {} }
   }
 
-  // This might be a custom domain - look up the user
+  // This might be a custom domain - look up the user and render profile directly
   try {
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
     const res = await fetch(`${baseUrl}/api/domain/lookup?domain=${encodeURIComponent(host)}`)
 
     if (res.ok) {
       const data = await res.json()
-      // Redirect to user's profile page (internally)
+
+      // Fetch full user data (same logic as [username]/index.js getServerSideProps)
+      const user = await getUserByName(data.userName)
+
+      // Mark as custom domain access
+      user.isCustomDomain = true
+
+      // Process posts efficiently
+      const processedPosts = user.posts
+        .filter(p => p.published)
+        .map(p => ({
+          ...p,
+          lastEdited: p.lastEdited?.toDate?.() ? p.lastEdited.toDate().getTime() : p.lastEdited?.toMillis?.() || Date.now(),
+        }))
+        .sort((a, b) => b.lastEdited - a.lastEdited)
+        .slice(0, 20)
+
+      user.posts = processedPosts
+
+      // Ensure all required fields exist (same as [username]/index.js)
+      if (!user.socialLinks) user.socialLinks = {}
+      if (!user.skills) user.skills = []
+      if (!user.customSections) user.customSections = []
+      if (!user.skillsSectionTitle) user.skillsSectionTitle = ''
+      if (!user.sectionOrder) user.sectionOrder = ['skills', 'writing', 'custom']
+      if (!user.customBranding) user.customBranding = data.customBranding || null
+      if (!user.followers) user.followers = []
+      if (!user.following) user.following = []
+      if (!user.subscribers) user.subscribers = []
+      if (!user.statsVisibility) user.statsVisibility = { followers: false, following: false, subscribers: false }
+      if (!user.statsOrder) user.statsOrder = ['followers', 'following', 'subscribers']
+      if (!user.statsStyle) user.statsStyle = 'separator'
+      if (!user.statsAlignment) user.statsAlignment = 'center'
+      if (!user.buttonsVisibility) user.buttonsVisibility = { follow: false, newsletter: true }
+      if (!user.buttonsOrder) user.buttonsOrder = ['follow', 'newsletter']
+      if (!user.dividersVisibility) user.dividersVisibility = { skills: true, writing: true, custom: true }
+      if (!user.banner) user.banner = null
+      if (!user.bannerPosition) user.bannerPosition = 'center'
+      if (!user.avatarFrame) user.avatarFrame = { type: 'none', color: null, gradientColors: null, customUrl: null, size: 'medium' }
+
+      // Generate schemas for SEO
+      const organizationSchema = generateOrganizationSchema()
+      const profilePageSchema = generateProfilePageSchema({
+        name: user.displayName,
+        username: user.name,
+        photo: user.photo,
+        about: user.about,
+        socialLinks: user.socialLinks,
+        website: user.link,
+        postCount: user.posts?.length || 0,
+        followerCount: user.followers?.length || 0,
+        subscriberCount: user.subscribers?.length || 0
+      })
+
       return {
-        redirect: {
-          destination: `/${data.userName}`,
-          permanent: false,
+        props: {
+          customDomainUser: user,
+          organizationSchema,
+          profilePageSchema,
         },
       }
     }

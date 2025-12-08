@@ -841,7 +841,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
                       </p>
                       <div css={css`display: flex; flex-direction: column; gap: 20px; margin-top: 16px;`}>
                         {user.posts.map((post) => (
-                          <Link key={post.id} href={`/${user.name}/${post.slug}`}>
+                          <Link key={post.id} href={user.isCustomDomain ? `/${post.slug}` : `/${user.name}/${post.slug}`}>
                             <a
                               css={css`
                                 cursor: pointer;
@@ -990,12 +990,49 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
 export async function getServerSideProps({ params, req }) {
   const { username } = params
   const host = req.headers.host || ''
+  const hostWithoutPort = host.split(':')[0]
+
+  // Check if this is a custom domain request
+  // List of main domains that should NOT be treated as custom domains
+  const mainDomains = ['bublr.life', 'www.bublr.life', 'localhost']
+  const isMainDomain = mainDomains.includes(hostWithoutPort)
+  const isVercelPreview = host.includes('.vercel.app')
+
+  // If it's a custom domain, the "username" param might actually be a post slug
+  if (!isMainDomain && !isVercelPreview) {
+    try {
+      // Look up which user owns this custom domain
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
+      const lookupRes = await fetch(`${baseUrl}/api/domain/lookup?domain=${encodeURIComponent(host)}`)
+
+      if (lookupRes.ok) {
+        const domainData = await lookupRes.json()
+
+        // Check if the "username" param matches a post slug for this user
+        const domainUser = await getUserByName(domainData.userName)
+        const matchingPost = domainUser.posts.find(p => p.slug === username && p.published)
+
+        if (matchingPost) {
+          // This is a post request on a custom domain - redirect to the post page internally
+          // We use redirect here because the post page has its own getStaticProps
+          return {
+            redirect: {
+              destination: `/${domainData.userName}/${username}`,
+              permanent: false,
+            },
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Custom domain post lookup error:', error)
+    }
+  }
 
   try {
     const user = await getUserByName(username)
 
     // Check if this is being accessed via a custom domain
-    const isCustomDomain = user.customDomain?.domain === host.split(':')[0] &&
+    const isCustomDomain = user.customDomain?.domain === hostWithoutPort &&
                            user.customDomain?.status === 'verified' &&
                            user.hasCustomDomainAccess
 

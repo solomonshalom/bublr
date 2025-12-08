@@ -7,7 +7,7 @@ import { useRouter } from 'next/router'
 import { I18nProvider } from '../lib/i18n'
 
 const App = ({ Component, pageProps }) => {
-  const getLayout = Component.getLayout || (page => page)
+  const getLayout = Component.getLayout || ((page) => page)
   const router = useRouter()
 
   return (
@@ -119,7 +119,7 @@ const App = ({ Component, pageProps }) => {
       <IdProvider>
         <I18nProvider>
           <ThemeProvider defaultTheme="system">
-            {getLayout(<Component {...pageProps} />)}
+            {getLayout(<Component {...pageProps} />, pageProps)}
           </ThemeProvider>
         </I18nProvider>
       </IdProvider>
