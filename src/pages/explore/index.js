@@ -21,6 +21,19 @@ import ThemeToggle from '../../components/theme-toggle'
 import NotificationsPanel, { NotificationsTrigger } from '../../components/notifications-panel'
 import { truncate } from '../../lib/utils'
 import { getPostByID } from '../../lib/db'
+import meta from '../../components/meta'
+
+// Static schema for explore page (defined at module level for SSR compatibility)
+const collectionPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  'name': 'Explore Writing',
+  'description': 'Discover inspiring stories, articles, and blog posts from writers around the world.',
+  'url': 'https://bublr.life/explore',
+  'isPartOf': { '@id': 'https://bublr.life/#website' },
+  'about': { '@type': 'Thing', 'name': 'Writing and Blog Posts' },
+  'inLanguage': 'en-US'
+}
 
 export default function Explore() {
   const router = useRouter()
@@ -396,10 +409,20 @@ Explore.getLayout = function Explore(page) {
       `}
     >
       <Head>
-        <title>Explore / Bublr</title>
-        <meta name="description" content="An ultra-minimal communty for anyone, to write anything." />
-        <meta name="keywords" content="explore, writing community, stories, articles, blog posts, minimal writing platform" />
+        {meta({
+          title: 'Explore Writing | Bublr',
+          description: 'Discover inspiring stories, articles, and blog posts from writers around the world. An ultra-minimal community for anyone to write anything.',
+          url: '/explore',
+          image: '/images/socials.png',
+          keywords: 'explore, writing community, stories, articles, blog posts, minimal writing platform, discover writers, blog discovery'
+        })}
         <link rel="canonical" href="https://bublr.life/explore" />
+
+        {/* CollectionPage schema for content aggregation */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify(collectionPageSchema)
+        }} />
+
         <script defer src="https://cloud.umami.is/script.js" data-website-id="ec0fac0a-1f2b-44de-90d2-1e224c8d8492"></script>
         <meta name="mobile-web-app-capable" content="yes" />
       </Head>

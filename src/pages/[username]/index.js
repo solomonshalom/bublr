@@ -133,7 +133,7 @@ const globalStyles = css`
   @import url('https://fonts.bunny.net/css?family=inter:400,500');
 `
 
-export default function Profile({ user }) {
+export default function Profile({ user, organizationSchema, profilePageSchema }) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [currentUser] = useAuthState(auth)
@@ -767,22 +767,12 @@ export default function Profile({ user }) {
 
       {/* Organization schema - critical for E-E-A-T */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{
-        __html: JSON.stringify(generateOrganizationSchema())
+        __html: JSON.stringify(organizationSchema)
       }} />
 
       {/* ProfilePage structured data with E-E-A-T signals */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{
-        __html: JSON.stringify(generateProfilePageSchema({
-          name: user.displayName,
-          username: user.name,
-          photo: user.photo,
-          about: user.about,
-          socialLinks: user.socialLinks,
-          website: user.link,
-          postCount: user.posts?.length || 0,
-          followerCount: user.followers?.length || 0,
-          subscriberCount: user.subscribers?.length || 0
-        }))
+        __html: JSON.stringify(profilePageSchema)
       }} />
     </>
   )
@@ -889,8 +879,22 @@ export async function getServerSideProps({ params, req }) {
       user.buttonsOrder = ['follow', 'newsletter']
     }
 
+    // Generate schemas server-side for SSR compatibility
+    const organizationSchema = generateOrganizationSchema()
+    const profilePageSchema = generateProfilePageSchema({
+      name: user.displayName,
+      username: user.name,
+      photo: user.photo,
+      about: user.about,
+      socialLinks: user.socialLinks,
+      website: user.link,
+      postCount: user.posts?.length || 0,
+      followerCount: user.followers?.length || 0,
+      subscriberCount: user.subscribers?.length || 0
+    })
+
     return {
-      props: { user },
+      props: { user, organizationSchema, profilePageSchema },
     }
   } catch (err) {
     console.log(err)

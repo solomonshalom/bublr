@@ -16,9 +16,34 @@ import {
   generateMetaDescription,
   generateKeywords,
   cleanTitle,
-  generateBlogPostingSchema,
-  generateBreadcrumbSchema
+  generateEnhancedBlogPostingSchema,
+  generateBreadcrumbSchema,
+  extractFAQsFromContent,
+  generateFAQSchema
 } from '../../lib/seo-utils'
+
+// Static Organization schema for posts (defined at module level for SSR compatibility)
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': 'https://bublr.life/#organization',
+  'name': 'Bublr',
+  'url': 'https://bublr.life',
+  'logo': {
+    '@type': 'ImageObject',
+    'url': 'https://bublr.life/images/logo.png',
+    'width': 512,
+    'height': 512
+  },
+  'description': 'An open-source, ultra-minimal community for writers to share their thoughts, stories, and ideas without ads or paywalls.',
+  'foundingDate': '2024',
+  'sameAs': ['https://github.com/bublr'],
+  'contactPoint': {
+    '@type': 'ContactPoint',
+    'contactType': 'customer support',
+    'url': 'https://bublr.life/about'
+  }
+}
 
 import meta from '../../components/meta'
 import Container from '../../components/container'
@@ -178,10 +203,16 @@ export default function Post({ post, seo }) {
           type: 'article',
           keywords: seo.keywords,
           author: seo.authorUrl,
+          authorName: post.author.displayName,
           publishedTime: seo.publishedTime,
           modifiedTime: seo.modifiedTime,
           readingTime: seo.readingTime,
-          section: 'Blog'
+          wordCount: seo.wordCount,
+          section: 'Blog',
+          // GEO-specific fields for AI citation
+          citationTitle: seo.cleanTitle,
+          citationAuthor: post.author.displayName,
+          citationDate: seo.publishedTime
         })}
 
         {/* Canonical URL */}
@@ -202,7 +233,13 @@ export default function Post({ post, seo }) {
           rel="stylesheet"
         />
 
-        {/* BlogPosting structured data for rich snippets */}
+        {/* Organization schema - critical for E-E-A-T */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+
+        {/* BlogPosting structured data with Speakable for voice search and AI */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(seo.blogPostingSchema) }}
@@ -213,6 +250,14 @@ export default function Post({ post, seo }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(seo.breadcrumbSchema) }}
         />
+
+        {/* FAQ schema if content contains Q&A patterns */}
+        {seo.faqSchema && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(seo.faqSchema) }}
+          />
+        )}
       </Head>
 
       {/* Semantic article structure for SEO */}
@@ -343,8 +388,8 @@ export async function getStaticProps({ params }) {
     const firstImage = extractFirstImage(post.content)
     const ogImage = firstImage || post.author.photo
 
-    // Generate structured data schemas
-    const blogPostingSchema = generateBlogPostingSchema({
+    // Generate structured data schemas with GEO optimizations
+    const blogPostingSchema = generateEnhancedBlogPostingSchema({
       title: postTitle,
       description,
       content: post.content,
@@ -356,7 +401,8 @@ export async function getStaticProps({ params }) {
       datePublished: publishedTime,
       dateModified: publishedTime,
       wordCount,
-      readingTime
+      readingTime,
+      keywords
     })
 
     const breadcrumbSchema = generateBreadcrumbSchema([
@@ -364,6 +410,10 @@ export async function getStaticProps({ params }) {
       { name: post.author.displayName, url: authorUrl },
       { name: postTitle, url: postUrl }
     ])
+
+    // Extract FAQs from content for FAQ schema (GEO optimization)
+    const faqs = extractFAQsFromContent(post.content)
+    const faqSchema = faqs.length > 0 ? generateFAQSchema(faqs) : null
 
     const seo = {
       title: `${postTitle} - ${post.author.displayName} | Bublr`,
@@ -379,7 +429,8 @@ export async function getStaticProps({ params }) {
       readingTime,
       wordCount,
       blogPostingSchema,
-      breadcrumbSchema
+      breadcrumbSchema,
+      faqSchema
     }
 
     return {

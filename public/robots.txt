@@ -1,13 +1,204 @@
-# Allow all web crawlers
-User-agent: *
+# Bublr Robots.txt - SEO & GEO Optimized
+# Last updated: December 2025
+
+# ============================================
+# STANDARD SEARCH ENGINE CRAWLERS
+# ============================================
+
+# Google
+User-agent: Googlebot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Crawl-delay: 1
+
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.webp$
+Allow: /*.svg$
+
+User-agent: Googlebot-News
 Allow: /
 
-# Block dashboard and authentication pages from crawlers
+# Bing
+User-agent: Bingbot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Crawl-delay: 1
+
+User-agent: msnbot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Crawl-delay: 2
+
+# Yahoo
+User-agent: Slurp
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Crawl-delay: 1
+
+# DuckDuckGo
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Crawl-delay: 1
+
+# Yandex
+User-agent: Yandex
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Crawl-delay: 2
+
+# Baidu
+User-agent: Baiduspider
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Crawl-delay: 2
+
+# ============================================
+# AI/LLM CRAWLERS (GEO Optimization)
+# ============================================
+# These crawlers power AI search engines and LLMs.
+# We explicitly allow them to index and summarize content.
+
+# OpenAI GPTBot (ChatGPT Search, Bing Chat)
+User-agent: GPTBot
+Allow: /
+Allow: /*/
 Disallow: /dashboard/
 Disallow: /api/
 
-# Crawl delay to be respectful
-Crawl-delay: 1
+# Google Gemini / Bard
+User-agent: Google-Extended
+Allow: /
+Allow: /*/
+Disallow: /dashboard/
+Disallow: /api/
 
-# Sitemap location
+# Anthropic Claude
+User-agent: anthropic-ai
+Allow: /
+Allow: /*/
+Disallow: /dashboard/
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /*/
+Disallow: /dashboard/
+Disallow: /api/
+
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+Allow: /*/
+Disallow: /dashboard/
+Disallow: /api/
+
+# Common Crawl (used by many AI systems)
+User-agent: CCBot
+Allow: /
+Allow: /*/
+Disallow: /dashboard/
+Disallow: /api/
+
+# Meta AI
+User-agent: FacebookBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+User-agent: Meta-ExternalAgent
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+User-agent: meta-externalfetcher
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+# Cohere AI
+User-agent: cohere-ai
+Allow: /
+Allow: /*/
+Disallow: /dashboard/
+Disallow: /api/
+
+# Bytespider (TikTok/ByteDance AI)
+User-agent: Bytespider
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+# Apple (Siri, Spotlight)
+User-agent: Applebot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+# Amazon Alexa
+User-agent: Amazonbot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+# You.com AI
+User-agent: YouBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+# ============================================
+# SOCIAL MEDIA CRAWLERS
+# ============================================
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Pinterest
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+# ============================================
+# DEFAULT RULE FOR ALL OTHER BOTS
+# ============================================
+
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+Crawl-delay: 2
+
+# ============================================
+# SITEMAP LOCATIONS
+# ============================================
+
 Sitemap: https://bublr.life/sitemap.xml
+
+# ============================================
+# ADDITIONAL INFORMATION
+# ============================================
+
+# LLMs.txt file for AI-specific instructions
+# See: https://bublr.life/llms.txt
+
+# For questions about this robots.txt, contact:
+# https://bublr.life/about

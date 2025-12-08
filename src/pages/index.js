@@ -8,6 +8,62 @@ import { setUser, userWithIDExists } from '../lib/db'
 
 import meta from '../components/meta'
 import Spinner from '../components/spinner'
+
+// Static schema objects for homepage (defined at module level for SSR compatibility)
+const SITE_URL = 'https://bublr.life'
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': `${SITE_URL}/#organization`,
+  'name': 'Bublr',
+  'url': SITE_URL,
+  'logo': {
+    '@type': 'ImageObject',
+    'url': `${SITE_URL}/images/logo.png`,
+    'width': 512,
+    'height': 512
+  },
+  'description': 'An open-source, ultra-minimal community for writers to share their thoughts, stories, and ideas without ads or paywalls.',
+  'foundingDate': '2024',
+  'sameAs': ['https://github.com/bublr'],
+  'contactPoint': {
+    '@type': 'ContactPoint',
+    'contactType': 'customer support',
+    'url': `${SITE_URL}/about`
+  }
+}
+
+const webSiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${SITE_URL}/#website`,
+  'url': SITE_URL,
+  'name': 'Bublr',
+  'description': 'An open-source, ultra-minimal community for writers to share their thoughts, stories, and ideas without ads or paywalls.',
+  'publisher': { '@id': `${SITE_URL}/#organization` },
+  'inLanguage': 'en-US',
+  'potentialAction': {
+    '@type': 'SearchAction',
+    'target': {
+      '@type': 'EntryPoint',
+      'urlTemplate': `${SITE_URL}/explore?q={search_term_string}`
+    },
+    'query-input': 'required name=search_term_string'
+  }
+}
+
+const siteNavigationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SiteNavigationElement',
+  'name': 'Main Navigation',
+  'hasPart': [
+    { '@type': 'SiteNavigationElement', 'name': 'Home', 'url': SITE_URL },
+    { '@type': 'SiteNavigationElement', 'name': 'Explore', 'url': `${SITE_URL}/explore` },
+    { '@type': 'SiteNavigationElement', 'name': 'Dashboard', 'url': `${SITE_URL}/dashboard` },
+    { '@type': 'SiteNavigationElement', 'name': 'About', 'url': `${SITE_URL}/about` }
+  ]
+}
+
 import Container from '../components/container'
 import PeepWalk from '../components/PeepWalk'
 import Button, { LinkButton } from '../components/button'
@@ -165,19 +221,20 @@ Home.getLayout = function HomeLayout(page) {
           image: '/images/socials.png',
         })}
         <link rel="canonical" href="https://bublr.life/" />
+
+        {/* Organization schema - critical for E-E-A-T and AI citation */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "url": "https://bublr.life/",
-            "name": "Bublr",
-            "description": "An open-source, ultra-minimal community for anyone, to write anything",
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": "https://bublr.life/{search_term_string}",
-              "query-input": "required name=search_term_string"
-            }
-          })
+          __html: JSON.stringify(organizationSchema)
+        }} />
+
+        {/* WebSite schema with SearchAction for sitelinks */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify(webSiteSchema)
+        }} />
+
+        {/* SiteNavigationElement for site structure */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify(siteNavigationSchema)
         }} />
       </Head>
       {page}

@@ -1,6 +1,17 @@
 {
-  "name": "Bublr",
+  "name": "Bublr - A Minimal Writing Community",
   "short_name": "Bublr",
+  "description": "An open-source, ultra-minimal community for writers to share their thoughts, stories, and ideas without ads or paywalls.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#FCFCFC",
+  "theme_color": "#171717",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["writing", "blog", "social", "productivity"],
   "icons": [
     {
       "src": "/favicon.ico",
@@ -10,11 +21,29 @@
     {
       "src": "/images/logo.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
-  "display": "standalone",
-  "theme_color": "#171717",
-  "background_color": "#FCFCFC"
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to your writing dashboard",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Explore",
+      "short_name": "Explore",
+      "description": "Discover new writing",
+      "url": "/explore"
+    }
+  ],
+  "prefer_related_applications": false
 }
