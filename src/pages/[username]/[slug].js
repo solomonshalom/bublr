@@ -4,7 +4,7 @@ import Head from 'next/head'
 import { css } from '@emotion/react'
 import sanitize from 'sanitize-html'
 import { htmlToText } from 'html-to-text'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
 import firebase, { firestore, auth } from '../../lib/firebase'
@@ -24,74 +24,9 @@ import meta from '../../components/meta'
 import Container from '../../components/container'
 import { IconButton } from '../../components/button'
 import PostContainer from '../../components/post-container'
-import CommunityNotes, { CommunityNotesIcon } from '../../components/community-notes'
-import Comments from '../../components/comments'
 import ThemeToggle from '../../components/theme-toggle'
-import ReadingProgressBar from '../../components/reading-progress-bar'
 
 const SITE_URL = 'https://bublr.life'
-
-// View counter component
-function ViewCounter({ postId }) {
-  const [views, setViews] = useState(null)
-  const didLogViewRef = useRef(false)
-
-  useEffect(() => {
-    // Get initial view count
-    fetch(`/api/view?id=${encodeURIComponent(postId)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.viewsFormatted) {
-          setViews(data.viewsFormatted)
-        }
-      })
-      .catch(console.error)
-
-    // Increment view count (only once per page load, not in dev)
-    if (!didLogViewRef.current) {
-      fetch(`/api/view?id=${encodeURIComponent(postId)}&incr=1`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.viewsFormatted) {
-            setViews(data.viewsFormatted)
-          }
-        })
-        .catch(console.error)
-      didLogViewRef.current = true
-    }
-  }, [postId])
-
-  if (views === null) return null
-
-  return (
-    <span
-      css={css`
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        color: var(--grey-3);
-        font-size: 0.85rem;
-      `}
-    >
-      {/* Eye icon */}
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
-      {views} views
-    </span>
-  )
-}
 
 function AddToReadingListButton({ uid, pid }) {
   const [user, setUser] = useState({ readingList: [] })
@@ -171,18 +106,6 @@ function AddToReadingListButton({ uid, pid }) {
 
 export default function Post({ post, seo }) {
   const [user, _loading, _error] = useAuthState(auth)
-  const [showCommunityNotes, setShowCommunityNotes] = useState(false)
-  const [hasNotes, setHasNotes] = useState(false)
-
-  // Fetch notes count on mount
-  useEffect(() => {
-    fetch(`/api/notes?postId=${encodeURIComponent(post.id)}`)
-      .then(res => res.json())
-      .then(data => {
-        setHasNotes((data.approvedNotes || []).length > 0)
-      })
-      .catch(console.error)
-  }, [post.id])
 
   const formattedDate = new Date(post.lastEdited).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -190,13 +113,8 @@ export default function Post({ post, seo }) {
     day: 'numeric'
   })
 
-  // Get post color for the progress bar
-  const postColor = post.dotColor || '#4D96FF'
-
   return (
     <Container maxWidth="640px">
-      {/* Reading Progress Bar */}
-      <ReadingProgressBar color={postColor} />
 
       <Head>
         {meta({
@@ -316,38 +234,22 @@ export default function Post({ post, seo }) {
         />
       </article>
 
-      {/* Footer with view counter, theme toggle, community notes icon, and bookmark */}
+      {/* Footer with theme toggle and bookmark */}
       <footer
         css={css`
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: flex-end;
           margin-bottom: 1rem;
           padding-top: 1rem;
           border-top: 1px solid var(--grey-2);
         `}
       >
-        <ViewCounter postId={post.id} />
-        <div css={css`display: flex; align-items: center; gap: 0.5rem; margin-left: auto;`}>
+        <div css={css`display: flex; align-items: center; gap: 0.5rem;`}>
           <ThemeToggle />
-          <CommunityNotesIcon
-            onClick={() => setShowCommunityNotes(!showCommunityNotes)}
-            hasNotes={hasNotes}
-          />
           {user && <AddToReadingListButton uid={user.uid} pid={post.id} />}
         </div>
       </footer>
-
-      {/* Community Notes (expanded/collapsed) */}
-      {showCommunityNotes && (
-        <CommunityNotes
-          postId={post.id}
-          isExpanded={showCommunityNotes}
-        />
-      )}
-
-      {/* Comments Section */}
-      <Comments postId={post.id} />
     </Container>
   )
 }

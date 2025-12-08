@@ -6,15 +6,10 @@ import { useAuthState } from 'react-firebase-hooks/auth'
 import { auth, firestore } from '../lib/firebase'
 import { getPostByID, getUserByID } from '../lib/db'
 import { htmlToText } from 'html-to-text'
-import { truncate } from '../lib/utils'
 
 // Notification type colors
 const NOTIFICATION_COLORS = {
-  comment: '#4D96FF',    // Blue - new comment
-  reply: '#9B59B6',      // Purple - reply to comment
   subscriber: '#2ECC71', // Green - new subscriber
-  milestone: '#F1C40F',  // Gold - view milestone
-  like: '#E91E63',       // Pink - comment like
 }
 
 // Icons
@@ -64,16 +59,8 @@ function formatRelativeTime(timestamp) {
 // Generate notification message
 function getNotificationMessage(notification) {
   switch (notification.type) {
-    case 'comment':
-      return `commented on "${truncate(notification.postTitle || 'your post', 30)}"`
-    case 'reply':
-      return `replied to your comment`
     case 'subscriber':
       return `subscribed to your newsletter`
-    case 'milestone':
-      return `Your post "${truncate(notification.postTitle || '', 25)}" hit ${notification.metadata?.views || 100} views!`
-    case 'like':
-      return `liked your comment`
     default:
       return notification.message || 'New notification'
   }
@@ -81,8 +68,7 @@ function getNotificationMessage(notification) {
 
 // Single notification item
 function NotificationItem({ notification, onMarkRead }) {
-  const color = NOTIFICATION_COLORS[notification.type] || '#4D96FF'
-  const isMilestone = notification.type === 'milestone'
+  const color = NOTIFICATION_COLORS[notification.type] || '#2ECC71'
 
   const handleClick = () => {
     if (!notification.read) {
@@ -123,37 +109,18 @@ function NotificationItem({ notification, onMarkRead }) {
         `}
       />
 
-      {/* Avatar or icon for milestones */}
-      {isMilestone ? (
-        <div
-          css={css`
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: ${color}20;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-          `}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={color} stroke="none">
-            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-          </svg>
-        </div>
-      ) : (
-        <img
-          src={notification.actorPhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${notification.actorName}`}
-          alt={notification.actorName}
-          css={css`
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            flex-shrink: 0;
-          `}
-        />
-      )}
+      {/* Avatar */}
+      <img
+        src={notification.actorPhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${notification.actorName}`}
+        alt={notification.actorName}
+        css={css`
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+          flex-shrink: 0;
+        `}
+      />
 
       {/* Content */}
       <div css={css`flex: 1; min-width: 0;`}>
@@ -165,9 +132,7 @@ function NotificationItem({ notification, onMarkRead }) {
             margin: 0;
           `}
         >
-          {!isMilestone && (
-            <span css={css`font-weight: 500;`}>{notification.actorName}</span>
-          )}{' '}
+          <span css={css`font-weight: 500;`}>{notification.actorName}</span>{' '}
           {getNotificationMessage(notification)}
         </p>
         <span
@@ -616,7 +581,7 @@ export default function NotificationsPanel({ isOpen, onClose }) {
                 No notifications yet
               </p>
               <p css={css`font-size: 0.8rem; margin-top: 0.25rem;`}>
-                You'll see comments, replies, and more here
+                You'll see new subscribers and more here
               </p>
             </div>
           )

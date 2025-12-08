@@ -3,27 +3,15 @@ import { firestore } from '../../../lib/firebase'
 
 /**
  * Notification types and their importance colors:
- * - comment: Someone commented on your post (blue: #4D96FF)
- * - reply: Someone replied to your comment (purple: #9B59B6)
  * - subscriber: New newsletter subscriber (green: #2ECC71)
- * - milestone: Post hit a view milestone (gold: #F1C40F)
- * - like: Someone liked your comment (pink: #E91E63)
  */
 
 export const NOTIFICATION_TYPES = {
-  COMMENT: 'comment',
-  REPLY: 'reply',
   SUBSCRIBER: 'subscriber',
-  MILESTONE: 'milestone',
-  LIKE: 'like',
 }
 
 export const NOTIFICATION_COLORS = {
-  comment: '#4D96FF',    // Blue - new comment
-  reply: '#9B59B6',      // Purple - reply to comment
   subscriber: '#2ECC71', // Green - new subscriber
-  milestone: '#F1C40F',  // Gold - view milestone
-  like: '#E91E63',       // Pink - comment like
 }
 
 export default async function handler(req, res) {
@@ -90,7 +78,6 @@ export default async function handler(req, res) {
       postTitle,
       postSlug,
       postAuthorName,
-      commentId,
       message,
       metadata,
     } = req.body
@@ -117,7 +104,6 @@ export default async function handler(req, res) {
         postTitle: postTitle || null,
         postSlug: postSlug || null,
         postAuthorName: postAuthorName || null,
-        commentId: commentId || null,
         message: message || null,
         metadata: metadata || {},
         read: false,
