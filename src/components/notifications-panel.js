@@ -182,10 +182,10 @@ function NotificationItem({ notification, onMarkRead }) {
     )
   }
 
-  // For like notifications, link to the liked post
-  if (notification.type === 'like' && notification.postSlug && notification.postAuthorName) {
+  // For like notifications, link to the user who liked (same as follow)
+  if (notification.type === 'like' && notification.actorUsername) {
     return (
-      <Link href={`/${notification.postAuthorName}/${notification.postSlug}`}>
+      <Link href={`/${notification.actorUsername}`}>
         <a css={css`text-decoration: none; display: block; color: inherit;`}>
           {content}
         </a>
