@@ -41,7 +41,9 @@
     "tinykeys": "^3.0.0"
   },
   "devDependencies": {
+    "canvas": "^3.2.0",
     "eslint": "7.31.0",
-    "eslint-config-next": "11.0.1"
+    "eslint-config-next": "11.0.1",
+    "png-to-ico": "^3.0.1"
   }
 }

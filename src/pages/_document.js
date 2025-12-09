@@ -33,16 +33,11 @@ class MyDocument extends Document {
 
           {/* Comprehensive Favicon Support */}
           <link rel="icon" href="/favicon.ico" sizes="any" />
-          <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
           <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
           <link rel="manifest" href="/manifest.json" />
 
           {/* Microsoft Tile */}
           <meta name="msapplication-TileColor" content="#FCFCFC" />
-          <meta name="msapplication-config" content="/browserconfig.xml" />
-
-          {/* Safari Pinned Tab */}
-          <link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#171717" />
 
           {/* DNS Prefetch & Preconnect for Performance */}
           <link rel="dns-prefetch" href="//fonts.googleapis.com" />

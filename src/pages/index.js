@@ -66,9 +66,18 @@ const siteNavigationSchema = {
   ]
 }
 
+import dynamic from 'next/dynamic'
 import Container from '../components/container'
-import PeepWalk from '../components/PeepWalk'
 import Button, { LinkButton } from '../components/button'
+
+// Dynamic import PeepWalk - it uses GSAP (heavy) and only renders on home page
+// This keeps it out of the initial bundle, improving First Contentful Paint
+const PeepWalk = dynamic(() => import('../components/PeepWalk'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height: '450px', width: '100%', background: 'transparent' }} />
+  ),
+})
 import CTAButton from '../components/cta-button'
 import CTAButtonDashboard from '../components/cta-button-dashboard'
 import CTAButtonSignOut from '../components/cta-button-signout'
@@ -162,25 +171,48 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
           `}
         >
           <CTAButtonDashboard
-            onClick={(e) => {
-              if (e.target.closest('.arrow')) {
-                window.location.href = '/dashboard'
-              }
+            onClick={() => {
+              window.location.href = '/dashboard'
             }}
           />
           <CTAButtonSignOut
-            onClick={(e) => {
-              if (e.target.closest('.arrow')) {
-                auth.signOut()
-              }
+            onClick={() => {
+              auth.signOut()
             }}
           />
+          <LinkButton
+            href="/explore"
+            css={css`
+              margin-top: 0.5rem;
+              width: 100%;
+              text-align: center;
+              background-color: #212631;
+              color: #fff;
+              padding: 12px 0;
+              border-radius: 6px;
+              text-decoration: none;
+              font: 500 14px/20px 'Inter', Arial;
+              letter-spacing: 0.25px;
+              box-shadow: 0px 8px 20px -8px rgba(26, 33, 43, 0.50), 0px 4px 12px 0px rgba(26, 33, 43, 0.05), 0px 1px 3px 0px rgba(26, 33, 43, 0.25);
+              transition: opacity 0.2s ease;
+              &:hover {
+                opacity: 0.9;
+              }
+            `}
+          >
+            Explore
+          </LinkButton>
         </div>
       ) : (
-        <CTAButton
-          onClick={(e) => {
-            // Check if click was on the arrow element
-            if (e.target.closest('.arrow')) {
+        <div
+          css={css`
+            display: inline-flex;
+            flex-direction: column;
+            gap: 0.2rem;
+          `}
+        >
+          <CTAButton
+            onClick={() => {
               const googleAuthProvider = new firebase.auth.GoogleAuthProvider()
               // Explicitly request email and profile scopes to ensure email is captured
               googleAuthProvider.addScope('email')
@@ -209,11 +241,33 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
                   }
                 }
               })
-            }
-          }}
-        >
-          Sign Up
-        </CTAButton>
+            }}
+          >
+            Sign Up
+          </CTAButton>
+          <LinkButton
+            href="/explore"
+            css={css`
+              margin-top: 0.5rem;
+              width: 100%;
+              text-align: center;
+              background-color: #212631;
+              color: #fff;
+              padding: 12px 0;
+              border-radius: 6px;
+              text-decoration: none;
+              font: 500 14px/20px 'Inter', Arial;
+              letter-spacing: 0.25px;
+              box-shadow: 0px 8px 20px -8px rgba(26, 33, 43, 0.50), 0px 4px 12px 0px rgba(26, 33, 43, 0.05), 0px 1px 3px 0px rgba(26, 33, 43, 0.25);
+              transition: opacity 0.2s ease;
+              &:hover {
+                opacity: 0.9;
+              }
+            `}
+          >
+            Explore
+          </LinkButton>
+        </div>
       )}
       <div
         css={css`
