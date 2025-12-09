@@ -2195,10 +2195,8 @@ function Editor({ user }) {
           <div css={css`
             border: 1px solid var(--grey-2);
             border-radius: 0.5rem;
-            overflow: hidden;
+            overflow: ${openBannerDropdown ? 'visible' : 'hidden'};
             background: var(--grey-1);
-            transition: max-height 0.25s ease-out;
-            max-height: ${openBannerDropdown ? '600px' : '400px'};
           `}>
             {/* Banner Preview */}
             {clientUser.banner ? (
@@ -2207,6 +2205,8 @@ function Editor({ user }) {
                 width: 100%;
                 height: 120px;
                 background: var(--grey-2);
+                border-radius: 0.5rem 0.5rem 0 0;
+                overflow: hidden;
               `}>
                 <img
                   src={clientUser.banner}
