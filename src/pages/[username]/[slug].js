@@ -21,6 +21,7 @@ import {
   extractFAQsFromContent,
   generateFAQSchema
 } from '../../lib/seo-utils'
+import { sanitizeFontFamily } from '../../lib/fonts'
 
 // Static Organization schema for posts (defined at module level for SSR compatibility)
 const organizationSchema = {
@@ -308,7 +309,7 @@ function AddToReadingListButton({ uid, pid }) {
   )
 }
 
-export default function Post({ post, seo }) {
+export default function Post({ post, seo, fontSettings, customFonts }) {
   const [user, _loading, _error] = useAuthState(auth)
   const [userInfo, setUserInfo] = useState(null)
 
@@ -392,6 +393,20 @@ export default function Post({ post, seo }) {
             dangerouslySetInnerHTML={{ __html: JSON.stringify(seo.faqSchema) }}
           />
         )}
+
+        {/* Load custom Google Fonts if needed */}
+        {customFonts && customFonts.length > 0 && (
+          <>
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link
+              href={`https://fonts.googleapis.com/css2?${customFonts.map(f =>
+                `family=${encodeURIComponent(f)}:wght@400;500;600;700`
+              ).join('&')}&display=swap`}
+              rel="stylesheet"
+            />
+          </>
+        )}
       </Head>
 
       {/* Semantic article structure for SEO */}
@@ -457,6 +472,7 @@ export default function Post({ post, seo }) {
         <PostContainer
           itemProp="articleBody"
           textDirection={post.textDirection || 'auto'}
+          fontSettings={fontSettings}
           dangerouslySetInnerHTML={{
             __html: sanitize(post.content, {
               allowedTags: sanitize.defaults.allowedTags.concat(['img']),
@@ -521,10 +537,26 @@ export async function getStaticProps({ params }) {
     // Preserve author ID before overwriting with full author data
     const authorId = post.author
     const userDoc = await firestore.collection('users').doc(authorId).get()
-    post.author = userDoc.data()
+    const userData = userDoc.data()
+    post.author = userData
     post.authorId = authorId
     const lastEditedTime = post.lastEdited.toDate().getTime()
     post.lastEdited = lastEditedTime
+
+    // Merge user font settings with post overrides (with sanitization for security)
+    const userFontSettings = userData?.fontSettings || {}
+    const postFontOverrides = post.fontOverrides || {}
+    const fontSettings = {
+      headingFont: sanitizeFontFamily(postFontOverrides.headingFont || userFontSettings.headingFont, 'Inter'),
+      bodyFont: sanitizeFontFamily(postFontOverrides.bodyFont || userFontSettings.bodyFont, 'Newsreader'),
+      codeFont: sanitizeFontFamily(postFontOverrides.codeFont || userFontSettings.codeFont, 'JetBrains Mono'),
+    }
+
+    // Filter out default fonts that are already loaded globally
+    const defaultFonts = ['Inter', 'Newsreader', 'JetBrains Mono']
+    const customFonts = [fontSettings.headingFont, fontSettings.bodyFont, fontSettings.codeFont]
+      .filter(f => f && !defaultFonts.includes(f))
+      .filter((f, i, arr) => arr.indexOf(f) === i) // Remove duplicates
 
     // Generate comprehensive SEO data
     const postTitle = cleanTitle(post.title)
@@ -586,7 +618,7 @@ export async function getStaticProps({ params }) {
     }
 
     return {
-      props: { post, seo },
+      props: { post, seo, fontSettings, customFonts },
       revalidate: 60, // Revalidate at most once per minute
     }
   } catch (err) {

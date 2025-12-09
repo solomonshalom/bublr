@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
 import React, { useEffect } from 'react'
+import { getFontCategory, getFontFallback, sanitizeFontFamily } from '../lib/fonts'
 
 // RTL language detection - checks if text contains primarily RTL characters
 const detectRTL = (text) => {
@@ -18,7 +19,16 @@ const detectRTL = (text) => {
   return meaningfulChars > 0 && (rtlChars / meaningfulChars) > 0.3
 }
 
-const PostContainer = ({ textDirection = 'auto', ...props }) => {
+const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
+  // Extract and sanitize fonts from settings (prevents CSS injection)
+  const headingFont = sanitizeFontFamily(fontSettings?.headingFont, 'Inter')
+  const bodyFont = sanitizeFontFamily(fontSettings?.bodyFont, 'Newsreader')
+  const codeFont = sanitizeFontFamily(fontSettings?.codeFont, 'JetBrains Mono')
+
+  // Get appropriate fallbacks for each font
+  const headingFallback = getFontFallback(getFontCategory(headingFont))
+  const bodyFallback = getFontFallback(getFontCategory(bodyFont))
+
   // Determine actual direction based on setting
   const getDirection = () => {
     if (textDirection === 'ltr' || textDirection === 'rtl') {
@@ -63,7 +73,7 @@ const PostContainer = ({ textDirection = 'auto', ...props }) => {
       font-size: 1.125rem;
       line-height: 1.5em;
 
-      font-family: 'Newsreader', serif;
+      font-family: '${bodyFont}', ${bodyFallback};
 
       img {
         display: block;
@@ -79,7 +89,7 @@ const PostContainer = ({ textDirection = 'auto', ...props }) => {
         margin: 0 var(--spacing, 0px);
         transition: margin .25s;
       }
-      
+
       a svg {
         width: 76px;
         height: 40px;
@@ -95,7 +105,7 @@ const PostContainer = ({ textDirection = 'auto', ...props }) => {
         stroke-dashoffset: 361px;
         transition: stroke .25s ease var(--stroke-delay, 0s), stroke-dasharray .35s;
       }
-      
+
       a:hover {
         --spacing: 4px;
         --stroke: var(--line-active);
@@ -119,7 +129,7 @@ const PostContainer = ({ textDirection = 'auto', ...props }) => {
       }
 
       blockquote > p {
-        font-family: 'Inter', sans-serif;
+        font-family: '${headingFont}', ${headingFallback};
         padding-left: ${isRTL ? '0' : '1.25rem'};
         padding-right: ${isRTL ? '1.25rem' : '0'};
         border-left: ${isRTL ? 'none' : '0.15rem solid var(--grey-2)'};
@@ -129,7 +139,7 @@ const PostContainer = ({ textDirection = 'auto', ...props }) => {
       h1,
       h2,
       h3 {
-        font-family: 'Inter', sans-serif;
+        font-family: '${headingFont}', ${headingFallback};
         font-weight: 500;
         letter-spacing: -0.02em;
         margin: 2rem 0 0.5rem 0;
@@ -150,7 +160,7 @@ const PostContainer = ({ textDirection = 'auto', ...props }) => {
 
       pre {
         background: var(--grey-5);
-        font-family: monospace;
+        font-family: '${codeFont}', monospace;
         border-radius: 0.5rem;
         padding: 1rem 1.5rem;
         overflow: auto;
@@ -158,7 +168,7 @@ const PostContainer = ({ textDirection = 'auto', ...props }) => {
 
       code {
         font-size: 0.9rem;
-        font-family: 'JetBrains Mono', monospace;
+        font-family: '${codeFont}', monospace;
 
         background: rgba(0, 0, 0, 0.1);
         color: var(--grey-4);

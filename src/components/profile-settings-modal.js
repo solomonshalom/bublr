@@ -15,6 +15,8 @@ import ModalOverlay from './modal-overlay'
 import Button, { IconButton } from './button'
 import ApiKeySection from './api-key-section'
 import { useI18n, SUPPORTED_UI_LANGUAGES } from '../lib/i18n'
+import FontPicker from './font-picker'
+import { DEFAULT_FONTS } from '../lib/fonts'
 
 // Status badge component for domain status
 const StatusBadge = ({ status }) => {
@@ -1713,6 +1715,11 @@ function Editor({ user }) {
       customUrl: null,
       size: 'medium',
     },
+    fontSettings: {
+      headingFont: 'Inter',
+      bodyFont: 'Newsreader',
+      codeFont: 'JetBrains Mono',
+    },
   })
   const [usernameErr, setUsernameErr] = useState(null)
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
@@ -1753,6 +1760,11 @@ function Editor({ user }) {
         gradientColors: null,
         customUrl: null,
         size: 'medium',
+      },
+      fontSettings: user.fontSettings || {
+        headingFont: 'Inter',
+        bodyFont: 'Newsreader',
+        codeFont: 'JetBrains Mono',
       },
     })
   }, [user])
@@ -2073,6 +2085,7 @@ function Editor({ user }) {
     const originalBannerFade = user.bannerFade || 'subtle'
     const originalBannerOverlay = user.bannerOverlay || 'none'
     const originalAvatarFrame = user.avatarFrame || { type: 'none', color: null, gradientColors: null, customUrl: null, size: 'medium' }
+    const originalFontSettings = user.fontSettings || { headingFont: 'Inter', bodyFont: 'Newsreader', codeFont: 'JetBrains Mono' }
 
     return (
       user.name !== clientUser.name ||
@@ -2097,7 +2110,8 @@ function Editor({ user }) {
       originalBannerStyle !== clientUser.bannerStyle ||
       originalBannerFade !== clientUser.bannerFade ||
       originalBannerOverlay !== clientUser.bannerOverlay ||
-      JSON.stringify(originalAvatarFrame) !== JSON.stringify(clientUser.avatarFrame)
+      JSON.stringify(originalAvatarFrame) !== JSON.stringify(clientUser.avatarFrame) ||
+      JSON.stringify(originalFontSettings) !== JSON.stringify(clientUser.fontSettings)
     )
   }, [user, clientUser])
 
@@ -2839,6 +2853,67 @@ function Editor({ user }) {
             }
             placeholder="yourwebsite.com"
           />
+        </div>
+
+        {/* Typography Section */}
+        <SectionHeader>Typography</SectionHeader>
+        <p css={css`
+          font-size: 0.8rem;
+          color: var(--grey-3);
+          margin-bottom: 1rem;
+        `}>
+          Customize the fonts used across your blog posts.
+        </p>
+
+        <div css={css`
+          display: grid;
+          gap: 1rem;
+          margin-bottom: 1.25rem;
+        `}>
+          <div>
+            <StyledLabel htmlFor="font-heading">Heading Font</StyledLabel>
+            <FontPicker
+              value={clientUser.fontSettings?.headingFont || DEFAULT_FONTS.headingFont}
+              onChange={(font) => setClientUser(prev => ({
+                ...prev,
+                fontSettings: {
+                  ...prev.fontSettings,
+                  headingFont: font || DEFAULT_FONTS.headingFont,
+                },
+              }))}
+              fontType="heading"
+            />
+          </div>
+
+          <div>
+            <StyledLabel htmlFor="font-body">Body Font</StyledLabel>
+            <FontPicker
+              value={clientUser.fontSettings?.bodyFont || DEFAULT_FONTS.bodyFont}
+              onChange={(font) => setClientUser(prev => ({
+                ...prev,
+                fontSettings: {
+                  ...prev.fontSettings,
+                  bodyFont: font || DEFAULT_FONTS.bodyFont,
+                },
+              }))}
+              fontType="body"
+            />
+          </div>
+
+          <div>
+            <StyledLabel htmlFor="font-code">Code Font</StyledLabel>
+            <FontPicker
+              value={clientUser.fontSettings?.codeFont || DEFAULT_FONTS.codeFont}
+              onChange={(font) => setClientUser(prev => ({
+                ...prev,
+                fontSettings: {
+                  ...prev.fontSettings,
+                  codeFont: font || DEFAULT_FONTS.codeFont,
+                },
+              }))}
+              fontType="code"
+            />
+          </div>
         </div>
 
         {/* Social Links Section */}

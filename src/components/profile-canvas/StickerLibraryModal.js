@@ -5,7 +5,6 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { Cross2Icon } from '@radix-ui/react-icons'
 
 import { uploadToImgBB } from '../../lib/utils'
-import Spinner from '../spinner'
 
 // Animation
 const fadeIn = keyframes`
@@ -16,6 +15,11 @@ const fadeIn = keyframes`
 const slideUp = keyframes`
   from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+`
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 `
 
 // Built-in sticker library - curated decorative stickers
@@ -342,24 +346,32 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
               css={css`
                 position: absolute;
                 inset: 0;
-                background: rgba(var(--grey-1-rgb, 255, 255, 255), 0.9);
+                background: var(--grey-1);
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 12px;
+                gap: 10px;
                 z-index: 10;
                 border-radius: 12px;
               `}
             >
-              <Spinner size={32} />
               <span
                 css={css`
-                  font-size: 0.9rem;
+                  width: 16px;
+                  height: 16px;
+                  border: 2px solid var(--grey-2);
+                  border-top-color: var(--grey-4);
+                  border-radius: 50%;
+                  animation: ${spin} 0.8s linear infinite;
+                `}
+              />
+              <span
+                css={css`
+                  font-size: 0.85rem;
                   color: var(--grey-3);
                 `}
               >
-                {isUploading ? 'Uploading...' : 'Adding sticker...'}
+                {isUploading ? 'Uploading...' : 'Adding...'}
               </span>
             </div>
           )}
@@ -623,7 +635,16 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
                         gap: 8px;
                       `}
                     >
-                      <Spinner size={18} />
+                      <span
+                        css={css`
+                          width: 14px;
+                          height: 14px;
+                          border: 2px solid var(--grey-2);
+                          border-top-color: var(--grey-4);
+                          border-radius: 50%;
+                          animation: ${spin} 0.8s linear infinite;
+                        `}
+                      />
                       Uploading...
                     </span>
                   ) : (

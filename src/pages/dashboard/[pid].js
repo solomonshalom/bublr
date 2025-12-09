@@ -57,6 +57,8 @@ import ModalOverlay from '../../components/modal-overlay'
 import PostContainer from '../../components/post-container'
 import VoiceInput from '../../components/voice-input'
 import Button, { IconButton, LinkIconButton } from '../../components/button'
+import FontPicker from '../../components/font-picker'
+import { DEFAULT_FONTS } from '../../lib/fonts'
 
 function SelectionMenu({ editor }) {
   const [editingLink, setEditingLink] = useState(false)
@@ -1567,6 +1569,93 @@ function Editor({ post }) {
                     {label}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Typography Override */}
+            <div
+              css={css`
+                margin: 1.5rem 0;
+              `}
+            >
+              <label
+                css={css`
+                  display: block;
+                  margin-bottom: 0.5rem;
+                `}
+              >
+                Typography
+              </label>
+              <p
+                css={css`
+                  font-size: 0.8rem;
+                  color: var(--grey-3);
+                  margin-bottom: 0.75rem;
+                `}
+              >
+                Override your blog's default fonts for this post only.
+              </p>
+
+              <div css={css`display: grid; gap: 0.75rem;`}>
+                <div>
+                  <label css={css`font-size: 0.75rem; color: var(--grey-3); display: block; margin-bottom: 0.25rem;`}>
+                    Heading Font
+                  </label>
+                  <FontPicker
+                    value={post.fontOverrides?.headingFont || null}
+                    onChange={async (font) => {
+                      await firestore
+                        .collection('posts')
+                        .doc(post.id)
+                        .update({
+                          'fontOverrides.headingFont': font,
+                        })
+                    }}
+                    fontType="heading"
+                    allowBlogDefault
+                    blogDefaultFont={userdata?.fontSettings?.headingFont || DEFAULT_FONTS.headingFont}
+                  />
+                </div>
+
+                <div>
+                  <label css={css`font-size: 0.75rem; color: var(--grey-3); display: block; margin-bottom: 0.25rem;`}>
+                    Body Font
+                  </label>
+                  <FontPicker
+                    value={post.fontOverrides?.bodyFont || null}
+                    onChange={async (font) => {
+                      await firestore
+                        .collection('posts')
+                        .doc(post.id)
+                        .update({
+                          'fontOverrides.bodyFont': font,
+                        })
+                    }}
+                    fontType="body"
+                    allowBlogDefault
+                    blogDefaultFont={userdata?.fontSettings?.bodyFont || DEFAULT_FONTS.bodyFont}
+                  />
+                </div>
+
+                <div>
+                  <label css={css`font-size: 0.75rem; color: var(--grey-3); display: block; margin-bottom: 0.25rem;`}>
+                    Code Font
+                  </label>
+                  <FontPicker
+                    value={post.fontOverrides?.codeFont || null}
+                    onChange={async (font) => {
+                      await firestore
+                        .collection('posts')
+                        .doc(post.id)
+                        .update({
+                          'fontOverrides.codeFont': font,
+                        })
+                    }}
+                    fontType="code"
+                    allowBlogDefault
+                    blogDefaultFont={userdata?.fontSettings?.codeFont || DEFAULT_FONTS.codeFont}
+                  />
+                </div>
               </div>
             </div>
 

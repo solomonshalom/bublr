@@ -15,6 +15,7 @@ import { generateProfilePageSchema, generateOrganizationSchema } from '../../lib
 import SubscribeNewsletter from '../../components/subscribe-newsletter'
 import FollowButton from '../../components/follow-button'
 import { ProfileCanvas } from '../../components/profile-canvas'
+import { sanitizeFontFamily } from '../../lib/fonts'
 
 // Color palette for dots (same as berrysauce)
 const COLOR_PALETTE = ['#cf52f2', '#6BCB77', '#4D96FF', '#A66CFF', '#E23E57', '#ff3e00']
@@ -285,7 +286,7 @@ const AvatarWithFrame = ({ user, size = 48 }) => {
   )
 }
 
-export default function Profile({ user, organizationSchema, profilePageSchema }) {
+export default function Profile({ user, organizationSchema, profilePageSchema, customFonts }) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [currentUser] = useAuthState(auth)
@@ -347,6 +348,20 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
           keywords: `${user.displayName}, ${user.name}, writer, author, blog, writing`
         })}
         <link rel="canonical" href={`https://bublr.life/${user.name}`} />
+
+        {/* Load custom Google Fonts if needed */}
+        {customFonts && customFonts.length > 0 && (
+          <>
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link
+              href={`https://fonts.googleapis.com/css2?${customFonts.map(f =>
+                `family=${encodeURIComponent(f)}:wght@400;500;600;700`
+              ).join('&')}&display=swap`}
+              rel="stylesheet"
+            />
+          </>
+        )}
       </Head>
 
       {/* Main body - isolated styles that don't affect other pages */}
@@ -885,6 +900,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
                                 color: ${colors.text};
                                 margin-bottom: 4px;
                                 font-size: 14px;
+                                font-family: '${sanitizeFontFamily(user.fontSettings?.headingFont, 'Inter')}', -apple-system, BlinkMacSystemFont, sans-serif;
                               `}>
                                 <ColorDot color={getPostColor(post)} />
                                 {post.title ? htmlToText(post.title) : 'Untitled'}
@@ -894,6 +910,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
                                 font-size: 13px;
                                 color: ${colors.muted};
                                 line-height: 1.5;
+                                font-family: '${sanitizeFontFamily(user.fontSettings?.bodyFont, 'Newsreader')}', Georgia, serif;
                               `}>
                                 {(() => {
                                   // Check if excerpt has actual content (not just whitespace/empty)
@@ -1184,6 +1201,32 @@ export async function getServerSideProps({ params, req }) {
       }
     }
 
+    // Font settings defaults (with sanitization for security)
+    if (!user.fontSettings) {
+      user.fontSettings = {
+        headingFont: 'Inter',
+        bodyFont: 'Newsreader',
+        codeFont: 'JetBrains Mono'
+      }
+    } else {
+      // Sanitize existing font settings
+      user.fontSettings = {
+        headingFont: sanitizeFontFamily(user.fontSettings.headingFont, 'Inter'),
+        bodyFont: sanitizeFontFamily(user.fontSettings.bodyFont, 'Newsreader'),
+        codeFont: sanitizeFontFamily(user.fontSettings.codeFont, 'JetBrains Mono')
+      }
+    }
+
+    // Calculate custom fonts to load (exclude defaults that are globally loaded)
+    const defaultFonts = ['Inter', 'Newsreader', 'JetBrains Mono']
+    const customFonts = [
+      user.fontSettings.headingFont,
+      user.fontSettings.bodyFont,
+      user.fontSettings.codeFont
+    ]
+      .filter(f => f && !defaultFonts.includes(f))
+      .filter((f, i, arr) => arr.indexOf(f) === i) // Remove duplicates
+
     // Profile decorations defaults
     if (!user.profileDecorations) {
       user.profileDecorations = {
@@ -1208,7 +1251,7 @@ export async function getServerSideProps({ params, req }) {
     })
 
     return {
-      props: { user, organizationSchema, profilePageSchema },
+      props: { user, organizationSchema, profilePageSchema, customFonts },
     }
   } catch (err) {
     console.log(err)
