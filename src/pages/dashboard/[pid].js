@@ -1337,11 +1337,28 @@ function Editor({ post }) {
                 flex: 1;
                 overflow-y: auto;
                 padding: 1.5rem;
+
+                /* Sleek pill scrollbar */
                 &::-webkit-scrollbar {
-                  display: none;
+                  width: 6px;
                 }
-                -ms-overflow-style: none;
-                scrollbar-width: none;
+                &::-webkit-scrollbar-track {
+                  background: transparent;
+                }
+                &::-webkit-scrollbar-thumb {
+                  background: var(--grey-2);
+                  border-radius: 3px;
+                  opacity: 0;
+                  transition: opacity 0.2s ease, background 0.2s ease;
+                }
+                &:hover::-webkit-scrollbar-thumb,
+                &::-webkit-scrollbar-thumb:active {
+                  background: var(--grey-3);
+                }
+
+                /* Firefox */
+                scrollbar-width: thin;
+                scrollbar-color: var(--grey-2) transparent;
               `}
             >
             {/* Settings View */}
