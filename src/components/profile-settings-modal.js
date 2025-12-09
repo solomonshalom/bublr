@@ -1547,6 +1547,9 @@ function Editor({ user }) {
     buttonsOrder: ['follow', 'newsletter'],
     banner: null,
     bannerPosition: 'center',
+    bannerStyle: 'rounded',
+    bannerFade: 'subtle',
+    bannerOverlay: 'none',
     avatarFrame: {
       type: 'none',
       color: null,
@@ -1584,6 +1587,9 @@ function Editor({ user }) {
       dividersVisibility: user.dividersVisibility || { skills: true, writing: true, custom: true },
       banner: user.banner || null,
       bannerPosition: user.bannerPosition || 'center',
+      bannerStyle: user.bannerStyle || 'rounded',
+      bannerFade: user.bannerFade || 'subtle',
+      bannerOverlay: user.bannerOverlay || 'none',
       avatarFrame: user.avatarFrame || {
         type: 'none',
         color: null,
@@ -1906,6 +1912,9 @@ function Editor({ user }) {
     const originalDividersVisibility = user.dividersVisibility || { skills: true, writing: true, custom: true }
     const originalBanner = user.banner || null
     const originalBannerPosition = user.bannerPosition || 'center'
+    const originalBannerStyle = user.bannerStyle || 'rounded'
+    const originalBannerFade = user.bannerFade || 'subtle'
+    const originalBannerOverlay = user.bannerOverlay || 'none'
     const originalAvatarFrame = user.avatarFrame || { type: 'none', color: null, gradientColors: null, customUrl: null, size: 'medium' }
 
     return (
@@ -1928,6 +1937,9 @@ function Editor({ user }) {
       JSON.stringify(originalDividersVisibility) !== JSON.stringify(clientUser.dividersVisibility) ||
       originalBanner !== clientUser.banner ||
       originalBannerPosition !== clientUser.bannerPosition ||
+      originalBannerStyle !== clientUser.bannerStyle ||
+      originalBannerFade !== clientUser.bannerFade ||
+      originalBannerOverlay !== clientUser.bannerOverlay ||
       JSON.stringify(originalAvatarFrame) !== JSON.stringify(clientUser.avatarFrame)
     )
   }, [user, clientUser])
@@ -2163,6 +2175,66 @@ function Editor({ user }) {
                   <option value="top">Align Top</option>
                   <option value="center">Align Center</option>
                   <option value="bottom">Align Bottom</option>
+                </select>
+              )}
+
+              {clientUser.banner && (
+                <select
+                  value={clientUser.bannerStyle || 'rounded'}
+                  onChange={(e) => setClientUser(prev => ({ ...prev, bannerStyle: e.target.value }))}
+                  css={css`
+                    background: var(--grey-1);
+                    color: var(--grey-4);
+                    border: 1px solid var(--grey-2);
+                    padding: 0.5rem 0.75rem;
+                    border-radius: 0.5rem;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                  `}
+                >
+                  <option value="rounded">Rounded</option>
+                  <option value="full">Full Width</option>
+                </select>
+              )}
+
+              {clientUser.banner && (
+                <select
+                  value={clientUser.bannerFade || 'subtle'}
+                  onChange={(e) => setClientUser(prev => ({ ...prev, bannerFade: e.target.value }))}
+                  css={css`
+                    background: var(--grey-1);
+                    color: var(--grey-4);
+                    border: 1px solid var(--grey-2);
+                    padding: 0.5rem 0.75rem;
+                    border-radius: 0.5rem;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                  `}
+                >
+                  <option value="none">No Fade</option>
+                  <option value="subtle">Subtle Fade</option>
+                  <option value="medium">Medium Fade</option>
+                  <option value="strong">Strong Fade</option>
+                </select>
+              )}
+
+              {clientUser.banner && (
+                <select
+                  value={clientUser.bannerOverlay || 'none'}
+                  onChange={(e) => setClientUser(prev => ({ ...prev, bannerOverlay: e.target.value }))}
+                  css={css`
+                    background: var(--grey-1);
+                    color: var(--grey-4);
+                    border: 1px solid var(--grey-2);
+                    padding: 0.5rem 0.75rem;
+                    border-radius: 0.5rem;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                  `}
+                >
+                  <option value="none">No Overlay</option>
+                  <option value="dark">Dark Overlay</option>
+                  <option value="darker">Darker Overlay</option>
                 </select>
               )}
             </div>

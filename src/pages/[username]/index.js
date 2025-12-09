@@ -386,9 +386,9 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
           <div
             css={css`
               width: 100%;
-              max-width: 550px;
+              max-width: ${(user.bannerStyle || 'rounded') === 'full' ? 'none' : '550px'};
               margin: 0 auto;
-              padding: 0 0.75rem;
+              padding: ${(user.bannerStyle || 'rounded') === 'full' ? '0' : '0 0.75rem'};
 
               @media (min-width: 992px) {
                 padding: 0;
@@ -398,15 +398,15 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
             <div
               css={css`
                 width: 100%;
-                height: 150px;
-                border-radius: 12px;
+                height: ${(user.bannerStyle || 'rounded') === 'full' ? '180px' : '150px'};
+                border-radius: ${(user.bannerStyle || 'rounded') === 'full' ? '0' : '12px'};
                 overflow: hidden;
                 position: relative;
-                margin-top: 1.5rem;
+                margin-top: ${(user.bannerStyle || 'rounded') === 'full' ? '0' : '1.5rem'};
 
                 @media (min-width: 992px) {
-                  height: 200px;
-                  margin-top: 3rem;
+                  height: ${(user.bannerStyle || 'rounded') === 'full' ? '240px' : '200px'};
+                  margin-top: ${(user.bannerStyle || 'rounded') === 'full' ? '0' : '3rem'};
                 }
               `}
             >
@@ -420,18 +420,37 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
                   object-position: center ${user.bannerPosition || 'center'};
                 `}
               />
-              {/* Subtle gradient overlay at bottom for smooth transition */}
-              <div
-                css={css`
-                  position: absolute;
-                  bottom: 0;
-                  left: 0;
-                  right: 0;
-                  height: 60px;
-                  background: linear-gradient(to top, ${colors.bg}, transparent);
-                  pointer-events: none;
-                `}
-              />
+              {/* Dark overlay for better contrast */}
+              {(user.bannerOverlay === 'dark' || user.bannerOverlay === 'darker') && (
+                <div
+                  css={css`
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, ${user.bannerOverlay === 'darker' ? '0.35' : '0.15'});
+                    pointer-events: none;
+                  `}
+                />
+              )}
+              {/* Gradient overlay at bottom for smooth transition */}
+              {(user.bannerFade || 'subtle') !== 'none' && (
+                <div
+                  css={css`
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: ${
+                      (user.bannerFade || 'subtle') === 'subtle' ? '60px' :
+                      (user.bannerFade || 'subtle') === 'medium' ? '100px' : '150px'
+                    };
+                    background: linear-gradient(to top, ${colors.bg}, transparent);
+                    pointer-events: none;
+                  `}
+                />
+              )}
             </div>
           </div>
         )}
@@ -1136,6 +1155,15 @@ export async function getServerSideProps({ params, req }) {
     }
     if (!user.bannerPosition) {
       user.bannerPosition = 'center'
+    }
+    if (!user.bannerStyle) {
+      user.bannerStyle = 'rounded'
+    }
+    if (!user.bannerFade) {
+      user.bannerFade = 'subtle'
+    }
+    if (!user.bannerOverlay) {
+      user.bannerOverlay = 'none'
     }
 
     // Avatar frame defaults
