@@ -2342,6 +2342,8 @@ function Editor({ user }) {
                         { value: 'center', label: 'Center' },
                         { value: 'bottom', label: 'Bottom' },
                       ]}
+                      onOpen={() => setOpenBannerDropdown('position')}
+                      onClose={() => setOpenBannerDropdown(null)}
                     />
                   </div>
 
