@@ -42,6 +42,7 @@ export default function ProfileCanvas({
   const [selectedId, setSelectedId] = useState(null)
   const [showStickerModal, setShowStickerModal] = useState(false)
   const [saveStatus, setSaveStatus] = useState('saved')
+  const [isSavingOnExit, setIsSavingOnExit] = useState(false)
   const [isRotating, setIsRotating] = useState(false)
   const [rotationStart, setRotationStart] = useState({ angle: 0, startAngle: 0 })
 
@@ -296,6 +297,8 @@ export default function ProfileCanvas({
 
   // Toggle edit mode
   const handleToggleEditMode = useCallback(async () => {
+    if (isSavingOnExit) return // Prevent double-clicks while saving
+
     if (isEditMode) {
       // Exiting edit mode - save immediately if there are unsaved changes
       if (saveTimeoutRef.current) {
@@ -303,12 +306,18 @@ export default function ProfileCanvas({
       }
       const currentState = JSON.stringify(decorations)
       if (currentState !== lastSavedRef.current) {
-        await saveDecorations(decorations)
+        setIsSavingOnExit(true)
+        const success = await saveDecorations(decorations)
+        setIsSavingOnExit(false)
+        if (!success) {
+          // Save failed - stay in edit mode so user can retry
+          return
+        }
       }
       setSelectedId(null)
     }
     setIsEditMode(prev => !prev)
-  }, [isEditMode, decorations, saveDecorations])
+  }, [isEditMode, decorations, saveDecorations, isSavingOnExit])
 
   // If no decorations and definitely not owner (auth loaded), skip canvas wrapper
   // But always render decorations if they exist
@@ -365,6 +374,7 @@ export default function ProfileCanvas({
           {/* Edit toggle button */}
           <CanvasEditToggle
             isEditMode={isEditMode}
+            isSaving={isSavingOnExit}
             onClick={handleToggleEditMode}
             decorationsCount={decorations.length}
           />
