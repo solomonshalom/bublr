@@ -100,6 +100,148 @@ const CameraIcon = () => (
   </svg>
 )
 
+// Custom Dropdown Component
+const CustomDropdown = ({ value, onChange, options, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const selectedOption = options.find(opt => opt.value === value)
+
+  return (
+    <div
+      ref={dropdownRef}
+      css={css`
+        position: relative;
+        min-width: 120px;
+      `}
+    >
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        css={css`
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.5rem;
+          background: var(--grey-1);
+          color: var(--grey-4);
+          border: 1px solid var(--grey-2);
+          padding: 0.5rem 0.75rem;
+          border-radius: 0.5rem;
+          font-size: 0.8rem;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &:hover {
+            border-color: var(--grey-3);
+          }
+
+          &:focus {
+            outline: none;
+            border-color: var(--grey-3);
+          }
+        `}
+      >
+        <span>{selectedOption?.label || placeholder}</span>
+        <ChevronDownIcon
+          width={14}
+          height={14}
+          css={css`
+            transition: transform 0.15s ease;
+            transform: ${isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
+            opacity: 0.6;
+          `}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          css={css`
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: var(--grey-1);
+            border: 1px solid var(--grey-2);
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            overflow: hidden;
+            animation: dropdownFadeIn 0.15s ease;
+
+            @keyframes dropdownFadeIn {
+              from {
+                opacity: 0;
+                transform: translateY(-4px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}
+        >
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value)
+                setIsOpen(false)
+              }}
+              css={css`
+                width: 100%;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.6rem 0.75rem;
+                background: ${value === option.value ? 'var(--grey-2)' : 'transparent'};
+                color: var(--grey-4);
+                border: none;
+                font-size: 0.8rem;
+                cursor: pointer;
+                text-align: left;
+                transition: background 0.1s ease;
+
+                &:hover {
+                  background: var(--grey-2);
+                }
+
+                &:first-of-type {
+                  border-radius: 0.4rem 0.4rem 0 0;
+                }
+
+                &:last-of-type {
+                  border-radius: 0 0 0.4rem 0.4rem;
+                }
+              `}
+            >
+              {value === option.value && (
+                <CheckCircledIcon width={14} height={14} css={css`color: var(--grey-4); flex-shrink: 0;`} />
+              )}
+              <span css={css`${value !== option.value ? 'margin-left: calc(14px + 0.5rem);' : ''}`}>
+                {option.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Profile Picture Upload Component
 const ProfilePictureUpload = ({ currentPhoto, onPhotoChange }) => {
   const [uploading, setUploading] = useState(false)
@@ -2107,14 +2249,17 @@ function Editor({ user }) {
 
             {/* Banner Controls */}
             <div css={css`
-              padding: 0.75rem;
+              padding: 1rem;
               border-top: 1px solid var(--grey-2);
               display: flex;
-              gap: 0.5rem;
-              align-items: center;
-              flex-wrap: wrap;
+              flex-direction: column;
+              gap: 1rem;
             `}>
+              {/* Upload Button Row */}
               <label css={css`
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
                 background: var(--grey-5);
                 color: var(--grey-1);
                 border: none;
@@ -2123,6 +2268,7 @@ function Editor({ user }) {
                 font-size: 0.8rem;
                 cursor: pointer;
                 transition: all 0.2s ease;
+                width: fit-content;
 
                 &:hover {
                   opacity: 0.8;
@@ -2158,91 +2304,76 @@ function Editor({ user }) {
                 />
               </label>
 
+              {/* Style Options Grid */}
               {clientUser.banner && (
-                <select
-                  value={clientUser.bannerPosition || 'center'}
-                  onChange={(e) => setClientUser(prev => ({ ...prev, bannerPosition: e.target.value }))}
-                  css={css`
-                    background: var(--grey-1);
-                    color: var(--grey-4);
-                    border: 1px solid var(--grey-2);
-                    padding: 0.5rem 0.75rem;
-                    border-radius: 0.5rem;
-                    font-size: 0.8rem;
-                    cursor: pointer;
-                  `}
-                >
-                  <option value="top">Align Top</option>
-                  <option value="center">Align Center</option>
-                  <option value="bottom">Align Bottom</option>
-                </select>
-              )}
+                <div css={css`
+                  display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  gap: 0.75rem;
 
-              {clientUser.banner && (
-                <select
-                  value={clientUser.bannerStyle || 'rounded'}
-                  onChange={(e) => setClientUser(prev => ({ ...prev, bannerStyle: e.target.value }))}
-                  css={css`
-                    background: var(--grey-1);
-                    color: var(--grey-4);
-                    border: 1px solid var(--grey-2);
-                    padding: 0.5rem 0.75rem;
-                    border-radius: 0.5rem;
-                    font-size: 0.8rem;
-                    cursor: pointer;
-                  `}
-                >
-                  <option value="rounded">Rounded</option>
-                  <option value="full">Full Width</option>
-                </select>
-              )}
+                  @media (min-width: 500px) {
+                    grid-template-columns: repeat(2, 1fr);
+                  }
+                `}>
+                  <div css={css`display: flex; flex-direction: column; gap: 0.35rem;`}>
+                    <span css={css`font-size: 0.7rem; color: var(--grey-3); text-transform: uppercase; letter-spacing: 0.03em;`}>Position</span>
+                    <CustomDropdown
+                      value={clientUser.bannerPosition || 'center'}
+                      onChange={(value) => setClientUser(prev => ({ ...prev, bannerPosition: value }))}
+                      options={[
+                        { value: 'top', label: 'Top' },
+                        { value: 'center', label: 'Center' },
+                        { value: 'bottom', label: 'Bottom' },
+                      ]}
+                    />
+                  </div>
 
-              {clientUser.banner && (
-                <select
-                  value={clientUser.bannerFade || 'subtle'}
-                  onChange={(e) => setClientUser(prev => ({ ...prev, bannerFade: e.target.value }))}
-                  css={css`
-                    background: var(--grey-1);
-                    color: var(--grey-4);
-                    border: 1px solid var(--grey-2);
-                    padding: 0.5rem 0.75rem;
-                    border-radius: 0.5rem;
-                    font-size: 0.8rem;
-                    cursor: pointer;
-                  `}
-                >
-                  <option value="none">No Fade</option>
-                  <option value="subtle">Subtle Fade</option>
-                  <option value="medium">Medium Fade</option>
-                  <option value="strong">Strong Fade</option>
-                </select>
-              )}
+                  <div css={css`display: flex; flex-direction: column; gap: 0.35rem;`}>
+                    <span css={css`font-size: 0.7rem; color: var(--grey-3); text-transform: uppercase; letter-spacing: 0.03em;`}>Style</span>
+                    <CustomDropdown
+                      value={clientUser.bannerStyle || 'rounded'}
+                      onChange={(value) => setClientUser(prev => ({ ...prev, bannerStyle: value }))}
+                      options={[
+                        { value: 'rounded', label: 'Rounded' },
+                        { value: 'full', label: 'Full Width' },
+                      ]}
+                    />
+                  </div>
 
-              {clientUser.banner && (
-                <select
-                  value={clientUser.bannerOverlay || 'none'}
-                  onChange={(e) => setClientUser(prev => ({ ...prev, bannerOverlay: e.target.value }))}
-                  css={css`
-                    background: var(--grey-1);
-                    color: var(--grey-4);
-                    border: 1px solid var(--grey-2);
-                    padding: 0.5rem 0.75rem;
-                    border-radius: 0.5rem;
-                    font-size: 0.8rem;
-                    cursor: pointer;
-                  `}
-                >
-                  <option value="none">No Overlay</option>
-                  <option value="dark">Dark Overlay</option>
-                  <option value="darker">Darker Overlay</option>
-                </select>
+                  <div css={css`display: flex; flex-direction: column; gap: 0.35rem;`}>
+                    <span css={css`font-size: 0.7rem; color: var(--grey-3); text-transform: uppercase; letter-spacing: 0.03em;`}>Fade</span>
+                    <CustomDropdown
+                      value={clientUser.bannerFade || 'subtle'}
+                      onChange={(value) => setClientUser(prev => ({ ...prev, bannerFade: value }))}
+                      options={[
+                        { value: 'none', label: 'None' },
+                        { value: 'subtle', label: 'Subtle' },
+                        { value: 'medium', label: 'Medium' },
+                        { value: 'strong', label: 'Strong' },
+                      ]}
+                    />
+                  </div>
+
+                  <div css={css`display: flex; flex-direction: column; gap: 0.35rem;`}>
+                    <span css={css`font-size: 0.7rem; color: var(--grey-3); text-transform: uppercase; letter-spacing: 0.03em;`}>Overlay</span>
+                    <CustomDropdown
+                      value={clientUser.bannerOverlay || 'none'}
+                      onChange={(value) => setClientUser(prev => ({ ...prev, bannerOverlay: value }))}
+                      options={[
+                        { value: 'none', label: 'None' },
+                        { value: 'dark', label: 'Dark' },
+                        { value: 'darker', label: 'Darker' },
+                      ]}
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
           <p css={css`
             font-size: 0.75rem;
             color: var(--grey-3);
-            margin-top: 0.5rem;
+            margin-top: 0.75rem;
           `}>
             Recommended: 1500×500px (3:1 ratio). Max 5MB.
           </p>
