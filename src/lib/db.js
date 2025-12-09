@@ -434,3 +434,18 @@ export async function createPostForUser(userId) {
 
   return doc.id
 }
+
+/**
+ * Update profile decorations for a user
+ * @param {string} userId - The user's document ID
+ * @param {Array} items - Array of decoration objects
+ */
+export async function updateProfileDecorations(userId, items) {
+  await firestore.collection('users').doc(userId).update({
+    profileDecorations: {
+      enabled: items.length > 0,
+      updatedAt: Date.now(),
+      items: items,
+    },
+  })
+}

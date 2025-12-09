@@ -14,6 +14,7 @@ import meta from '../../components/meta'
 import { generateProfilePageSchema, generateOrganizationSchema } from '../../lib/seo-utils'
 import SubscribeNewsletter from '../../components/subscribe-newsletter'
 import FollowButton from '../../components/follow-button'
+import { ProfileCanvas } from '../../components/profile-canvas'
 
 // Color palette for dots (same as berrysauce)
 const COLOR_PALETTE = ['#cf52f2', '#6BCB77', '#4D96FF', '#A66CFF', '#E23E57', '#ff3e00']
@@ -349,6 +350,11 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
       </Head>
 
       {/* Main body - isolated styles that don't affect other pages */}
+      <ProfileCanvas
+        userId={currentUser?.uid}
+        profileOwnerId={user.id}
+        initialDecorations={user.profileDecorations?.items || []}
+      >
       <div
         css={css`
           margin: 0;
@@ -992,6 +998,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema })
           </div>
         </section>
       </div>
+      </ProfileCanvas>
 
       {/* Organization schema - critical for E-E-A-T */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{
@@ -1174,6 +1181,15 @@ export async function getServerSideProps({ params, req }) {
         gradientColors: null,
         customUrl: null,
         size: 'medium'
+      }
+    }
+
+    // Profile decorations defaults
+    if (!user.profileDecorations) {
+      user.profileDecorations = {
+        enabled: false,
+        updatedAt: null,
+        items: []
       }
     }
 
