@@ -180,28 +180,6 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
               auth.signOut()
             }}
           />
-          <LinkButton
-            href="/explore"
-            css={css`
-              margin-top: 0.5rem;
-              width: 100%;
-              text-align: center;
-              background-color: #212631;
-              color: #fff;
-              padding: 12px 0;
-              border-radius: 6px;
-              text-decoration: none;
-              font: 500 14px/20px 'Inter', Arial;
-              letter-spacing: 0.25px;
-              box-shadow: 0px 8px 20px -8px rgba(26, 33, 43, 0.50), 0px 4px 12px 0px rgba(26, 33, 43, 0.05), 0px 1px 3px 0px rgba(26, 33, 43, 0.25);
-              transition: opacity 0.2s ease;
-              &:hover {
-                opacity: 0.9;
-              }
-            `}
-          >
-            Explore
-          </LinkButton>
         </div>
       ) : (
         <div
@@ -245,28 +223,6 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
           >
             Sign Up
           </CTAButton>
-          <LinkButton
-            href="/explore"
-            css={css`
-              margin-top: 0.5rem;
-              width: 100%;
-              text-align: center;
-              background-color: #212631;
-              color: #fff;
-              padding: 12px 0;
-              border-radius: 6px;
-              text-decoration: none;
-              font: 500 14px/20px 'Inter', Arial;
-              letter-spacing: 0.25px;
-              box-shadow: 0px 8px 20px -8px rgba(26, 33, 43, 0.50), 0px 4px 12px 0px rgba(26, 33, 43, 0.05), 0px 1px 3px 0px rgba(26, 33, 43, 0.25);
-              transition: opacity 0.2s ease;
-              &:hover {
-                opacity: 0.9;
-              }
-            `}
-          >
-            Explore
-          </LinkButton>
         </div>
       )}
       <div
