@@ -146,19 +146,37 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
   const [urlError, setUrlError] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [isAddingSticker, setIsAddingSticker] = useState(false)
   const fileInputRef = useRef(null)
 
-  const handleStickerSelect = useCallback((sticker) => {
-    onAddSticker({
+  // Helper to preload image before adding to canvas
+  const preloadAndAddSticker = useCallback((stickerData) => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => resolve(true)
+      img.onerror = () => resolve(true) // Still add even if preload fails
+      img.src = stickerData.src
+
+      // Timeout fallback after 5 seconds
+      setTimeout(() => resolve(true), 5000)
+    })
+  }, [])
+
+  const handleStickerSelect = useCallback(async (sticker) => {
+    setIsAddingSticker(true)
+    const stickerData = {
       type: 'library',
       src: sticker.src,
       width: sticker.defaultWidth,
       height: sticker.defaultHeight,
-    })
+    }
+    await preloadAndAddSticker(stickerData)
+    onAddSticker(stickerData)
+    setIsAddingSticker(false)
     onClose()
-  }, [onAddSticker, onClose])
+  }, [onAddSticker, onClose, preloadAndAddSticker])
 
-  const handleUrlSubmit = useCallback((e) => {
+  const handleUrlSubmit = useCallback(async (e) => {
     e.preventDefault()
     setUrlError('')
 
@@ -188,15 +206,19 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
       return
     }
 
-    onAddSticker({
+    setIsAddingSticker(true)
+    const stickerData = {
       type: 'url',
       src: url,
       width: 80,
       height: 80,
-    })
+    }
+    await preloadAndAddSticker(stickerData)
+    onAddSticker(stickerData)
     setUrlInput('')
+    setIsAddingSticker(false)
     onClose()
-  }, [urlInput, onAddSticker, onClose])
+  }, [urlInput, onAddSticker, onClose, preloadAndAddSticker])
 
   const handleFileUpload = useCallback(async (e) => {
     const file = e.target.files?.[0]
@@ -225,10 +247,11 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
 
       if (!imageUrl) {
         setUploadError('Failed to upload image. Please try again.')
+        setIsUploading(false)
         return
       }
 
-      // Get image dimensions
+      // Get image dimensions and preload
       const img = new Image()
       img.onload = () => {
         // Scale to reasonable size while maintaining aspect ratio
@@ -248,6 +271,10 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
           width,
           height,
         })
+        setIsUploading(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
         onClose()
       }
       img.onerror = () => {
@@ -257,13 +284,16 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
           width: 80,
           height: 80,
         })
+        setIsUploading(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
         onClose()
       }
       img.src = imageUrl
     } catch (err) {
       console.error('Upload error:', err)
       setUploadError('Failed to upload image. Please try again.')
-    } finally {
       setIsUploading(false)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
@@ -306,6 +336,34 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
             }
           `}
         >
+          {/* Loading overlay */}
+          {(isUploading || isAddingSticker) && (
+            <div
+              css={css`
+                position: absolute;
+                inset: 0;
+                background: rgba(var(--grey-1-rgb, 255, 255, 255), 0.9);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                z-index: 10;
+                border-radius: 12px;
+              `}
+            >
+              <Spinner size={32} />
+              <span
+                css={css`
+                  font-size: 0.9rem;
+                  color: var(--grey-3);
+                `}
+              >
+                {isUploading ? 'Uploading...' : 'Adding sticker...'}
+              </span>
+            </div>
+          )}
+
           {/* Header */}
           <div
             css={css`

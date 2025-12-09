@@ -26,8 +26,15 @@ export default function ProfileCanvas({
   initialDecorations = [],
   children,
 }) {
-  const [currentUser] = useAuthState(auth)
-  const isOwner = currentUser?.uid === profileOwnerId
+  const [currentUser, authLoading] = useAuthState(auth)
+  const [mounted, setMounted] = useState(false)
+
+  // Wait for client-side mount to avoid SSR hydration issues
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isOwner = mounted && !authLoading && currentUser?.uid === profileOwnerId
 
   // State
   const [isEditMode, setIsEditMode] = useState(false)
@@ -289,8 +296,9 @@ export default function ProfileCanvas({
     setIsEditMode(prev => !prev)
   }, [isEditMode])
 
-  // Don't render canvas functionality if no decorations and not owner
-  if (!isOwner && decorations.length === 0) {
+  // If no decorations and definitely not owner (auth loaded), skip canvas wrapper
+  // But always render decorations if they exist
+  if (decorations.length === 0 && mounted && !authLoading && !isOwner) {
     return <>{children}</>
   }
 
