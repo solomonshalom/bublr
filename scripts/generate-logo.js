@@ -45,13 +45,16 @@ function downloadImage(url) {
 /**
  * Create a PNG with the bento emoji at the specified size using Twemoji
  */
-async function createEmojiPng(emojiImage, size, outputPath) {
+async function createEmojiPng(emojiImage, size, outputPath, transparent = false) {
   const canvas = createCanvas(size, size);
   const ctx = canvas.getContext('2d');
 
-  // White background for better visibility
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(0, 0, size, size);
+  if (!transparent) {
+    // White background for PWA icons
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, size, size);
+  }
+  // Otherwise leave transparent
 
   // Calculate padding (10% on each side)
   const padding = Math.floor(size * 0.1);
@@ -63,7 +66,7 @@ async function createEmojiPng(emojiImage, size, outputPath) {
   // Save to file
   const buffer = canvas.toBuffer('image/png');
   fs.writeFileSync(outputPath, buffer);
-  console.log(`Created: ${outputPath} (${size}x${size})`);
+  console.log(`Created: ${outputPath} (${size}x${size})${transparent ? ' [transparent]' : ''}`);
 
   return buffer;
 }
@@ -100,13 +103,13 @@ async function main() {
   // Generate apple-touch-icon.png (180x180)
   await createEmojiPng(emojiImage, 180, path.join(IMAGES_DIR, 'apple-touch-icon.png'));
 
-  // Generate favicon sizes and create .ico
+  // Generate favicon sizes and create .ico (transparent background)
   const sizes = [16, 32, 48];
   const tempPngPaths = [];
 
   for (const size of sizes) {
     const tempPath = path.join(PUBLIC_DIR, `favicon-${size}.png`);
-    await createEmojiPng(emojiImage, size, tempPath);
+    await createEmojiPng(emojiImage, size, tempPath, true); // transparent
     tempPngPaths.push(tempPath);
   }
 
