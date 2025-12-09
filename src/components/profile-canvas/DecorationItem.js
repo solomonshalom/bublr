@@ -1,6 +1,9 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
-import { useCallback, memo, useState } from 'react'
+import { useCallback, memo, useState, useRef, useEffect, useLayoutEffect } from 'react'
+
+// Use useLayoutEffect on client, useEffect on server (avoid SSR warning)
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 /**
  * Individual decoration item with transform capabilities
@@ -31,8 +34,16 @@ const DecorationItem = memo(function DecorationItem({
     opacity = 1,
   } = decoration
 
+  const imgRef = useRef(null)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
+
+  // Check if image is already loaded (cached) on mount - use layoutEffect to run before paint
+  useIsomorphicLayoutEffect(() => {
+    if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+      setImageLoaded(true)
+    }
+  }, [src])
 
   // Calculate actual position and size during drag/resize
   const actualX = x + dragOffset.x
@@ -100,6 +111,7 @@ const DecorationItem = memo(function DecorationItem({
       {/* The decoration image */}
       {!imageError ? (
         <img
+          ref={imgRef}
           src={src}
           alt=""
           draggable={false}
