@@ -1318,7 +1318,6 @@ function Editor({ post }) {
             css={css`
               background: var(--grey-1);
               border-radius: 0.5rem;
-              padding: 1.5rem;
               position: fixed;
               top: 50%;
               left: 50%;
@@ -1327,8 +1326,24 @@ function Editor({ post }) {
               max-width: 420px;
               overflow: hidden;
               z-index: 100;
+              max-height: 85vh;
+              display: flex;
+              flex-direction: column;
             `}
           >
+            {/* Scrollable content wrapper */}
+            <div
+              css={css`
+                flex: 1;
+                overflow-y: auto;
+                padding: 1.5rem;
+                &::-webkit-scrollbar {
+                  display: none;
+                }
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+              `}
+            >
             {/* Settings View */}
             {settingsView === 'settings' && (
             <div>
@@ -2090,6 +2105,8 @@ function Editor({ post }) {
               )}
             </div>
             )}
+            </div>
+            {/* End scrollable content wrapper */}
 
             <Dialog.Close
               as={IconButton}
