@@ -101,20 +101,33 @@ const CameraIcon = () => (
 )
 
 // Custom Dropdown Component
-const CustomDropdown = ({ value, onChange, options, placeholder }) => {
+const CustomDropdown = ({ value, onChange, options, placeholder, onOpen, onClose }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
+
+  // Handle toggle with callbacks
+  const handleToggle = () => {
+    if (isOpen) {
+      onClose?.()
+    } else {
+      onOpen?.()
+    }
+    setIsOpen(!isOpen)
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        if (isOpen) {
+          onClose?.()
+        }
         setIsOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [isOpen, onClose])
 
   const selectedOption = options.find(opt => opt.value === value)
 
@@ -128,7 +141,7 @@ const CustomDropdown = ({ value, onChange, options, placeholder }) => {
     >
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         css={css`
           width: 100%;
           display: flex;
@@ -199,6 +212,7 @@ const CustomDropdown = ({ value, onChange, options, placeholder }) => {
               type="button"
               onClick={() => {
                 onChange(option.value)
+                onClose?.()
                 setIsOpen(false)
               }}
               css={css`
@@ -1702,6 +1716,7 @@ function Editor({ user }) {
   })
   const [usernameErr, setUsernameErr] = useState(null)
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
+  const [openBannerDropdown, setOpenBannerDropdown] = useState(null) // 'fade' | 'overlay' | null
   const saveTimeoutRef = useRef(null)
   const isInitialMount = useRef(true)
 
@@ -2182,6 +2197,8 @@ function Editor({ user }) {
             border-radius: 0.5rem;
             overflow: hidden;
             background: var(--grey-1);
+            transition: max-height 0.25s ease-out;
+            max-height: ${openBannerDropdown ? '600px' : '400px'};
           `}>
             {/* Banner Preview */}
             {clientUser.banner ? (
@@ -2351,6 +2368,8 @@ function Editor({ user }) {
                         { value: 'medium', label: 'Medium' },
                         { value: 'strong', label: 'Strong' },
                       ]}
+                      onOpen={() => setOpenBannerDropdown('fade')}
+                      onClose={() => setOpenBannerDropdown(null)}
                     />
                   </div>
 
@@ -2364,6 +2383,8 @@ function Editor({ user }) {
                         { value: 'dark', label: 'Dark' },
                         { value: 'darker', label: 'Darker' },
                       ]}
+                      onOpen={() => setOpenBannerDropdown('overlay')}
+                      onClose={() => setOpenBannerDropdown(null)}
                     />
                   </div>
                 </div>
