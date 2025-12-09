@@ -158,7 +158,28 @@ export default function ProfileCanvas({
     }
   }, [isRotating, rotationStart, selectedId])
 
-  // Auto-save with debounce
+  // Save function
+  const saveDecorations = useCallback(async (items) => {
+    try {
+      setSaveStatus('saving')
+      await firestore.collection('users').doc(profileOwnerId).update({
+        profileDecorations: {
+          enabled: items.length > 0,
+          updatedAt: Date.now(),
+          items: items,
+        },
+      })
+      lastSavedRef.current = JSON.stringify(items)
+      setSaveStatus('saved')
+      return true
+    } catch (err) {
+      console.error('Failed to save decorations:', err)
+      setSaveStatus('unsaved')
+      return false
+    }
+  }, [profileOwnerId])
+
+  // Auto-save with debounce while editing
   useEffect(() => {
     if (!isOwner || !isEditMode) return
 
@@ -174,22 +195,8 @@ export default function ProfileCanvas({
       clearTimeout(saveTimeoutRef.current)
     }
 
-    saveTimeoutRef.current = setTimeout(async () => {
-      setSaveStatus('saving')
-      try {
-        await firestore.collection('users').doc(profileOwnerId).update({
-          profileDecorations: {
-            enabled: true,
-            updatedAt: Date.now(),
-            items: decorations,
-          },
-        })
-        lastSavedRef.current = currentState
-        setSaveStatus('saved')
-      } catch (err) {
-        console.error('Failed to save decorations:', err)
-        setSaveStatus('unsaved')
-      }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveDecorations(decorations)
     }, 1000)
 
     return () => {
@@ -197,7 +204,7 @@ export default function ProfileCanvas({
         clearTimeout(saveTimeoutRef.current)
       }
     }
-  }, [decorations, isOwner, isEditMode, profileOwnerId])
+  }, [decorations, isOwner, isEditMode, saveDecorations])
 
   // Click outside to deselect
   const handleCanvasClick = useCallback((e) => {
@@ -288,13 +295,20 @@ export default function ProfileCanvas({
   }, [selectedId])
 
   // Toggle edit mode
-  const handleToggleEditMode = useCallback(() => {
+  const handleToggleEditMode = useCallback(async () => {
     if (isEditMode) {
-      // Exiting edit mode - clear selection
+      // Exiting edit mode - save immediately if there are unsaved changes
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+      const currentState = JSON.stringify(decorations)
+      if (currentState !== lastSavedRef.current) {
+        await saveDecorations(decorations)
+      }
       setSelectedId(null)
     }
     setIsEditMode(prev => !prev)
-  }, [isEditMode])
+  }, [isEditMode, decorations, saveDecorations])
 
   // If no decorations and definitely not owner (auth loaded), skip canvas wrapper
   // But always render decorations if they exist
