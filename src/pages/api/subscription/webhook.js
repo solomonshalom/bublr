@@ -1,6 +1,7 @@
 import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
 import { firestore } from '../../../lib/firebase'
 import { WEBHOOK_SECRET } from '../../../lib/polar'
+import { sendSubscriptionEmail } from '../../../lib/resend'
 
 // Disable body parsing, we need the raw body for webhook verification
 export const config = {
@@ -56,8 +57,11 @@ export default async function handler(req, res) {
         break
 
       case 'subscription.canceled':
-      case 'subscription.revoked':
         await handleSubscriptionCanceled(event.data)
+        break
+
+      case 'subscription.revoked':
+        await handleSubscriptionRevoked(event.data)
         break
 
       case 'order.paid':
@@ -83,6 +87,10 @@ async function handleSubscriptionActive(subscription) {
     return
   }
 
+  // Get user email for notification
+  const userDoc = await firestore.collection('users').doc(userId).get()
+  const userData = userDoc.exists ? userDoc.data() : null
+
   // Update user's subscription status in Firestore
   await firestore.collection('users').doc(userId).update({
     subscription: {
@@ -97,6 +105,15 @@ async function handleSubscriptionActive(subscription) {
     },
     hasCustomDomainAccess: true,
   })
+
+  // Send welcome email
+  if (userData?.email) {
+    await sendSubscriptionEmail({
+      userEmail: userData.email,
+      userName: userData.displayName || userData.name,
+      type: 'activated',
+    })
+  }
 
   console.log('Subscription activated for user:', userId)
 }
@@ -166,14 +183,84 @@ async function handleSubscriptionCanceled(subscription) {
     return
   }
 
+  // Get user for email
+  const userDoc = await firestore.collection('users').doc(targetUserId).get()
+  const userData = userDoc.exists ? userDoc.data() : null
+
+  // Check if user should retain access until period end
+  const periodEnd = subscription.currentPeriodEnd
+  const shouldRetainAccess =
+    subscription.cancelAtPeriodEnd === true &&
+    periodEnd &&
+    new Date(periodEnd) > new Date()
+
   // Update subscription status but keep the custom domain data
-  // until period ends (if cancelAtPeriodEnd was true)
+  // User retains access until period ends if cancelAtPeriodEnd is true
   await firestore.collection('users').doc(targetUserId).update({
     'subscription.status': subscription.status,
-    'subscription.cancelAtPeriodEnd': true,
+    'subscription.cancelAtPeriodEnd': subscription.cancelAtPeriodEnd || false,
+    'subscription.currentPeriodEnd': subscription.currentPeriodEnd,
+    'subscription.updatedAt': new Date().toISOString(),
+    hasCustomDomainAccess: shouldRetainAccess,
+  })
+
+  // Send cancellation email
+  if (userData?.email) {
+    await sendSubscriptionEmail({
+      userEmail: userData.email,
+      userName: userData.displayName || userData.name,
+      type: 'canceled',
+      periodEndDate: shouldRetainAccess ? periodEnd : null,
+    })
+  }
+
+  console.log('Subscription canceled for user:', targetUserId,
+    shouldRetainAccess ? '(access retained until period end)' : '(access revoked)')
+}
+
+async function handleSubscriptionRevoked(subscription) {
+  const userId = subscription.metadata?.userId
+
+  // Try to find user by subscription ID if not in metadata
+  let targetUserId = userId
+  if (!targetUserId) {
+    const usersSnapshot = await firestore
+      .collection('users')
+      .where('subscription.id', '==', subscription.id)
+      .limit(1)
+      .get()
+
+    if (!usersSnapshot.empty) {
+      targetUserId = usersSnapshot.docs[0].id
+    }
+  }
+
+  if (!targetUserId) {
+    console.error('No user found for revoked subscription:', subscription.id)
+    return
+  }
+
+  // Get user for email
+  const userDoc = await firestore.collection('users').doc(targetUserId).get()
+  const userData = userDoc.exists ? userDoc.data() : null
+
+  // Revoked means immediate loss of access (payment failure, etc.)
+  await firestore.collection('users').doc(targetUserId).update({
+    'subscription.status': 'revoked',
+    'subscription.cancelAtPeriodEnd': false,
+    'subscription.currentPeriodEnd': subscription.currentPeriodEnd,
     'subscription.updatedAt': new Date().toISOString(),
     hasCustomDomainAccess: false,
   })
 
-  console.log('Subscription canceled for user:', targetUserId)
+  // Send expired email (immediate revocation)
+  if (userData?.email) {
+    await sendSubscriptionEmail({
+      userEmail: userData.email,
+      userName: userData.displayName || userData.name,
+      type: 'expired',
+    })
+  }
+
+  console.log('Subscription revoked for user:', targetUserId)
 }

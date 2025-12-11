@@ -9,6 +9,7 @@ import { useTheme } from 'next-themes'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { auth, firestore } from '../../lib/firebase'
 import { getUserByName } from '../../lib/db'
+import { hasActiveAccess } from '../../lib/subscription'
 
 import meta from '../../components/meta'
 import { generateProfilePageSchema, generateOrganizationSchema } from '../../lib/seo-utils'
@@ -1074,10 +1075,10 @@ export async function getServerSideProps({ params, req }) {
   try {
     const user = await getUserByName(username)
 
-    // Check if this is being accessed via a custom domain
+    // Check if this is being accessed via a custom domain (with grace period support)
     const isCustomDomain = user.customDomain?.domain === hostWithoutPort &&
                            user.customDomain?.status === 'verified' &&
-                           user.hasCustomDomainAccess
+                           hasActiveAccess(user)
 
     // Add isCustomDomain flag to user for frontend use
     user.isCustomDomain = isCustomDomain

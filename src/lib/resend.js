@@ -431,4 +431,182 @@ export async function sendBatchNotifications({
   }
 }
 
+/**
+ * Send subscription status email (activated, canceled, expired)
+ * @param {Object} options - Email options
+ * @param {string} options.userEmail - User's email address
+ * @param {string} [options.userName] - User's display name
+ * @param {string} options.type - Email type: 'activated', 'canceled', or 'expired'
+ * @param {string} [options.periodEndDate] - End date for grace period (ISO string)
+ */
+export async function sendSubscriptionEmail({ userEmail, userName, type, periodEndDate }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.error('RESEND_API_KEY not configured')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
+  const logoUrl = `${baseUrl}/images/logo.png`
+
+  let subject, heading, message, ctaText, ctaUrl
+
+  switch (type) {
+    case 'activated':
+      subject = 'Welcome to Bublr Pro!'
+      heading = 'Your subscription is active'
+      message = 'Thank you for subscribing! You now have access to custom domains, custom branding, and custom newsletter templates.'
+      ctaText = 'Set Up Your Domain'
+      ctaUrl = `${baseUrl}/dashboard`
+      break
+
+    case 'canceled':
+      subject = 'Your Bublr Pro subscription has been canceled'
+      heading = 'Subscription canceled'
+      message = periodEndDate
+        ? `Your subscription has been canceled. You'll continue to have access to Pro features until ${new Date(periodEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.`
+        : 'Your subscription has been canceled. Your Pro features have been deactivated.'
+      ctaText = 'Resubscribe'
+      ctaUrl = `${baseUrl}/dashboard`
+      break
+
+    case 'expired':
+      subject = 'Your Bublr Pro access has ended'
+      heading = 'Pro access expired'
+      message = 'Your subscription period has ended. Your custom domain and branding features have been deactivated, but all your settings are saved and will be restored if you resubscribe.'
+      ctaText = 'Resubscribe'
+      ctaUrl = `${baseUrl}/dashboard`
+      break
+
+    default:
+      return { success: false, error: 'Invalid email type' }
+  }
+
+  const html = generateSubscriptionEmailHTML({
+    logoUrl,
+    heading,
+    userName,
+    message,
+    ctaText,
+    ctaUrl,
+    baseUrl,
+  })
+
+  const text = generateSubscriptionEmailText({
+    heading,
+    userName,
+    message,
+    ctaUrl,
+  })
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject,
+      html,
+      text,
+    })
+
+    if (error) {
+      console.error('Subscription email error:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data }
+  } catch (err) {
+    console.error('Subscription email send error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * Generate HTML email template for subscription status emails
+ */
+function generateSubscriptionEmailHTML({ logoUrl, heading, userName, message, ctaText, ctaUrl, baseUrl }) {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${heading}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.6; color: #2e2e2e; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+          <!-- Logo -->
+          <tr>
+            <td style="padding: 32px 32px 24px 32px; text-align: center;">
+              <img src="${logoUrl}" alt="Bublr" height="48" style="height: 48px;">
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 0 32px 32px 32px;">
+              <h1 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 500; color: #2e2e2e; text-align: center;">
+                ${heading}
+              </h1>
+
+              <p style="margin: 0 0 8px 0; color: #6f6f6f; text-align: center;">
+                Hi${userName ? ` ${userName}` : ''},
+              </p>
+
+              <p style="margin: 0 0 24px 0; color: #6f6f6f; text-align: center;">
+                ${message}
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${ctaUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2e2e2e; color: #ffffff; text-decoration: none; font-weight: 500; font-size: 14px; border-radius: 6px;">
+                      ${ctaText}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 32px; border-top: 1px solid #e5e5e5;">
+              <p style="margin: 0; font-size: 12px; color: #9a9a9a; text-align: center;">
+                <a href="${baseUrl}" style="color: #6f6f6f; text-decoration: underline;">Bublr</a>
+                <span style="color: #c7c7c7; margin: 0 8px;">·</span>
+                A minimal writing platform
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`
+}
+
+/**
+ * Generate plain text email for subscription status emails
+ */
+function generateSubscriptionEmailText({ heading, userName, message, ctaUrl }) {
+  return `
+${heading}
+
+Hi${userName ? ` ${userName}` : ''},
+
+${message}
+
+${ctaUrl}
+
+---
+Bublr - A minimal writing platform
+https://bublr.life
+`
+}
+
 export default resend

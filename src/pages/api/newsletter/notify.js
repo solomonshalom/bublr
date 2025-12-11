@@ -1,5 +1,6 @@
 import { firestore } from '../../../lib/firebase'
 import { sendBatchNotifications } from '../../../lib/resend'
+import { hasActiveAccess } from '../../../lib/subscription'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -47,8 +48,8 @@ export default async function handler(req, res) {
       })
     }
 
-    // Get custom newsletter template if user has one and has subscription
-    const customTemplate = (author.hasCustomDomainAccess && author.newsletterTemplate?.html)
+    // Get custom newsletter template if user has one and has active subscription (with grace period support)
+    const customTemplate = (hasActiveAccess(author) && author.newsletterTemplate?.html)
       ? author.newsletterTemplate.html
       : null
 

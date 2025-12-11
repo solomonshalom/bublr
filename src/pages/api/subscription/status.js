@@ -1,4 +1,6 @@
 import { firestore } from '../../../lib/firebase'
+import { checkSubscriptionAccess } from '../../../lib/subscription'
+import { sendSubscriptionEmail } from '../../../lib/resend'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -20,9 +22,28 @@ export default async function handler(req, res) {
 
     const userData = userDoc.data()
 
+    // Check if grace period just expired (for sending email)
+    const wasAccessible = userData.hasCustomDomainAccess
+    const hadGracePeriod = userData.subscription?.cancelAtPeriodEnd
+    const periodEnd = userData.subscription?.currentPeriodEnd
+    const gracePeriodJustExpired = wasAccessible && hadGracePeriod && periodEnd &&
+      new Date(periodEnd) < new Date()
+
+    // Check access with lazy update (will update DB if grace period expired)
+    const hasAccess = await checkSubscriptionAccess(userData, userId, true)
+
+    // Send expiry email if grace period just ended
+    if (gracePeriodJustExpired && userData.email) {
+      await sendSubscriptionEmail({
+        userEmail: userData.email,
+        userName: userData.displayName || userData.name,
+        type: 'expired',
+      })
+    }
+
     return res.status(200).json({
       hasSubscription: !!userData.subscription,
-      hasCustomDomainAccess: userData.hasCustomDomainAccess || false,
+      hasCustomDomainAccess: hasAccess,
       subscription: userData.subscription || null,
       customDomain: userData.customDomain || null,
       customBranding: userData.customBranding || null,

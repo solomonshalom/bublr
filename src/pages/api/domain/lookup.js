@@ -1,4 +1,5 @@
 import { firestore } from '../../../lib/firebase'
+import { checkSubscriptionAccess } from '../../../lib/subscription'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -27,8 +28,9 @@ export default async function handler(req, res) {
     const userDoc = usersSnapshot.docs[0]
     const userData = userDoc.data()
 
-    // Check if user still has active subscription
-    if (!userData.hasCustomDomainAccess) {
+    // Check if user still has active subscription (with grace period support)
+    const hasAccess = await checkSubscriptionAccess(userData, userDoc.id, true)
+    if (!hasAccess) {
       return res.status(403).json({ error: 'Custom domain subscription not active' })
     }
 
