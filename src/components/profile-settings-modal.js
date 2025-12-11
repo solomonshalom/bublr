@@ -2045,7 +2045,17 @@ function Editor({ user }) {
       ...prev,
       customSections: [
         ...prev.customSections,
-        { title: '', content: '' },
+        { type: 'regular', title: '', content: '' },
+      ],
+    }))
+  }
+
+  const addBlankSection = () => {
+    setClientUser(prev => ({
+      ...prev,
+      customSections: [
+        ...prev.customSections,
+        { type: 'blank', width: 'medium' },
       ],
     }))
   }
@@ -3082,57 +3092,146 @@ function Editor({ user }) {
               <TrashIcon width={14} height={14} />
             </button>
 
-            <div css={css`margin-bottom: 0.75rem;`}>
-              <StyledLabel>Section Title</StyledLabel>
-              <SmallInput
-                type="text"
-                value={section.title}
-                onChange={e => updateCustomSection(index, 'title', e.target.value)}
-                placeholder="e.g., What I'm working on"
-              />
-            </div>
+            {section.type === 'blank' ? (
+              <div>
+                <div css={css`display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;`}>
+                  <span css={css`
+                    font-size: 0.75rem;
+                    color: var(--grey-4);
+                    background: var(--grey-2);
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 0.25rem;
+                  `}>
+                    Blank Section
+                  </span>
+                </div>
 
-            <div>
-              <StyledLabel>Content</StyledLabel>
-              <Textarea
-                value={section.content}
-                onChange={e => updateCustomSection(index, 'content', e.target.value)}
-                placeholder="Write your section content..."
-                css={css`
-                  min-height: 5em;
-                `}
-              />
-            </div>
+                <StyledLabel>Width</StyledLabel>
+                <div css={css`display: flex; gap: 0.5rem; flex-wrap: wrap;`}>
+                  {[
+                    { value: 'small', label: 'Small (25%)' },
+                    { value: 'medium', label: 'Medium (50%)' },
+                    { value: 'large', label: 'Large (75%)' },
+                    { value: 'full', label: 'Full (100%)' }
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => updateCustomSection(index, 'width', option.value)}
+                      css={css`
+                        padding: 0.35rem 0.75rem;
+                        border: 1px solid ${section.width === option.value ? 'var(--grey-4)' : 'var(--grey-2)'};
+                        border-radius: 0.375rem;
+                        background: ${section.width === option.value ? 'var(--grey-2)' : 'var(--grey-1)'};
+                        color: var(--grey-4);
+                        font-size: 0.75rem;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        &:hover {
+                          border-color: var(--grey-3);
+                        }
+                      `}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                <p css={css`
+                  font-size: 0.7rem;
+                  color: var(--grey-3);
+                  margin-top: 0.5rem;
+                `}>
+                  Use blank sections as designated spots for sticker placement.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div css={css`margin-bottom: 0.75rem;`}>
+                  <StyledLabel>Section Title</StyledLabel>
+                  <SmallInput
+                    type="text"
+                    value={section.title}
+                    onChange={e => updateCustomSection(index, 'title', e.target.value)}
+                    placeholder="e.g., What I'm working on"
+                  />
+                </div>
+
+                <div>
+                  <StyledLabel>Content</StyledLabel>
+                  <Textarea
+                    value={section.content}
+                    onChange={e => updateCustomSection(index, 'content', e.target.value)}
+                    placeholder="Write your section content..."
+                    css={css`
+                      min-height: 5em;
+                    `}
+                  />
+                </div>
+              </>
+            )}
           </div>
         ))}
 
-        <button
-          type="button"
-          onClick={addCustomSection}
-          css={css`
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: none;
-            border: 1px dashed var(--grey-2);
-            border-radius: 0.5rem;
-            padding: 0.75rem 1rem;
-            color: var(--grey-3);
-            cursor: pointer;
-            width: 100%;
-            justify-content: center;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
+        <div css={css`display: flex; gap: 0.5rem; flex-wrap: wrap;`}>
+          <button
+            type="button"
+            onClick={addCustomSection}
+            css={css`
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              background: none;
+              border: 1px dashed var(--grey-2);
+              border-radius: 0.5rem;
+              padding: 0.75rem 1rem;
+              color: var(--grey-3);
+              cursor: pointer;
+              flex: 1;
+              min-width: 140px;
+              justify-content: center;
+              font-size: 0.85rem;
+              transition: all 0.2s ease;
 
-            &:hover {
-              border-color: var(--grey-3);
-              color: var(--grey-4);
-            }
-          `}
-        >
-          <PlusIcon width={14} height={14} />
-          Add Section
-        </button>
+              &:hover {
+                border-color: var(--grey-3);
+                color: var(--grey-4);
+              }
+            `}
+          >
+            <PlusIcon width={14} height={14} />
+            Add Section
+          </button>
+
+          <button
+            type="button"
+            onClick={addBlankSection}
+            css={css`
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              background: none;
+              border: 1px dashed var(--grey-2);
+              border-radius: 0.5rem;
+              padding: 0.75rem 1rem;
+              color: var(--grey-3);
+              cursor: pointer;
+              flex: 1;
+              min-width: 140px;
+              justify-content: center;
+              font-size: 0.85rem;
+              transition: all 0.2s ease;
+
+              &:hover {
+                border-color: var(--grey-3);
+                color: var(--grey-4);
+              }
+            `}
+          >
+            <PlusIcon width={14} height={14} />
+            Add Blank Section
+          </button>
+        </div>
 
         {/* Profile Customization - Collapsible Section */}
         <div css={css`

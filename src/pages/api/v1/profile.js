@@ -46,10 +46,19 @@ export default async function handler(req, res) {
       socialLinks: userData.socialLinks || {},
       skills: userData.skills || [],
       skillsSectionTitle: userData.skillsSectionTitle || '',
-      customSections: (userData.customSections || []).map(s => ({
-        title: s.title,
-        content: s.content
-      })),
+      customSections: (userData.customSections || []).map(s => {
+        if (s.type === 'blank') {
+          return {
+            type: 'blank',
+            width: s.width || 'medium'
+          }
+        }
+        return {
+          type: s.type || 'regular',
+          title: s.title,
+          content: s.content
+        }
+      }),
       postsCount: (userData.posts || []).length,
       subscribersCount: (userData.subscribers || []).length
     }

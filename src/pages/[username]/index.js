@@ -936,6 +936,17 @@ export default function Profile({ user, organizationSchema, profilePageSchema, c
 
                 // Custom Sections
                 if (sectionType === 'custom' && hasCustomSections) {
+                  // Width mapping for blank sections
+                  const getWidthStyle = (width) => {
+                    switch (width) {
+                      case 'small': return '25%'
+                      case 'medium': return '50%'
+                      case 'large': return '75%'
+                      case 'full': return '100%'
+                      default: return '50%'
+                    }
+                  }
+
                   return (
                     <div key="custom">
                       {user.customSections.map((section, index) => (
@@ -946,12 +957,25 @@ export default function Profile({ user, organizationSchema, profilePageSchema, c
                           {user.dividersVisibility?.custom === false && (
                             <div css={css`margin-top: 32px;`} />
                           )}
-                          <p css={css`font-weight: 500; margin-bottom: 8px;`}>
-                            {section.title}
-                          </p>
-                          <p css={css`color: ${colors.muted}; a { color: inherit; }; margin-top: 16px;`}>
-                            {section.content}
-                          </p>
+                          {section.type === 'blank' ? (
+                            <div
+                              css={css`
+                                width: ${getWidthStyle(section.width)};
+                                min-height: 100px;
+                              `}
+                              data-blank-section="true"
+                              data-section-index={index}
+                            />
+                          ) : (
+                            <>
+                              <p css={css`font-weight: 500; margin-bottom: 8px;`}>
+                                {section.title}
+                              </p>
+                              <p css={css`color: ${colors.muted}; a { color: inherit; }; margin-top: 16px;`}>
+                                {section.content}
+                              </p>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>
