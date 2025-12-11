@@ -4,7 +4,9 @@ import { ThemeProvider } from 'next-themes'
 import { Global, css } from '@emotion/react'
 import { IdProvider } from '@radix-ui/react-id'
 import { useRouter } from 'next/router'
+import { motion, AnimatePresence } from 'framer-motion'
 import { I18nProvider } from '../lib/i18n'
+import { pageVariants } from '../lib/animation-config'
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || ((page) => page)
@@ -66,6 +68,16 @@ const App = ({ Component, pageProps }) => {
             padding: 0;
           }
 
+          /* Hide scrollbar globally while keeping scroll functionality */
+          * {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+          }
+
+          *::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+          }
+
           html {
             font-size: 100%;
             color: var(--grey-4);
@@ -114,12 +126,31 @@ const App = ({ Component, pageProps }) => {
           .ProseMirror img.ProseMirror-selectednode {
             box-shadow: 0 0 1rem var(--grey-2);
           }
+
+          /* Reduced motion support */
+          @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+              animation-duration: 0.01ms !important;
+              animation-iteration-count: 1 !important;
+              transition-duration: 0.01ms !important;
+            }
+          }
         `}
       />
       <IdProvider>
         <I18nProvider>
           <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme">
-            {getLayout(<Component {...pageProps} />, pageProps)}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={router.pathname}
+                variants={pageVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                {getLayout(<Component {...pageProps} />, pageProps)}
+              </motion.div>
+            </AnimatePresence>
           </ThemeProvider>
         </I18nProvider>
       </IdProvider>

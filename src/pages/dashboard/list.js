@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
 import Header from '../../components/header'
-import Spinner from '../../components/spinner'
 import Container from '../../components/container'
 import ProfileSettingsModal from '../../components/profile-settings-modal'
 import ThemeToggle from '../../components/theme-toggle'
@@ -17,47 +16,73 @@ import NotificationsPanel, { NotificationsTrigger } from '../../components/notif
 import { truncate } from '../../lib/utils'
 import { firestore, auth } from '../../lib/firebase'
 import { getPostByID, getUserByID } from '../../lib/db'
+import { SkeletonExploreItem } from '../../components/skeleton-post-item'
+import { AnimatedList, AnimatedListItem } from '../../components/animated-list'
 
 function List({ uid }) {
   const [list, setList] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    setIsLoading(true)
     ;(async () => {
-      const user = await getUserByID(uid)
-      const postPromises = user.readingList.map(async pid => {
-        const post = await getPostByID(pid)
-        const author = await firestore
-          .collection('users')
-          .doc(post.author)
-          .get()
-        post.author = author.data()
-        return post
-      })
-      const posts = await Promise.all(postPromises)
-      console.log(posts)
-      setList(posts)
+      try {
+        const user = await getUserByID(uid)
+        if (!user?.readingList?.length) {
+          setList([])
+          setIsLoading(false)
+          return
+        }
+        const postPromises = user.readingList.map(async pid => {
+          const post = await getPostByID(pid)
+          const author = await firestore
+            .collection('users')
+            .doc(post.author)
+            .get()
+          post.author = author.data()
+          return post
+        })
+        const posts = await Promise.all(postPromises)
+        setList(posts)
+      } catch (err) {
+        console.error('Error loading reading list:', err)
+        setList([])
+      } finally {
+        setIsLoading(false)
+      }
     })()
   }, [uid])
 
+  if (isLoading) {
+    return (
+      <ul css={css`list-style: none;`}>
+        {[1, 2, 3].map(i => (
+          <SkeletonExploreItem key={i} />
+        ))}
+      </ul>
+    )
+  }
+
   if (list.length > 0)
     return (
-      <ul
+      <AnimatedList
         css={css`
           list-style: none;
-
-          li {
-            max-width: 25rem;
-            margin: 2.5rem 0;
-
-            a {
-              text-decoration: none !important;
-              color: inherit;
-            }
-          }
         `}
       >
         {list.map(post => (
-          <li key={post.id}>
+          <AnimatedListItem
+            key={post.id}
+            css={css`
+              max-width: 25rem;
+              margin: 2.5rem 0;
+
+              a {
+                text-decoration: none !important;
+                color: inherit;
+              }
+            `}
+          >
             <Link href={`/${post.author.name}/${post.slug}`}>
               <a>
                 <h3
@@ -104,9 +129,9 @@ function List({ uid }) {
                 </p>
               </a>
             </Link>
-          </li>
+          </AnimatedListItem>
         ))}
-      </ul>
+      </AnimatedList>
     )
 
   return <p>You have no posts saved to read later 😔</p>
@@ -194,7 +219,11 @@ export default function ReadingList() {
       ) : user ? (
         <List uid={user.uid} />
       ) : (
-        <Spinner />
+        <ul css={css`list-style: none;`}>
+          {[1, 2, 3].map(i => (
+            <SkeletonExploreItem key={i} />
+          ))}
+        </ul>
       )}
     </>
   )

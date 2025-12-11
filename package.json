@@ -26,6 +26,7 @@
     "axios": "^1.13.2",
     "firebase": "^8.7.1",
     "formidable": "^3.5.4",
+    "framer-motion": "^6.5.1",
     "groq-sdk": "^0.37.0",
     "gsap": "^3.13.0",
     "html-to-text": "^8.0.0",

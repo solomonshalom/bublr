@@ -13,13 +13,14 @@ import { firestore, auth } from '../../lib/firebase'
 
 import Button from '../../components/button'
 import Header from '../../components/header'
-import Spinner from '../../components/spinner'
 import Container from '../../components/container'
 import Search from '../../components/search'
 import ProfileSettingsModal from '../../components/profile-settings-modal'
 import ThemeToggle from '../../components/theme-toggle'
 import NotificationsPanel, { NotificationsTrigger } from '../../components/notifications-panel'
 import { formatDate } from '../../lib/utils'
+import { SkeletonDashboardItem } from '../../components/skeleton-post-item'
+import { AnimatedList, AnimatedListItem } from '../../components/animated-list'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -225,7 +226,7 @@ export default function Dashboard() {
                 Yep, nothing matches your search results, I wonder why 🤔
               </p>
               ) : (
-                <ul
+                <AnimatedList
                   css={css`
                     margin-top: 0rem;
                     list-style: none;
@@ -238,7 +239,7 @@ export default function Dashboard() {
                         a.lastEdited.toDate().getTime(),
                     )
                     .map(post => (
-                      <li
+                      <AnimatedListItem
                         key={post.id}
                         css={css`
                           margin: 2rem 0;
@@ -295,9 +296,9 @@ export default function Dashboard() {
                             {post.title ? htmlToText(post.title) : 'Untitled'}
                           </a>
                         </Link>
-                      </li>
+                      </AnimatedListItem>
                     ))}
-                </ul>
+                </AnimatedList>
               )}
           </div>
           :
@@ -313,7 +314,11 @@ export default function Dashboard() {
           }
         </>
       ) : (
-        <Spinner />
+        <ul css={css`list-style: none; margin-top: 0;`}>
+          {[1, 2, 3, 4, 5].map(i => (
+            <SkeletonDashboardItem key={i} />
+          ))}
+        </ul>
       )}
     </>
   )

@@ -13,7 +13,6 @@ import { firestore, auth } from '../../lib/firebase'
 
 import Button from '../../components/button'
 import Header from '../../components/header'
-import Spinner from '../../components/spinner'
 import Container from '../../components/container'
 import Search from '../../components/search'
 import ProfileSettingsModal from '../../components/profile-settings-modal'
@@ -22,6 +21,8 @@ import NotificationsPanel, { NotificationsTrigger } from '../../components/notif
 import { truncate } from '../../lib/utils'
 import { getPostByID } from '../../lib/db'
 import meta from '../../components/meta'
+import { SkeletonExploreItem } from '../../components/skeleton-post-item'
+import { AnimatedList, AnimatedListItem } from '../../components/animated-list'
 
 // Static schema for explore page (defined at module level for SSR compatibility)
 const collectionPageSchema = {
@@ -304,22 +305,28 @@ export default function Explore() {
           </div>
 
           {shouldShowSpinner ? (
-            <Spinner />
+            <ul css={css`list-style: none;`}>
+              {[1, 2, 3, 4].map(i => (
+                <SkeletonExploreItem key={i} />
+              ))}
+            </ul>
           ) : shouldShowPosts ? (
-            <ul css={css`
+            <AnimatedList css={css`
               list-style: none;
               text-decoration: none;
-              li {
-                max-width: 25rem;
-                margin: 2.5rem 0;
-                text-decoration: none;
-              }
             `}>
               {explorePosts.map(post => (
-                <li key={post.id}>
+                <AnimatedListItem
+                  key={post.id}
+                  css={css`
+                    max-width: 25rem;
+                    margin: 2.5rem 0;
+                    text-decoration: none;
+                  `}
+                >
                   <Link href={`/${post.author.name || 'unknown'}/${post.slug}`}>
                     <div css={css`
-                      text-decoration: none; 
+                      text-decoration: none;
                       color: inherit;
                       display: block;
                       cursor: pointer;
@@ -365,15 +372,15 @@ export default function Explore() {
                       `}>
                         {post.excerpt
                           ? htmlToText(post.excerpt)
-                          : post.content 
+                          : post.content
                             ? truncate(htmlToText(post.content), 25)
                             : 'No preview available'}
                       </p>
                     </div>
                   </Link>
-                </li>
+                </AnimatedListItem>
               ))}
-            </ul>
+            </AnimatedList>
           ) : shouldShowEmptyState ? (
             <div css={css`
               text-align: center;
@@ -393,7 +400,11 @@ export default function Explore() {
           ) : null}
         </>
       ) : (
-        <Spinner />
+        <ul css={css`list-style: none;`}>
+          {[1, 2, 3, 4].map(i => (
+            <SkeletonExploreItem key={i} />
+          ))}
+        </ul>
       )}
     </>
   )

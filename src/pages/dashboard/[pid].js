@@ -90,8 +90,8 @@ const PlatformIcons = {
 }
 
 import Input from '../../components/input'
-import Spinner from '../../components/spinner'
 import Container from '../../components/container'
+import { SkeletonEditor } from '../../components/skeleton-post-item'
 import ModalOverlay from '../../components/modal-overlay'
 import PostContainer from '../../components/post-container'
 import VoiceInput from '../../components/voice-input'
@@ -2376,7 +2376,7 @@ export default function PostEditor() {
     return <Editor post={post} />
   }
 
-  return <Spinner />
+  return <SkeletonEditor />
 }
 
 PostEditor.getLayout = function PostEditorLayout(page) {
