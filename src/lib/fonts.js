@@ -56,7 +56,7 @@ export const ALL_CURATED_FONTS = Object.values(CURATED_FONTS).flat()
 // Default fonts (already loaded globally)
 export const DEFAULT_FONTS = {
   headingFont: 'Inter',
-  bodyFont: 'Newsreader',
+  bodyFont: 'Inter',
   codeFont: 'JetBrains Mono',
 }
 
