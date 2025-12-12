@@ -2,8 +2,6 @@
 import Link from 'next/link'
 import Head from 'next/head'
 import { css, Global } from '@emotion/react'
-import { useState, useEffect } from 'react'
-import { useTheme } from 'next-themes'
 
 import meta from '../components/meta'
 
@@ -12,62 +10,43 @@ const globalStyles = css`
   @import url('https://fonts.bunny.net/css?family=inter:400,500,600&family=jetbrains-mono:400');
 `
 
+// Code block component using CSS variables
+const CodeBlock = ({ children }) => (
+  <pre
+    css={css`
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 12px 0;
+      border: 1px solid var(--border);
+    `}
+  >
+    {children}
+  </pre>
+)
+
+// Inline code component
+const InlineCode = ({ children }) => (
+  <code
+    css={css`
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
+    `}
+  >
+    {children}
+  </code>
+)
+
 export default function Docs() {
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
   const currentYear = new Date().getFullYear()
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const isDark = mounted ? resolvedTheme === 'dark' : false
-
-  // Theme-aware colors (matching app's --grey-1)
-  const colors = {
-    bg: isDark ? '#171717' : '#ffffff',
-    text: isDark ? 'rgb(229, 231, 235)' : 'rgb(33, 37, 41)',
-    muted: isDark ? 'rgba(229, 231, 235, 0.6)' : 'rgba(33, 37, 41, 0.6)',
-    border: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgb(222, 223, 223)',
-    codeBg: isDark ? '#262626' : '#f5f5f5',
-    codeText: isDark ? '#e5e7eb' : '#374151',
-    success: isDark ? '#22c55e' : '#16a34a',
-    warning: isDark ? '#eab308' : '#ca8a04',
-    error: isDark ? '#ef4444' : '#dc2626',
-  }
-
-  const CodeBlock = ({ children }) => (
-    <pre
-      css={css`
-        background: ${colors.codeBg};
-        color: ${colors.codeText};
-        padding: 1rem;
-        border-radius: 8px;
-        overflow-x: auto;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 13px;
-        line-height: 1.6;
-        margin: 12px 0;
-        border: 1px solid ${colors.border};
-      `}
-    >
-      {children}
-    </pre>
-  )
-
-  const InlineCode = ({ children }) => (
-    <code
-      css={css`
-        background: ${colors.codeBg};
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.9em;
-      `}
-    >
-      {children}
-    </code>
-  )
 
   const MethodBadge = ({ method }) => {
     const methodColors = {
@@ -99,8 +78,8 @@ export default function Docs() {
   const Endpoint = ({ method, path, description }) => (
     <div
       css={css`
-        background: ${colors.codeBg};
-        border: 1px solid ${colors.border};
+        background: var(--code-bg);
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: 12px 16px;
         margin: 12px 0;
@@ -113,7 +92,7 @@ export default function Docs() {
         </code>
       </div>
       {description && (
-        <p css={css`color: ${colors.muted}; margin-top: 8px; margin-bottom: 0; font-size: 13px;`}>
+        <p css={css`color: var(--grey-3); margin-top: 8px; margin-bottom: 0; font-size: 13px;`}>
           {description}
         </p>
       )}
@@ -139,9 +118,9 @@ export default function Docs() {
           font-size: 14px;
           font-weight: 400;
           line-height: 1.5;
-          color: ${colors.text};
+          color: var(--grey-4);
           text-align: left;
-          background-color: ${colors.bg};
+          background-color: var(--grey-1);
           min-height: 100vh;
           -webkit-text-size-adjust: 100%;
           -webkit-tap-highlight-color: transparent;
@@ -211,17 +190,17 @@ export default function Docs() {
                 API Documentation
               </h1>
 
-              <p css={css`color: ${colors.muted}; margin-bottom: 32px;`}>
+              <p css={css`color: var(--grey-3); margin-bottom: 32px;`}>
                 Integrate with Bublr programmatically
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Getting Started */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Getting Started
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 The Bublr API allows you to manage your posts and profile programmatically. You can list posts, read content, update your profile, and publish new articles via the API.
               </p>
 
@@ -230,44 +209,44 @@ export default function Docs() {
               </p>
               <CodeBlock>https://bublr.life/api/v1</CodeBlock>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Authentication */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Authentication
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
-                All API requests require authentication using an API key. You can create API keys from your <Link href="/dashboard"><a css={css`border-bottom: 1px dotted ${colors.muted};`}>Profile Settings</a></Link> → Advanced.
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
+                All API requests require authentication using an API key. You can create API keys from your <Link href="/dashboard"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Profile Settings</a></Link> → Advanced.
               </p>
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Include your API key in the <InlineCode>Authorization</InlineCode> header:
               </p>
 
               <CodeBlock>{`Authorization: Bearer bublr_sk_your_api_key_here`}</CodeBlock>
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 <strong>Important:</strong> Keep your API keys secure. Never expose them in client-side code or public repositories. You can create up to 5 API keys and revoke them at any time.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Rate Limits */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Rate Limits
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 The API has the following rate limits to ensure fair usage:
               </p>
-              <ul css={css`color: ${colors.muted}; margin-top: 12px; margin-left: 1.25rem; line-height: 1.7;`}>
+              <ul css={css`color: var(--grey-3); margin-top: 12px; margin-left: 1.25rem; line-height: 1.7;`}>
                 <li><strong>100 requests per minute</strong> for read operations (GET)</li>
                 <li><strong>30 requests per minute</strong> for write operations (POST, PUT, DELETE)</li>
               </ul>
-              <p css={css`color: ${colors.muted}; margin-top: 12px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 12px; line-height: 1.7;`}>
                 If you exceed these limits, you&apos;ll receive a <InlineCode>429 Too Many Requests</InlineCode> response.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Endpoints */}
               <p css={css`font-weight: 600; margin-bottom: 16px; font-size: 1.1rem;`}>
@@ -285,7 +264,7 @@ export default function Docs() {
                 description="Get your profile information"
               />
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 <strong>Response:</strong>
               </p>
               <CodeBlock>{`{
@@ -305,7 +284,7 @@ export default function Docs() {
   }
 }`}</CodeBlock>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Posts */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
@@ -318,16 +297,16 @@ export default function Docs() {
                 description="List all your posts"
               />
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 <strong>Query Parameters:</strong>
               </p>
-              <ul css={css`color: ${colors.muted}; margin-top: 8px; margin-left: 1.25rem; line-height: 1.7;`}>
+              <ul css={css`color: var(--grey-3); margin-top: 8px; margin-left: 1.25rem; line-height: 1.7;`}>
                 <li><InlineCode>published</InlineCode> — Filter by publish status (<InlineCode>true</InlineCode> or <InlineCode>false</InlineCode>)</li>
                 <li><InlineCode>limit</InlineCode> — Number of posts to return (default: 50, max: 100)</li>
                 <li><InlineCode>offset</InlineCode> — Number of posts to skip for pagination</li>
               </ul>
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 <strong>Response:</strong>
               </p>
               <CodeBlock>{`{
@@ -354,7 +333,7 @@ export default function Docs() {
                 description="Get a single post by slug"
               />
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 <strong>Response:</strong>
               </p>
               <CodeBlock>{`{
@@ -377,7 +356,7 @@ export default function Docs() {
                 description="Create a new post"
               />
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 <strong>Request Body:</strong>
               </p>
               <CodeBlock>{`{
@@ -389,7 +368,7 @@ export default function Docs() {
   "dotColor": "#4D96FF"          // Optional, hex color
 }`}</CodeBlock>
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 <strong>Response:</strong>
               </p>
               <CodeBlock>{`{
@@ -411,7 +390,7 @@ export default function Docs() {
                 description="Update an existing post"
               />
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 <strong>Request Body:</strong> (all fields optional)
               </p>
               <CodeBlock>{`{
@@ -429,13 +408,13 @@ export default function Docs() {
                 description="Delete a post permanently"
               />
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Error Handling */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Error Handling
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 The API returns consistent error responses with an <InlineCode>error</InlineCode> message and <InlineCode>code</InlineCode>:
               </p>
 
@@ -444,10 +423,10 @@ export default function Docs() {
   "code": "INVALID_KEY_FORMAT"
 }`}</CodeBlock>
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 <strong>Common Error Codes:</strong>
               </p>
-              <ul css={css`color: ${colors.muted}; margin-top: 8px; margin-left: 1.25rem; line-height: 1.7;`}>
+              <ul css={css`color: var(--grey-3); margin-top: 8px; margin-left: 1.25rem; line-height: 1.7;`}>
                 <li><InlineCode>MISSING_AUTH</InlineCode> — Authorization header not provided</li>
                 <li><InlineCode>INVALID_KEY_FORMAT</InlineCode> — API key format is invalid</li>
                 <li><InlineCode>INVALID_KEY</InlineCode> — API key not found or invalid</li>
@@ -456,7 +435,7 @@ export default function Docs() {
                 <li><InlineCode>RATE_LIMITED</InlineCode> — Too many requests</li>
               </ul>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Example */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
@@ -473,7 +452,7 @@ export default function Docs() {
     "published": true
   }'`}</CodeBlock>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* SDK */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
@@ -506,13 +485,13 @@ async function createPost(title, content) {
   return response.json();
 }`}</CodeBlock>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Content Moderation */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Content Moderation
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 When publishing posts via the API, content is automatically moderated for spam, inappropriate content, and policy violations. If content is flagged, the post will be created but not published, and the response will include moderation details:
               </p>
 
@@ -528,16 +507,16 @@ async function createPost(title, content) {
   "message": "Post created but not published due to content moderation"
 }`}</CodeBlock>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Other Docs */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Other Documentation
               </p>
-              <ul css={css`color: ${colors.muted}; margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
+              <ul css={css`color: var(--grey-3); margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
                 <li>
                   <Link href="/docs/newsletter">
-                    <a css={css`border-bottom: 1px dotted ${colors.muted};`}>Newsletter Email Templates</a>
+                    <a css={css`border-bottom: 1px dotted var(--grey-3);`}>Newsletter Email Templates</a>
                   </Link>
                   {' — Customize the emails sent to your subscribers'}
                 </li>
@@ -545,7 +524,7 @@ async function createPost(title, content) {
 
               {/* Footer */}
               <div css={css`font-size: 12px; margin-top: 64px;`}>
-                <p css={css`color: ${colors.muted}; a { color: inherit; }`}>
+                <p css={css`color: var(--grey-3); a { color: inherit; }`}>
                   Copyright &copy; {currentYear} Bublr<br />
                   <Link href="/"><a>Home</a></Link>
                   &nbsp;&middot;&nbsp;

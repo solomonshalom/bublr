@@ -9,10 +9,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { I18nProvider } from '../lib/i18n'
 import { SmoothScrollProvider } from '../components/smooth-scroll'
 
+// Premium easing curves
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1]
+const EASE_OUT = [0.4, 0, 0.2, 1]
+
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || ((page) => page)
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
+  const [displayedPath, setDisplayedPath] = useState(router.asPath)
 
   // Handle route change loading state
   useEffect(() => {
@@ -21,8 +26,9 @@ const App = ({ Component, pageProps }) => {
         setIsNavigating(true)
       }
     }
-    const handleComplete = () => {
+    const handleComplete = (url) => {
       setIsNavigating(false)
+      setDisplayedPath(url)
       // Scroll to top on route change
       window.scrollTo(0, 0)
     }
@@ -78,6 +84,9 @@ const App = ({ Component, pageProps }) => {
             --text: #2B3044;
             --line: #BBC1E1;
             --line-active: #275EFE;
+            --code-bg: #f5f5f5;
+            --code-text: #374151;
+            --border: rgb(222, 223, 223);
           }
 
           [data-theme='dark'] {
@@ -85,6 +94,9 @@ const App = ({ Component, pageProps }) => {
             --grey-2: #2e2e2e;
             --grey-4: #c7c7c7;
             --grey-5: #fcfcfc;
+            --code-bg: #262626;
+            --code-text: #e5e7eb;
+            --border: rgba(255, 255, 255, 0.15);
           }
 
           *,
@@ -180,20 +192,24 @@ const App = ({ Component, pageProps }) => {
         <I18nProvider>
           <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme">
             <SmoothScrollProvider>
-              {/* Immediate fade feedback when navigation starts */}
-              <motion.div
-                animate={{
-                  opacity: isNavigating ? 0.6 : 1,
-                  scale: isNavigating ? 0.995 : 1,
-                }}
-                transition={{
-                  duration: 0.15,
-                  ease: [0.4, 0, 0.2, 1]
-                }}
-                style={{ transformOrigin: 'top center' }}
-              >
-                {getLayout(<Component {...pageProps} />, pageProps)}
-              </motion.div>
+              {/* Premium page transitions */}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={displayedPath}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{
+                    opacity: isNavigating ? 0.4 : 1,
+                    y: isNavigating ? 4 : 0,
+                  }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    duration: isNavigating ? 0.1 : 0.35,
+                    ease: EASE_OUT_EXPO,
+                  }}
+                >
+                  {getLayout(<Component {...pageProps} />, pageProps)}
+                </motion.div>
+              </AnimatePresence>
             </SmoothScrollProvider>
           </ThemeProvider>
         </I18nProvider>

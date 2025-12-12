@@ -2,8 +2,6 @@
 import Link from 'next/link'
 import Head from 'next/head'
 import { css, Global } from '@emotion/react'
-import { useState, useEffect } from 'react'
-import { useTheme } from 'next-themes'
 
 import meta from '../../components/meta'
 
@@ -12,79 +10,61 @@ const globalStyles = css`
   @import url('https://fonts.bunny.net/css?family=inter:400,500,600&family=jetbrains-mono:400');
 `
 
+// Code block component using CSS variables
+const CodeBlock = ({ children }) => (
+  <pre
+    css={css`
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 12px 0;
+      border: 1px solid var(--border);
+    `}
+  >
+    {children}
+  </pre>
+)
+
+// Inline code component
+const InlineCode = ({ children }) => (
+  <code
+    css={css`
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
+    `}
+  >
+    {children}
+  </code>
+)
+
+// Tag component
+const Tag = ({ children }) => (
+  <span
+    css={css`
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      display: inline-block;
+      margin: 4px 4px 4px 0;
+    `}
+  >
+    {children}
+  </span>
+)
+
 export default function NewsletterDocs() {
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
   const currentYear = new Date().getFullYear()
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const isDark = mounted ? resolvedTheme === 'dark' : false
-
-  // Theme-aware colors (matching app's --grey-1)
-  const colors = {
-    bg: isDark ? '#171717' : '#ffffff',
-    text: isDark ? 'rgb(229, 231, 235)' : 'rgb(33, 37, 41)',
-    muted: isDark ? 'rgba(229, 231, 235, 0.6)' : 'rgba(33, 37, 41, 0.6)',
-    border: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgb(222, 223, 223)',
-    codeBg: isDark ? '#262626' : '#f5f5f5',
-    codeText: isDark ? '#e5e7eb' : '#374151',
-    success: isDark ? '#22c55e' : '#16a34a',
-    warning: isDark ? '#eab308' : '#ca8a04',
-    error: isDark ? '#ef4444' : '#dc2626',
-  }
-
-  const CodeBlock = ({ children }) => (
-    <pre
-      css={css`
-        background: ${colors.codeBg};
-        color: ${colors.codeText};
-        padding: 1rem;
-        border-radius: 8px;
-        overflow-x: auto;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 13px;
-        line-height: 1.6;
-        margin: 12px 0;
-        border: 1px solid ${colors.border};
-      `}
-    >
-      {children}
-    </pre>
-  )
-
-  const InlineCode = ({ children }) => (
-    <code
-      css={css`
-        background: ${colors.codeBg};
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.9em;
-      `}
-    >
-      {children}
-    </code>
-  )
-
-  const Tag = ({ children }) => (
-    <span
-      css={css`
-        background: ${colors.codeBg};
-        border: 1px solid ${colors.border};
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 13px;
-        font-family: 'JetBrains Mono', monospace;
-        display: inline-block;
-        margin: 4px 4px 4px 0;
-      `}
-    >
-      {children}
-    </span>
-  )
 
   return (
     <>
@@ -105,9 +85,9 @@ export default function NewsletterDocs() {
           font-size: 14px;
           font-weight: 400;
           line-height: 1.5;
-          color: ${colors.text};
+          color: var(--grey-4);
           text-align: left;
-          background-color: ${colors.bg};
+          background-color: var(--grey-1);
           min-height: 100vh;
           -webkit-text-size-adjust: 100%;
           -webkit-tap-highlight-color: transparent;
@@ -165,8 +145,8 @@ export default function NewsletterDocs() {
                 </a>
               </Link>
 
-              <p css={css`color: ${colors.muted}; margin-top: 32px; font-size: 12px;`}>
-                <Link href="/docs"><a css={css`border-bottom: 1px dotted ${colors.muted};`}>Docs</a></Link>
+              <p css={css`color: var(--grey-3); margin-top: 32px; font-size: 12px;`}>
+                <Link href="/docs"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Docs</a></Link>
                 {' → Newsletter Templates'}
               </p>
 
@@ -182,31 +162,31 @@ export default function NewsletterDocs() {
                 Custom Newsletter Email Templates
               </h1>
 
-              <p css={css`color: ${colors.muted}; margin-bottom: 32px;`}>
+              <p css={css`color: var(--grey-3); margin-bottom: 32px;`}>
                 Personalize the emails sent to your subscribers
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Overview */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Overview
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 With a paid subscription, you can fully customize the HTML email template that gets sent to your newsletter subscribers when you publish a new post. Use placeholder tags to dynamically insert post content, your author info, and more.
               </p>
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
-                Access this feature from <Link href="/dashboard"><a css={css`border-bottom: 1px dotted ${colors.muted};`}>Profile Settings</a></Link> → Custom Domain section → Newsletter Email Template.
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
+                Access this feature from <Link href="/dashboard"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Profile Settings</a></Link> → Custom Domain section → Newsletter Email Template.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Placeholder Tags */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Placeholder Tags
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Use these tags in your HTML template. They will be replaced with actual content when the email is sent:
               </p>
 
@@ -225,7 +205,7 @@ export default function NewsletterDocs() {
                 <p css={css`font-weight: 500; margin-bottom: 12px; font-size: 13px;`}>
                   Tag Reference
                 </p>
-                <ul css={css`color: ${colors.muted}; margin-top: 8px; margin-left: 1.25rem; line-height: 2;`}>
+                <ul css={css`color: var(--grey-3); margin-top: 8px; margin-left: 1.25rem; line-height: 2;`}>
                   <li><InlineCode>{'{{title}}'}</InlineCode> — Post title (plain text)</li>
                   <li><InlineCode>{'{{excerpt}}'}</InlineCode> — Post excerpt, max 300 characters</li>
                   <li><InlineCode>{'{{content}}'}</InlineCode> — Content preview, max 500 characters</li>
@@ -237,29 +217,29 @@ export default function NewsletterDocs() {
                 </ul>
               </div>
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Snake_case versions are also supported: <InlineCode>{'{{post_url}}'}</InlineCode>, <InlineCode>{'{{author_name}}'}</InlineCode>, etc.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Important Note */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Unsubscribe Link Requirement
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Your template <strong>must</strong> include the <InlineCode>{'{{unsubscribeUrl}}'}</InlineCode> placeholder. This is required for email compliance (CAN-SPAM, GDPR). Templates without this tag will be rejected.
               </p>
 
               <CodeBlock>{`<a href="{{unsubscribeUrl}}">Unsubscribe</a>`}</CodeBlock>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Example Template */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Example Template
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Here&apos;s a minimal example you can customize. For best email client compatibility, use table-based layouts:
               </p>
 
@@ -299,13 +279,13 @@ export default function NewsletterDocs() {
 </body>
 </html>`}</CodeBlock>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* Tips */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Tips for Email Templates
               </p>
-              <ul css={css`color: ${colors.muted}; margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
+              <ul css={css`color: var(--grey-3); margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
                 <li>Use <strong>inline styles</strong> — most email clients strip &lt;style&gt; tags</li>
                 <li>Use <strong>table layouts</strong> — flexbox and grid aren&apos;t well supported</li>
                 <li>Keep it <strong>under 50KB</strong> — large emails may be clipped</li>
@@ -314,14 +294,14 @@ export default function NewsletterDocs() {
                 <li>Always include <strong>alt text</strong> for images</li>
               </ul>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               {/* How to Use */}
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 How to Set Your Template
               </p>
-              <ol css={css`color: ${colors.muted}; margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
-                <li>Go to your <Link href="/dashboard"><a css={css`border-bottom: 1px dotted ${colors.muted};`}>Dashboard</a></Link></li>
+              <ol css={css`color: var(--grey-3); margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
+                <li>Go to your <Link href="/dashboard"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Dashboard</a></Link></li>
                 <li>Click the settings icon (gear) to open Profile Settings</li>
                 <li>Scroll to the Custom Domain section</li>
                 <li>Expand &quot;Newsletter Email Template&quot;</li>
@@ -329,13 +309,13 @@ export default function NewsletterDocs() {
                 <li>Click &quot;Save Template&quot;</li>
               </ol>
 
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Your custom template will be used for all future newsletter emails. You can reset to the default at any time.
               </p>
 
               {/* Footer */}
               <div css={css`font-size: 12px; margin-top: 64px;`}>
-                <p css={css`color: ${colors.muted}; a { color: inherit; }`}>
+                <p css={css`color: var(--grey-3); a { color: inherit; }`}>
                   Copyright &copy; {currentYear} Bublr<br />
                   <Link href="/"><a>Home</a></Link>
                   &nbsp;&middot;&nbsp;

@@ -2,8 +2,6 @@
 import Link from 'next/link'
 import Head from 'next/head'
 import { css, Global } from '@emotion/react'
-import { useState, useEffect } from 'react'
-import { useTheme } from 'next-themes'
 
 import meta from '../components/meta'
 
@@ -13,23 +11,7 @@ const globalStyles = css`
 `
 
 export default function Terms() {
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
   const currentYear = new Date().getFullYear()
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const isDark = mounted ? resolvedTheme === 'dark' : false
-
-  // Theme-aware colors (matching app's --grey-1)
-  const colors = {
-    bg: isDark ? '#171717' : '#ffffff',
-    text: isDark ? 'rgb(229, 231, 235)' : 'rgb(33, 37, 41)',
-    muted: isDark ? 'rgba(229, 231, 235, 0.6)' : 'rgba(33, 37, 41, 0.6)',
-    border: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgb(222, 223, 223)',
-  }
 
   return (
     <>
@@ -50,9 +32,9 @@ export default function Terms() {
           font-size: 14px;
           font-weight: 400;
           line-height: 1.5;
-          color: ${colors.text};
+          color: var(--grey-4);
           text-align: left;
-          background-color: ${colors.bg};
+          background-color: var(--grey-1);
           min-height: 100vh;
           -webkit-text-size-adjust: 100%;
           -webkit-tap-highlight-color: transparent;
@@ -122,37 +104,37 @@ export default function Terms() {
                 Terms of Service
               </h1>
 
-              <p css={css`color: ${colors.muted}; margin-bottom: 32px;`}>
+              <p css={css`color: var(--grey-3); margin-bottom: 32px;`}>
                 Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Acceptance of Terms
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 By accessing and using Bublr, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our service.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Your Account
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 You are responsible for maintaining the security of your account. Bublr uses Google Authentication for sign-in. You are responsible for all activities that occur under your account.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Content Guidelines
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 You retain ownership of the content you create on Bublr. However, you agree not to post content that:
               </p>
-              <ul css={css`color: ${colors.muted}; margin-top: 12px; margin-left: 1.25rem; line-height: 1.7;`}>
+              <ul css={css`color: var(--grey-3); margin-top: 12px; margin-left: 1.25rem; line-height: 1.7;`}>
                 <li>Is illegal, harmful, or violates any applicable laws</li>
                 <li>Infringes on intellectual property rights of others</li>
                 <li>Contains spam, malware, or deceptive content</li>
@@ -161,48 +143,48 @@ export default function Terms() {
                 <li>Impersonates another person or entity</li>
               </ul>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Content Moderation
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 We use automated moderation tools to help maintain community standards. Content that violates our guidelines may be automatically flagged or removed. We reserve the right to remove any content and terminate accounts that violate these terms.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Intellectual Property
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 You own the content you create. By posting content on Bublr, you grant us a non-exclusive license to display, distribute, and promote your content on our platform. This license ends when you delete your content.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Service Availability
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Bublr is provided &quot;as is&quot; without warranties of any kind. We do not guarantee that the service will be available at all times. We may modify or discontinue features at any time.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Limitation of Liability
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Bublr and its creators shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of the service.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Open Source
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Bublr is open-source software. The source code is available on{' '}
                 <a
                   href="https://github.com/solomonshalom/bublr"
@@ -221,18 +203,18 @@ export default function Terms() {
                 . Contributions are welcome under the project&apos;s license terms.
               </p>
 
-              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: ${colors.text};`} />
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Changes to Terms
               </p>
-              <p css={css`color: ${colors.muted}; margin-top: 16px; line-height: 1.7;`}>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 We reserve the right to modify these terms at any time. Continued use of Bublr after changes constitutes acceptance of the new terms.
               </p>
 
               {/* Footer */}
               <div css={css`font-size: 12px; margin-top: 64px;`}>
-                <p css={css`color: ${colors.muted}; a { color: inherit; }`}>
+                <p css={css`color: var(--grey-3); a { color: inherit; }`}>
                   Copyright &copy; {currentYear} Bublr<br />
                   <Link href="/"><a>Home</a></Link>
                   &nbsp;&middot;&nbsp;
