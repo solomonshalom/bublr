@@ -4,100 +4,202 @@ import { FloatingMenu } from '@tiptap/react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { PlusIcon } from '@radix-ui/react-icons'
 
-// Quick-access block types for the floating menu
-const QUICK_BLOCKS = [
+// Same minimal icons as slash commands
+const MENU_ITEMS = [
   {
     title: 'Text',
+    description: 'Just start writing with plain text.',
+    category: 'basic',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <line x1="16" y1="13" x2="8" y2="13"></line>
-        <line x1="16" y1="17" x2="8" y2="17"></line>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 7V4h16v3" />
+        <path d="M9 20h6" />
+        <path d="M12 4v16" />
       </svg>
     ),
     action: (editor) => editor.chain().focus().setParagraph().run(),
   },
   {
     title: 'Heading 1',
+    description: 'Big section heading.',
+    category: 'basic',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 12h8"></path>
-        <path d="M4 18V6"></path>
-        <path d="M12 18V6"></path>
-        <path d="M17 12l3-2v8"></path>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 12h8" />
+        <path d="M4 18V6" />
+        <path d="M12 18V6" />
+        <path d="M17 12l3-2v8" />
       </svg>
     ),
     action: (editor) => editor.chain().focus().setHeading({ level: 1 }).run(),
   },
   {
     title: 'Heading 2',
+    description: 'Medium section heading.',
+    category: 'basic',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 12h8"></path>
-        <path d="M4 18V6"></path>
-        <path d="M12 18V6"></path>
-        <path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"></path>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 12h8" />
+        <path d="M4 18V6" />
+        <path d="M12 18V6" />
+        <path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1" />
       </svg>
     ),
     action: (editor) => editor.chain().focus().setHeading({ level: 2 }).run(),
   },
   {
-    title: 'Bullet List',
+    title: 'Heading 3',
+    description: 'Small section heading.',
+    category: 'basic',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <line x1="8" y1="6" x2="21" y2="6"></line>
-        <line x1="8" y1="12" x2="21" y2="12"></line>
-        <line x1="8" y1="18" x2="21" y2="18"></line>
-        <line x1="3" y1="6" x2="3.01" y2="6"></line>
-        <line x1="3" y1="12" x2="3.01" y2="12"></line>
-        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 12h8" />
+        <path d="M4 18V6" />
+        <path d="M12 18V6" />
+        <path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2" />
+        <path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2" />
       </svg>
     ),
-    action: (editor) => editor.chain().focus().toggleBulletList().run(),
+    action: (editor) => editor.chain().focus().setHeading({ level: 3 }).run(),
   },
   {
-    title: 'Task List',
+    title: 'To-do List',
+    description: 'Track tasks with a to-do list.',
+    category: 'basic',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="5" width="6" height="6" rx="1"></rect>
-        <path d="M3 17h6"></path>
-        <path d="M13 6h8"></path>
-        <path d="M13 12h8"></path>
-        <path d="M13 18h8"></path>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="5" width="6" height="6" rx="1" />
+        <path d="m3 17 2 2 4-4" />
+        <path d="M13 6h8" />
+        <path d="M13 12h8" />
+        <path d="M13 18h8" />
       </svg>
     ),
     action: (editor) => editor.chain().focus().toggleTaskList().run(),
   },
   {
-    title: 'Quote',
+    title: 'Bullet List',
+    description: 'Create a simple bullet list.',
+    category: 'basic',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"></path>
-        <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"></path>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="8" y1="6" x2="21" y2="6" />
+        <line x1="8" y1="12" x2="21" y2="12" />
+        <line x1="8" y1="18" x2="21" y2="18" />
+        <line x1="3" y1="6" x2="3.01" y2="6" />
+        <line x1="3" y1="12" x2="3.01" y2="12" />
+        <line x1="3" y1="18" x2="3.01" y2="18" />
+      </svg>
+    ),
+    action: (editor) => editor.chain().focus().toggleBulletList().run(),
+  },
+  {
+    title: 'Numbered List',
+    description: 'Create a numbered list.',
+    category: 'basic',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="10" y1="6" x2="21" y2="6" />
+        <line x1="10" y1="12" x2="21" y2="12" />
+        <line x1="10" y1="18" x2="21" y2="18" />
+        <path d="M4 6h1v4" />
+        <path d="M4 10h2" />
+        <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />
+      </svg>
+    ),
+    action: (editor) => editor.chain().focus().toggleOrderedList().run(),
+  },
+  {
+    title: 'Quote',
+    description: 'Capture a quote.',
+    category: 'basic',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z" />
+        <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z" />
       </svg>
     ),
     action: (editor) => editor.chain().focus().setBlockquote().run(),
   },
   {
-    title: 'Code',
+    title: 'Divider',
+    description: 'Visual divider line.',
+    category: 'basic',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="16 18 22 12 16 6"></polyline>
-        <polyline points="8 6 2 12 8 18"></polyline>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="3" y1="12" x2="21" y2="12" />
+      </svg>
+    ),
+    action: (editor) => editor.chain().focus().setHorizontalRule().run(),
+  },
+  {
+    title: 'Code',
+    description: 'Capture a code snippet.',
+    category: 'media',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="16 18 22 12 16 6" />
+        <polyline points="8 6 2 12 8 18" />
       </svg>
     ),
     action: (editor) => editor.chain().focus().setCodeBlock().run(),
   },
   {
-    title: 'Divider',
+    title: 'Image',
+    description: 'Upload or embed an image.',
+    category: 'media',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <line x1="2" y1="12" x2="22" y2="12"></line>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
       </svg>
     ),
-    action: (editor) => editor.chain().focus().setHorizontalRule().run(),
+    action: (editor) => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.onchange = async (event) => {
+        const file = event.target.files[0]
+        if (!file) return
+        window.dispatchEvent(new CustomEvent('tiptap-image-upload', { detail: { file } }))
+      }
+      input.click()
+    },
+  },
+  {
+    title: 'Pop-up',
+    description: 'Collapsible content block.',
+    category: 'media',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M9 9h6" />
+        <path d="M9 13h6" />
+        <path d="M9 17h4" />
+      </svg>
+    ),
+    action: (editor) => editor.chain().focus().setCallout().run(),
   },
 ]
+
+// Group items by category
+const groupByCategory = (items) => {
+  const groups = {}
+  items.forEach((item) => {
+    const category = item.category || 'other'
+    if (!groups[category]) {
+      groups[category] = []
+    }
+    groups[category].push(item)
+  })
+  return groups
+}
+
+const CATEGORY_LABELS = {
+  basic: 'Basic Blocks',
+  media: 'Media',
+}
 
 function EditorFloatingMenu({ editor }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -140,6 +242,8 @@ function EditorFloatingMenu({ editor }) {
 
   if (!editor) return null
 
+  const groupedItems = groupByCategory(MENU_ITEMS)
+
   return (
     <FloatingMenu
       editor={editor}
@@ -149,14 +253,15 @@ function EditorFloatingMenu({ editor }) {
         offset: [0, 8],
       }}
       shouldShow={({ editor, view, state }) => {
-        // Only show on empty paragraphs (not in code blocks, lists, etc.)
+        // Don't show if editor doesn't have focus (e.g., popup editor is focused)
+        if (!editor.isFocused) return false
+
         const { $from } = state.selection
         const isEmptyTextBlock =
           $from.parent.isTextblock &&
           $from.parent.content.size === 0 &&
           $from.depth <= 1
 
-        // Don't show in certain node types
         const isCodeBlock = editor.isActive('codeBlock')
         const isImage = editor.isActive('image')
 
@@ -196,7 +301,7 @@ function EditorFloatingMenu({ editor }) {
           <PlusIcon width={16} height={16} />
         </button>
 
-        {/* Expanded menu */}
+        {/* Expanded menu - matches slash command style */}
         {isExpanded && (
           <div
             css={css`
@@ -208,8 +313,11 @@ function EditorFloatingMenu({ editor }) {
               border: 1px solid var(--grey-2);
               border-radius: 0.5rem;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-              min-width: 200px;
-              padding: 0.5rem;
+              min-width: 240px;
+              max-height: 250px;
+              overflow-y: scroll;
+              overflow-x: hidden;
+              padding: 0.375rem;
               z-index: 100;
               animation: fadeIn 0.15s ease;
 
@@ -227,90 +335,103 @@ function EditorFloatingMenu({ editor }) {
               html[data-theme='dark'] & {
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
               }
+
+              /* Hide scrollbar but keep scroll functionality */
+              scrollbar-width: none; /* Firefox */
+              -ms-overflow-style: none; /* IE/Edge */
+              &::-webkit-scrollbar {
+                display: none; /* Chrome/Safari */
+                width: 0;
+                height: 0;
+              }
             `}
           >
-            <div
-              css={css`
-                font-size: 0.7rem;
-                font-weight: 500;
-                color: var(--grey-3);
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                padding: 0.25rem 0.5rem;
-                margin-bottom: 0.25rem;
-              `}
-            >
-              Basic blocks
-            </div>
-            {QUICK_BLOCKS.map((block) => (
-              <button
-                key={block.title}
-                onClick={() => handleBlockSelect(block)}
-                css={css`
-                  display: flex;
-                  align-items: center;
-                  gap: 0.6rem;
-                  width: 100%;
-                  padding: 0.5rem;
-                  border: none;
-                  border-radius: 0.375rem;
-                  background: transparent;
-                  cursor: pointer;
-                  text-align: left;
-                  transition: background 0.15s ease;
-                  color: var(--grey-4);
-
-                  &:hover {
-                    background: var(--grey-2);
-                  }
-                `}
-              >
-                <span
+            {Object.entries(groupedItems).map(([category, categoryItems]) => (
+              <div key={category}>
+                {/* Category Header */}
+                <div
                   css={css`
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 24px;
-                    height: 24px;
-                    border-radius: 4px;
-                    background: var(--grey-2);
-                    color: var(--grey-4);
-                    flex-shrink: 0;
+                    font-size: 0.65rem;
+                    font-weight: 500;
+                    color: var(--grey-3);
+                    text-transform: uppercase;
+                    letter-spacing: 0.04em;
+                    padding: 0.375rem 0.5rem 0.25rem;
+                    margin-top: 0.125rem;
 
-                    html[data-theme='dark'] & {
-                      background: var(--grey-3);
+                    &:first-of-type {
+                      margin-top: 0;
                     }
                   `}
                 >
-                  {block.icon}
-                </span>
-                <span
-                  css={css`
-                    font-size: 0.85rem;
-                    color: var(--grey-5);
-                  `}
-                >
-                  {block.title}
-                </span>
-              </button>
+                  {CATEGORY_LABELS[category] || category}
+                </div>
+
+                {/* Category Items */}
+                {categoryItems.map((item) => (
+                  <button
+                    key={item.title}
+                    onClick={() => handleBlockSelect(item)}
+                    css={css`
+                      display: flex;
+                      align-items: center;
+                      gap: 0.625rem;
+                      width: 100%;
+                      padding: 0.375rem 0.5rem;
+                      border: none;
+                      border-radius: 0.25rem;
+                      background: transparent;
+                      cursor: pointer;
+                      text-align: left;
+                      transition: background 0.1s ease;
+
+                      &:hover {
+                        background: var(--grey-2);
+                      }
+                    `}
+                  >
+                    {/* Icon - minimal, no container */}
+                    <span
+                      css={css`
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 18px;
+                        height: 18px;
+                        color: var(--grey-3);
+                        flex-shrink: 0;
+                      `}
+                    >
+                      {item.icon}
+                    </span>
+
+                    {/* Text Content */}
+                    <div css={css`min-width: 0; flex: 1;`}>
+                      <div
+                        css={css`
+                          font-size: 0.8125rem;
+                          font-weight: 500;
+                          color: var(--grey-5);
+                        `}
+                      >
+                        {item.title}
+                      </div>
+                      <div
+                        css={css`
+                          font-size: 0.6875rem;
+                          color: var(--grey-3);
+                          white-space: nowrap;
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                        `}
+                      >
+                        {item.description}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             ))}
-            <div
-              css={css`
-                font-size: 0.7rem;
-                color: var(--grey-3);
-                padding: 0.5rem 0.5rem 0.25rem;
-                border-top: 1px solid var(--grey-2);
-                margin-top: 0.25rem;
-              `}
-            >
-              Type <kbd css={css`
-                background: var(--grey-2);
-                padding: 1px 4px;
-                border-radius: 3px;
-                font-family: inherit;
-                font-size: 0.7rem;
-              `}>/</kbd> for commands
-            </div>
           </div>
         )}
       </div>

@@ -140,11 +140,17 @@ const App = ({ Component, pageProps }) => {
             border-radius: 0.5rem;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
             font-family: 'Inter', sans-serif;
-            min-width: 220px;
+            min-width: 240px;
+            max-width: 320px;
+            max-height: none;
+            overflow: visible;
           }
 
           .tippy-box[data-theme~='slash-command'] .tippy-content {
             padding: 0;
+            max-height: 250px;
+            overflow-y: auto;
+            overflow-x: hidden;
           }
 
           [data-theme='dark'] .tippy-box[data-theme~='slash-command'] {

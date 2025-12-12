@@ -60,6 +60,65 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
         link.appendChild(svg);
       }
     });
+
+    // Handle callout popup triggers
+    const calloutTriggers = document.querySelectorAll('.post-container .callout-trigger');
+
+    const openCalloutPopup = (callout) => {
+      const dotColor = callout.getAttribute('data-dot-color') || '#cf52f2';
+      const title = callout.getAttribute('data-title') || 'Pop-up';
+      // Content is stored in data-content attribute (HTML encoded)
+      const content = callout.getAttribute('data-content') || '<p></p>';
+
+      // Create overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'callout-popup-overlay';
+      overlay.innerHTML = `
+        <div class="callout-popup">
+          <div class="callout-popup-header">
+            <span class="callout-dot" style="background-color: ${dotColor}"></span>
+            <span class="callout-title">${title}</span>
+            <button class="callout-popup-close">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <div class="callout-popup-body">${content}</div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      // Close handlers
+      const closePopup = () => {
+        overlay.remove();
+        document.removeEventListener('keydown', handleEscape);
+      };
+
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') closePopup();
+      };
+
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closePopup();
+      });
+      overlay.querySelector('.callout-popup-close').addEventListener('click', closePopup);
+      document.addEventListener('keydown', handleEscape);
+    };
+
+    calloutTriggers.forEach(trigger => {
+      trigger.addEventListener('click', () => {
+        const callout = trigger.closest('[data-type="callout"]');
+        if (callout) openCalloutPopup(callout);
+      });
+    });
+
+    return () => {
+      // Cleanup - remove any open popups
+      document.querySelectorAll('.callout-popup-overlay').forEach(el => el.remove());
+    };
   }, []);
 
   return (
@@ -263,6 +322,149 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
         margin: 2rem 0;
       }
 
+      /* Callout/Pop-up Styles */
+      [data-type="callout"],
+      .tiptap-callout {
+        display: inline;
+        vertical-align: baseline;
+      }
+
+      .callout-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        margin: 0 0.25rem;
+        background: var(--grey-1);
+        border: 1px solid var(--grey-2);
+        border-radius: 2rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        font-size: 0.85rem;
+        color: var(--grey-4);
+        font-family: inherit;
+        vertical-align: middle;
+      }
+
+      .callout-trigger:hover {
+        border-color: var(--grey-3);
+        background: var(--grey-2);
+      }
+
+      .callout-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .callout-title {
+        font-weight: 500;
+      }
+
+      .callout-icon {
+        opacity: 0.5;
+      }
+
+      .callout-content {
+        display: none;
+      }
+
+      /* Callout popup overlay */
+      .callout-popup-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        backdrop-filter: blur(2px);
+        animation: calloutOverlayFadeIn 0.15s ease-out;
+      }
+
+      @keyframes calloutOverlayFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .callout-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--grey-1);
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 560px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        animation: calloutPopupFadeIn 0.2s ease-out;
+        border: 1px solid var(--grey-2);
+        overflow: hidden;
+      }
+
+      @keyframes calloutPopupFadeIn {
+        from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+        to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      }
+
+      .callout-popup-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--grey-2);
+        flex-shrink: 0;
+      }
+
+      .callout-popup-header .callout-dot {
+        width: 14px;
+        height: 14px;
+      }
+
+      .callout-popup-header .callout-title {
+        flex: 1;
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--grey-5);
+      }
+
+      .callout-popup-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.375rem;
+        border-radius: 0.25rem;
+        color: var(--grey-3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+      }
+
+      .callout-popup-close:hover {
+        background: var(--grey-2);
+        color: var(--grey-4);
+      }
+
+      .callout-popup-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem 1.25rem;
+        min-height: 100px;
+        line-height: 1.6;
+      }
+
+      .callout-popup-body > *:first-child {
+        margin-top: 0;
+      }
+
+      .callout-popup-body > *:last-child {
+        margin-bottom: 0;
+      }
+
       [data-theme='dark'] & {
         pre {
           background: var(--grey-2);
@@ -277,6 +479,13 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
         mark {
           background-color: #854d0e;
           color: #fef9c3;
+        }
+        .callout-trigger {
+          background: var(--grey-2);
+          border-color: var(--grey-3);
+        }
+        .callout-trigger:hover {
+          background: var(--grey-3);
         }
       }
     `}

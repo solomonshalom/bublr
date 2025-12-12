@@ -46,6 +46,7 @@ import HorizontalRule from '@tiptap/extension-horizontal-rule'
 // Custom editor components
 import SlashCommands from '../../components/editor/slash-commands'
 import EditorFloatingMenu from '../../components/editor/editor-floating-menu'
+import Callout from '../../components/editor/callout-extension'
 
 import * as Dialog from '@radix-ui/react-dialog'
 
@@ -120,7 +121,19 @@ function SelectionMenu({ editor }) {
       editor={editor}
       tippyOptions={{ duration: 150 }}
       shouldShow={({ editor, view, state, oldState, from, to }) => {
-        return editor.isActive('link') || state.selection.content().size > 0
+        // Don't show if editor doesn't have focus (e.g., popup editor is focused)
+        if (!editor.isFocused) return false
+
+        // Check if there's actual text selected (not just a node selection)
+        const { selection } = state
+        const isTextSelection = selection && !selection.empty && selection.from !== selection.to
+
+        // Get the actual text content of selection
+        const selectedText = state.doc.textBetween(selection.from, selection.to, ' ')
+        const hasSelectedText = selectedText && selectedText.trim().length > 0
+
+        // Show if editing a link OR if there's actual text selected
+        return editor.isActive('link') || (isTextSelection && hasSelectedText)
       }}
       css={css`
         display: flex;
@@ -1233,7 +1246,22 @@ function Editor({ post }) {
         },
       }),
       Placeholder.configure({
-        placeholder: "Press '/' for commands, or just start writing...",
+        placeholder: ({ node, editor }) => {
+          // Only show placeholder on empty paragraphs at the top level of the document
+          // and only if it's the first node or if the document is effectively empty
+          if (node.type.name !== 'paragraph') return ''
+
+          const { doc } = editor.state
+          const isFirstNode = doc.firstChild === node
+          const docIsEmpty = doc.childCount === 1 && doc.firstChild?.textContent === ''
+
+          if (isFirstNode || docIsEmpty) {
+            return "Press '/' for commands, or just start writing..."
+          }
+          return ''
+        },
+        showOnlyWhenEditable: true,
+        includeChildren: false,
       }),
       Underline,
       CodeBlockLowlight.configure({
@@ -1264,6 +1292,7 @@ function Editor({ post }) {
         },
       }),
       SlashCommands,
+      Callout,
     ],
     editorProps: {
       attributes: {
@@ -2483,6 +2512,11 @@ function Editor({ post }) {
           hr.ProseMirror-selectednode,
           .tiptap-hr.ProseMirror-selectednode {
             border-top-color: var(--grey-4);
+          }
+
+          /* Callout/Pop-up Styles */
+          .tiptap-callout {
+            margin: 1rem 0;
           }
         `}
       >
