@@ -336,8 +336,8 @@ const suggestion = {
   },
 
   render: () => {
-    let component
-    let popup
+    let component = null
+    let popup = null
 
     return {
       onStart: (props) => {
@@ -364,9 +364,10 @@ const suggestion = {
       },
 
       onUpdate(props) {
+        if (!component) return
         component.updateProps(props)
 
-        if (!props.clientRect) {
+        if (!props.clientRect || !popup?.[0]) {
           return
         }
 
@@ -377,16 +378,22 @@ const suggestion = {
 
       onKeyDown(props) {
         if (props.event.key === 'Escape') {
-          popup[0].hide()
+          if (popup?.[0]) {
+            popup[0].hide()
+          }
           return true
         }
 
-        return component.ref?.onKeyDown(props)
+        return component?.ref?.onKeyDown(props) ?? false
       },
 
       onExit() {
-        popup[0].destroy()
-        component.destroy()
+        if (popup?.[0]) {
+          popup[0].destroy()
+        }
+        if (component) {
+          component.destroy()
+        }
       },
     }
   },

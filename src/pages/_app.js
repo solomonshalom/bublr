@@ -133,6 +133,54 @@ const App = ({ Component, pageProps }) => {
             box-shadow: 0 0 1rem var(--grey-2);
           }
 
+          /* Tippy.js Slash Command Theme */
+          .tippy-box[data-theme~='slash-command'] {
+            background-color: var(--grey-1);
+            border: 1px solid var(--grey-2);
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            font-family: 'Inter', sans-serif;
+            min-width: 220px;
+          }
+
+          .tippy-box[data-theme~='slash-command'] .tippy-content {
+            padding: 0;
+          }
+
+          [data-theme='dark'] .tippy-box[data-theme~='slash-command'] {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+          }
+
+          /* ProseMirror Gapcursor */
+          .ProseMirror-gapcursor {
+            position: relative;
+          }
+
+          .ProseMirror-gapcursor:after {
+            content: '';
+            display: block;
+            position: absolute;
+            top: -2px;
+            width: 20px;
+            border-top: 1px solid var(--grey-4);
+            animation: ProseMirror-gapcursor-blink 1.1s steps(2, start) infinite;
+          }
+
+          @keyframes ProseMirror-gapcursor-blink {
+            to {
+              visibility: hidden;
+            }
+          }
+
+          /* Placeholder styles for TipTap */
+          .ProseMirror p.is-editor-empty:first-of-type::before {
+            content: attr(data-placeholder);
+            float: left;
+            color: var(--grey-3);
+            pointer-events: none;
+            height: 0;
+          }
+
           /* Reduced motion support */
           @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {

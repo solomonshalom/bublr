@@ -21,6 +21,7 @@ import {
   HeadingIcon,
   ListBulletIcon,
   UnderlineIcon,
+  QuoteIcon,
 } from '@radix-ui/react-icons'
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
 
@@ -34,6 +35,17 @@ import Underline from '@tiptap/extension-underline'
 import CharacterCount from '@tiptap/extension-character-count'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { lowlight } from 'lowlight'
+
+// New Notion-like extensions
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
+import Highlight from '@tiptap/extension-highlight'
+import Typography from '@tiptap/extension-typography'
+import HorizontalRule from '@tiptap/extension-horizontal-rule'
+
+// Custom editor components
+import SlashCommands from '../../components/editor/slash-commands'
+import EditorFloatingMenu from '../../components/editor/editor-floating-menu'
 
 import * as Dialog from '@radix-ui/react-dialog'
 
@@ -256,9 +268,24 @@ function SelectionMenu({ editor }) {
           >
             <StrikethroughIcon />
           </button>
-          
+          <button
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+            className={editor.isActive('highlight') ? 'is-active' : ''}
+            title="Highlight"
+            css={css`
+              svg {
+                fill: currentColor;
+              }
+            `}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </button>
+
           <div className="separator"></div>
-          
+
           <button
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
@@ -274,15 +301,36 @@ function SelectionMenu({ editor }) {
             <ListBulletIcon />
           </button>
           <button
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            className={editor.isActive('orderedList') ? 'is-active' : ''}
+            title="Numbered List"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="10" y1="6" x2="21" y2="6"></line>
+              <line x1="10" y1="12" x2="21" y2="12"></line>
+              <line x1="10" y1="18" x2="21" y2="18"></line>
+              <path d="M4 6h1v4"></path>
+              <path d="M4 10h2"></path>
+              <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path>
+            </svg>
+          </button>
+          <button
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            className={editor.isActive('blockquote') ? 'is-active' : ''}
+            title="Quote"
+          >
+            <QuoteIcon />
+          </button>
+          <button
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             className={editor.isActive('codeBlock') ? 'is-active' : ''}
             title="Code Block"
           >
             <CodeIcon />
           </button>
-          
+
           <div className="separator"></div>
-          
+
           {editor.isActive('link') ? (
             <button onClick={() => editor.chain().focus().unsetLink().run()} title="Remove Link">
               <LinkBreak2Icon />
@@ -1170,6 +1218,7 @@ function Editor({ post }) {
           levels: [1, 2, 3],
         },
         codeBlock: false,
+        horizontalRule: false, // Use our custom one
       }),
       Link.configure({
         openOnClick: false,
@@ -1184,12 +1233,37 @@ function Editor({ post }) {
         },
       }),
       Placeholder.configure({
-        placeholder: 'Write your post content here...',
+        placeholder: "Press '/' for commands, or just start writing...",
       }),
       Underline,
       CodeBlockLowlight.configure({
         lowlight,
       }),
+      // New Notion-like extensions
+      TaskList.configure({
+        HTMLAttributes: {
+          class: 'tiptap-task-list',
+        },
+      }),
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: {
+          class: 'tiptap-task-item',
+        },
+      }),
+      Highlight.configure({
+        multicolor: true,
+        HTMLAttributes: {
+          class: 'tiptap-highlight',
+        },
+      }),
+      Typography,
+      HorizontalRule.configure({
+        HTMLAttributes: {
+          class: 'tiptap-hr',
+        },
+      }),
+      SlashCommands,
     ],
     editorProps: {
       attributes: {
@@ -2305,14 +2379,115 @@ function Editor({ post }) {
             font-size: 0.85em;
             padding: 0.2em 0.4em;
           }
-          
+
           html[data-theme='dark'] code {
             background-color: rgba(255, 255, 255, 0.1);
             color: #e1e1e1;
           }
+
+          /* Task List Styles */
+          ul[data-type="taskList"] {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+          }
+
+          ul[data-type="taskList"] li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+          }
+
+          ul[data-type="taskList"] li > label {
+            flex-shrink: 0;
+            user-select: none;
+            margin-top: 0.25rem;
+          }
+
+          ul[data-type="taskList"] li > label input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--grey-3);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+          }
+
+          ul[data-type="taskList"] li > label input[type="checkbox"]:hover {
+            border-color: var(--grey-4);
+          }
+
+          ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+            background: var(--grey-5);
+            border-color: var(--grey-5);
+          }
+
+          ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+            content: '';
+            width: 5px;
+            height: 9px;
+            border: 2px solid var(--grey-1);
+            border-top: none;
+            border-left: none;
+            transform: rotate(45deg);
+            margin-bottom: 2px;
+          }
+
+          ul[data-type="taskList"] li[data-checked="true"] > div {
+            text-decoration: line-through;
+            color: var(--grey-3);
+          }
+
+          ul[data-type="taskList"] li > div {
+            flex: 1;
+          }
+
+          /* Nested task lists */
+          ul[data-type="taskList"] ul[data-type="taskList"] {
+            margin-left: 1.5rem;
+            margin-top: 0.25rem;
+            margin-bottom: 0.25rem;
+          }
+
+          /* Highlight Styles */
+          mark,
+          .tiptap-highlight {
+            background-color: #fef08a;
+            border-radius: 2px;
+            padding: 0.1em 0.2em;
+          }
+
+          html[data-theme='dark'] mark,
+          html[data-theme='dark'] .tiptap-highlight {
+            background-color: #854d0e;
+            color: #fef9c3;
+          }
+
+          /* Horizontal Rule Styles */
+          hr,
+          .tiptap-hr {
+            border: none;
+            border-top: 2px solid var(--grey-2);
+            margin: 2rem 0;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+          }
+
+          hr.ProseMirror-selectednode,
+          .tiptap-hr.ProseMirror-selectednode {
+            border-top-color: var(--grey-4);
+          }
         `}
       >
         {contentEditor && <SelectionMenu editor={contentEditor} />}
+        {contentEditor && <EditorFloatingMenu editor={contentEditor} />}
         <EditorContent editor={contentEditor} />
       </PostContainer>
 

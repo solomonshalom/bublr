@@ -31,6 +31,7 @@
     "@tiptap/extension-underline": "^2.27.1",
     "@tiptap/react": "^2.27.1",
     "@tiptap/starter-kit": "^2.27.1",
+    "@tiptap/suggestion": "^2.27.1",
     "axios": "^1.13.2",
     "firebase": "^8.7.1",
     "formidable": "^3.5.4",

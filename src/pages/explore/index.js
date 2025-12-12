@@ -371,7 +371,7 @@ export default function Explore() {
 
                       <p css={css`
                         color: var(--grey-4);
-                        font-family: 'Newsreader', serif;
+                        font-family: 'Inter', sans-serif;
                         line-height: 1.5em;
                         margin-top: 0.5rem;
                         text-decoration: none;

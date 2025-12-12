@@ -183,6 +183,86 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
         padding: 0;
       }
 
+      /* Task List Styles */
+      ul[data-type="taskList"] {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+      }
+
+      ul[data-type="taskList"] li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+      }
+
+      ul[data-type="taskList"] li > label {
+        flex-shrink: 0;
+        user-select: none;
+        margin-top: 0.15rem;
+      }
+
+      ul[data-type="taskList"] li > label input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--grey-3);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+      }
+
+      ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+        background: var(--grey-5);
+        border-color: var(--grey-5);
+      }
+
+      ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+        content: '';
+        width: 5px;
+        height: 9px;
+        border: 2px solid var(--grey-1);
+        border-top: none;
+        border-left: none;
+        transform: rotate(45deg);
+        margin-bottom: 2px;
+      }
+
+      ul[data-type="taskList"] li[data-checked="true"] > div {
+        text-decoration: line-through;
+        color: var(--grey-3);
+      }
+
+      ul[data-type="taskList"] li > div {
+        flex: 1;
+      }
+
+      ul[data-type="taskList"] ul[data-type="taskList"] {
+        margin-left: 1.5rem;
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+      }
+
+      /* Highlight Styles */
+      mark {
+        background-color: #fef08a;
+        border-radius: 2px;
+        padding: 0.1em 0.2em;
+      }
+
+      /* Horizontal Rule */
+      hr {
+        border: none;
+        border-top: 2px solid var(--grey-2);
+        margin: 2rem 0;
+      }
+
       [data-theme='dark'] & {
         pre {
           background: var(--grey-2);
@@ -193,6 +273,10 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
         pre code {
           background: none;
           color: var(--grey-4);
+        }
+        mark {
+          background-color: #854d0e;
+          color: #fef9c3;
         }
       }
     `}
