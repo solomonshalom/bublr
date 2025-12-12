@@ -14,7 +14,7 @@ import Document, { Html, Head, Main, NextScript } from 'next/document'
 class MyDocument extends Document {
   render() {
     return (
-      <Html lang="en" dir="ltr">
+      <Html lang="en" dir="ltr" suppressHydrationWarning>
         <Head>
           {/* Character encoding - must be first */}
           <meta charSet="utf-8" />
@@ -107,6 +107,41 @@ class MyDocument extends Document {
 
           {/* Umami Analytics */}
           <script defer src="https://cloud.umami.is/script.js" data-website-id="a5689409-8cdf-475a-8022-d977f83c181e"></script>
+
+          {/* Critical CSS for theme - must be inline to prevent FOUC */}
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
+                :root {
+                  --grey-1: #fcfcfc;
+                  --grey-2: #c7c7c7;
+                  --grey-3: #6f6f6f;
+                  --grey-4: #2e2e2e;
+                  --grey-5: #171717;
+                  --text: #2B3044;
+                  --line: #BBC1E1;
+                  --line-active: #275EFE;
+                  --code-bg: #f5f5f5;
+                  --code-text: #374151;
+                  --border: rgb(222, 223, 223);
+                  color-scheme: light;
+                }
+                [data-theme='dark'] {
+                  --grey-1: #171717;
+                  --grey-2: #2e2e2e;
+                  --grey-4: #c7c7c7;
+                  --grey-5: #fcfcfc;
+                  --code-bg: #262626;
+                  --code-text: #e5e7eb;
+                  --border: rgba(255, 255, 255, 0.15);
+                  color-scheme: dark;
+                }
+                html { background: var(--grey-1); }
+                body { background: var(--grey-1); visibility: hidden; }
+                body.theme-ready { visibility: visible; }
+              `,
+            }}
+          />
         </Head>
         <body>
           {/* Blocking script to prevent theme flash (FOUC) */}
@@ -117,13 +152,15 @@ class MyDocument extends Document {
                   try {
                     var theme = localStorage.getItem('theme');
                     var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    var isDark = theme === 'dark' || (!theme && systemDark);
 
-                    if (theme === 'dark' || (theme === 'system' && systemDark) || (!theme && systemDark)) {
-                      document.documentElement.setAttribute('data-theme', 'dark');
-                    } else {
-                      document.documentElement.setAttribute('data-theme', 'light');
-                    }
-                  } catch (e) {}
+                    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+                    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+                  } catch (e) {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  }
+                  // Show body immediately after theme is set
+                  document.body.classList.add('theme-ready');
                 })();
               `,
             }}
