@@ -71,9 +71,19 @@ class MyDocument extends Document {
           <meta name="geo.region" content="US" />
           <meta name="language" content="English" />
 
-          {/* Site verification (add your actual IDs) */}
-          {/* <meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_CODE" /> */}
-          {/* <meta name="msvalidate.01" content="YOUR_BING_VERIFICATION_CODE" /> */}
+          {/* Site verification - configure via environment variables */}
+          {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && (
+            <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} />
+          )}
+          {process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION && (
+            <meta name="msvalidate.01" content={process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION} />
+          )}
+          {process.env.NEXT_PUBLIC_YANDEX_VERIFICATION && (
+            <meta name="yandex-verification" content={process.env.NEXT_PUBLIC_YANDEX_VERIFICATION} />
+          )}
+          {process.env.NEXT_PUBLIC_PINTEREST_VERIFICATION && (
+            <meta name="p:domain_verify" content={process.env.NEXT_PUBLIC_PINTEREST_VERIFICATION} />
+          )}
 
           {/* Format detection - prevent auto-linking */}
           <meta name="format-detection" content="telephone=no" />
@@ -104,6 +114,11 @@ class MyDocument extends Document {
           {/* Alternate links for language versions */}
           <link rel="alternate" hrefLang="en" href="https://bublr.life" />
           <link rel="alternate" hrefLang="x-default" href="https://bublr.life" />
+
+          {/* RSS/Atom/JSON Feed autodiscovery links */}
+          <link rel="alternate" type="application/rss+xml" title="Bublr RSS Feed" href="https://bublr.life/feed.xml" />
+          <link rel="alternate" type="application/atom+xml" title="Bublr Atom Feed" href="https://bublr.life/atom.xml" />
+          <link rel="alternate" type="application/feed+json" title="Bublr JSON Feed" href="https://bublr.life/feed.json" />
 
           {/* Umami Analytics */}
           <script defer src="https://cloud.umami.is/script.js" data-website-id="a5689409-8cdf-475a-8022-d977f83c181e"></script>

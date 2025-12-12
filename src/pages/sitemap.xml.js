@@ -40,6 +40,23 @@ function generateSiteMap(users, postsWithContent) {
     <priority>0.9</priority>
   </url>
 
+  <!-- RSS/Atom/JSON Feeds -->
+  <url>
+    <loc>${SITE_URL}/feed.xml</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/atom.xml</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/feed.json</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
   <!-- User profile pages -->
   ${users
     .map(user => {

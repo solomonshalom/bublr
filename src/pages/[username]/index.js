@@ -12,7 +12,7 @@ import { getUserByName } from '../../lib/db'
 import { hasActiveAccess } from '../../lib/subscription'
 
 import meta from '../../components/meta'
-import { generateProfilePageSchema, generateOrganizationSchema } from '../../lib/seo-utils'
+import { generateProfilePageSchema, generateOrganizationSchema, generateBreadcrumbSchema, generateNewsletterSchema } from '../../lib/seo-utils'
 import SubscribeNewsletter from '../../components/subscribe-newsletter'
 import FollowButton from '../../components/follow-button'
 import { ProfileCanvas } from '../../components/profile-canvas'
@@ -287,7 +287,7 @@ const AvatarWithFrame = ({ user, size = 48 }) => {
   )
 }
 
-export default function Profile({ user, organizationSchema, profilePageSchema, customFonts }) {
+export default function Profile({ user, organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts }) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [currentUser] = useAuthState(auth)
@@ -350,6 +350,9 @@ export default function Profile({ user, organizationSchema, profilePageSchema, c
           keywords: `${user.displayName}, ${user.name}, writer, author, blog, writing`
         })}
         <link rel="canonical" href={`https://bublr.life/${user.name}`} />
+
+        {/* RSS Feed autodiscovery for this author */}
+        <link rel="alternate" type="application/rss+xml" title={`${user.displayName}'s RSS Feed`} href={`https://bublr.life/${user.name}/feed.xml`} />
 
         {/* Load custom Google Fonts if needed */}
         {customFonts && customFonts.length > 0 && (
@@ -1052,6 +1055,18 @@ export default function Profile({ user, organizationSchema, profilePageSchema, c
       <script type="application/ld+json" dangerouslySetInnerHTML={{
         __html: JSON.stringify(profilePageSchema)
       }} />
+
+      {/* Breadcrumb schema for navigation SEO */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify(breadcrumbSchema)
+      }} />
+
+      {/* Newsletter subscription schema for AI discoverability */}
+      {newsletterSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify(newsletterSchema)
+        }} />
+      )}
     </>
   )
 }
@@ -1293,8 +1308,26 @@ export async function getServerSideProps({ params, req }) {
       subscriberCount: user.subscribers?.length || 0
     })
 
+    // Breadcrumb schema for navigation SEO
+    const breadcrumbSchema = generateBreadcrumbSchema([
+      { name: 'Home', url: 'https://bublr.life' },
+      { name: 'Writers', url: 'https://bublr.life/explore' },
+      { name: user.displayName, url: `https://bublr.life/${user.name}` }
+    ])
+
+    // Newsletter schema for AI discoverability (only if newsletter is enabled)
+    const newsletterSchema = user.buttonsVisibility?.newsletter !== false
+      ? generateNewsletterSchema({
+          authorName: user.displayName,
+          authorUsername: user.name,
+          authorPhoto: user.photo,
+          authorAbout: user.about,
+          subscriberCount: user.subscribers?.length || 0
+        })
+      : null
+
     return {
-      props: { user, organizationSchema, profilePageSchema, customFonts },
+      props: { user, organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts },
     }
   } catch (err) {
     console.log(err)

@@ -739,6 +739,157 @@ export function generateCitableExcerpt(content, maxLength = 200) {
 }
 
 // ============================================
+// Newsletter Schema for AI Discoverability
+// ============================================
+
+/**
+ * Generate Newsletter schema for subscription CTAs
+ * Helps AI engines discover and surface newsletter subscription options
+ */
+export function generateNewsletterSchema({
+  authorName,
+  authorUsername,
+  authorPhoto,
+  authorAbout,
+  subscriberCount
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Periodical',
+    'name': `${authorName}'s Newsletter`,
+    'description': authorAbout || `Subscribe to ${authorName}'s newsletter for the latest updates and posts.`,
+    'url': `${SITE_URL}/${authorUsername}`,
+    'publisher': {
+      '@type': 'Person',
+      'name': authorName,
+      'url': `${SITE_URL}/${authorUsername}`,
+      'image': authorPhoto
+    },
+    'isAccessibleForFree': true,
+    'inLanguage': 'en-US',
+    'potentialAction': {
+      '@type': 'SubscribeAction',
+      'target': {
+        '@type': 'EntryPoint',
+        'urlTemplate': `${SITE_URL}/${authorUsername}`,
+        'actionPlatform': [
+          'https://schema.org/DesktopWebPlatform',
+          'https://schema.org/MobileWebPlatform'
+        ]
+      },
+      'name': 'Subscribe to Newsletter'
+    },
+    'interactionStatistic': {
+      '@type': 'InteractionCounter',
+      'interactionType': 'https://schema.org/SubscribeAction',
+      'userInteractionCount': subscriberCount || 0
+    }
+  }
+}
+
+/**
+ * Generate enhanced Person schema with E-E-A-T fields
+ * Includes expertise, credentials, and authority signals
+ */
+export function generateEnhancedPersonSchema({
+  name,
+  username,
+  photo,
+  about,
+  socialLinks,
+  website,
+  postCount,
+  followerCount,
+  subscriberCount,
+  expertise,
+  credentials,
+  awards,
+  education,
+  employer
+}) {
+  const sameAs = []
+
+  if (socialLinks?.github) sameAs.push(`https://github.com/${socialLinks.github}`)
+  if (socialLinks?.twitter) sameAs.push(`https://twitter.com/${socialLinks.twitter}`)
+  if (socialLinks?.instagram) sameAs.push(`https://instagram.com/${socialLinks.instagram}`)
+  if (socialLinks?.linkedin) sameAs.push(`https://linkedin.com/in/${socialLinks.linkedin}`)
+  if (socialLinks?.youtube) sameAs.push(`https://youtube.com/@${socialLinks.youtube}`)
+  if (website) sameAs.push(website.startsWith('http') ? website : `https://${website}`)
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': `${SITE_URL}/${username}#person`,
+    'name': name,
+    'alternateName': username,
+    'url': `${SITE_URL}/${username}`,
+    'image': photo,
+    'description': about,
+    'sameAs': sameAs,
+    // E-E-A-T: Expertise signals
+    'interactionStatistic': [
+      {
+        '@type': 'InteractionCounter',
+        'interactionType': 'https://schema.org/WriteAction',
+        'userInteractionCount': postCount || 0
+      },
+      {
+        '@type': 'InteractionCounter',
+        'interactionType': 'https://schema.org/FollowAction',
+        'userInteractionCount': followerCount || 0
+      },
+      {
+        '@type': 'InteractionCounter',
+        'interactionType': 'https://schema.org/SubscribeAction',
+        'userInteractionCount': subscriberCount || 0
+      }
+    ]
+  }
+
+  // Add expertise/knowsAbout if provided
+  if (expertise && expertise.length > 0) {
+    schema.knowsAbout = expertise.map(topic => ({
+      '@type': 'Thing',
+      'name': topic
+    }))
+  }
+
+  // Add credentials if provided
+  if (credentials && credentials.length > 0) {
+    schema.hasCredential = credentials.map(cred => ({
+      '@type': 'EducationalOccupationalCredential',
+      'name': cred.name,
+      'credentialCategory': cred.category || 'certification'
+    }))
+  }
+
+  // Add awards if provided
+  if (awards && awards.length > 0) {
+    schema.award = awards
+  }
+
+  // Add education if provided
+  if (education && education.length > 0) {
+    schema.alumniOf = education.map(edu => ({
+      '@type': 'EducationalOrganization',
+      'name': edu.institution,
+      'description': edu.degree
+    }))
+  }
+
+  // Add employer if provided
+  if (employer) {
+    schema.worksFor = {
+      '@type': 'Organization',
+      'name': employer.name,
+      'url': employer.url
+    }
+  }
+
+  return schema
+}
+
+// ============================================
 // Export constants for use in other files
 // ============================================
 

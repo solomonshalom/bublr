@@ -110,6 +110,7 @@ import PostContainer from '../../components/post-container'
 import VoiceInput from '../../components/voice-input'
 import Button, { IconButton, LinkIconButton } from '../../components/button'
 import FontPicker from '../../components/font-picker'
+import SEOAnalyzer from '../../components/seo-analyzer'
 import { DEFAULT_FONTS } from '../../lib/fonts'
 
 function SelectionMenu({ editor }) {
@@ -1518,6 +1519,16 @@ function Editor({ post, onBeforeDelete }) {
             >
               Make changes to your post&apos;s metadata.
             </Dialog.Description>
+
+            {/* SEO Analyzer - helps users optimize for search engines and AI */}
+            <div css={css`margin: 1.5rem 0;`}>
+              <SEOAnalyzer
+                title={clientPost.title}
+                content={clientPost.content}
+                excerpt={clientPost.excerpt}
+              />
+            </div>
+
             <div
               css={css`
                 margin: 1.5rem 0;
