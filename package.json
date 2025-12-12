@@ -17,11 +17,17 @@
     "@radix-ui/react-id": "^0.0.6",
     "@react-firebase/auth": "^0.2.10",
     "@studio-freight/lenis": "^1.0.42",
-    "@tiptap/extension-character-count": "^3.13.0",
+    "@tiptap/extension-character-count": "^2.27.1",
     "@tiptap/extension-code-block-lowlight": "^2.27.1",
+    "@tiptap/extension-floating-menu": "^2.27.1",
+    "@tiptap/extension-highlight": "^2.27.1",
+    "@tiptap/extension-horizontal-rule": "^2.27.1",
     "@tiptap/extension-image": "^2.27.1",
     "@tiptap/extension-link": "^2.27.1",
     "@tiptap/extension-placeholder": "^2.27.1",
+    "@tiptap/extension-task-item": "^2.27.1",
+    "@tiptap/extension-task-list": "^2.27.1",
+    "@tiptap/extension-typography": "^2.27.1",
     "@tiptap/extension-underline": "^2.27.1",
     "@tiptap/react": "^2.27.1",
     "@tiptap/starter-kit": "^2.27.1",
@@ -41,7 +47,8 @@
     "react-firebase-hooks": "^3.0.4",
     "resend": "^6.5.2",
     "sanitize-html": "^2.17.0",
-    "tinykeys": "^3.0.0"
+    "tinykeys": "^3.0.0",
+    "tippy.js": "^6.3.7"
   },
   "devDependencies": {
     "canvas": "^3.2.0",

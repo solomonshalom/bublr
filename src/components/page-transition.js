@@ -1,12 +1,10 @@
 /** @jsxImportSource @emotion/react */
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useRef, useEffect, useLayoutEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import gsap from 'gsap'
-import { useGSAP } from '@gsap/react'
-import { prefersReducedMotion } from '../lib/animation-config'
 
-// Register GSAP plugin
-gsap.registerPlugin(useGSAP)
+// Use useLayoutEffect on client, useEffect on server (to avoid SSR warnings)
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 /**
  * PageTransition - Buttery smooth page transitions using GSAP
@@ -18,49 +16,33 @@ export function PageTransition({ children }) {
   const containerRef = useRef(null)
   const router = useRouter()
   const [displayedChildren, setDisplayedChildren] = useState(children)
-  const [currentPath, setCurrentPath] = useState(router.asPath)
-  const isAnimatingRef = useRef(false)
-  const pendingChildrenRef = useRef(null)
+  const isFirstMount = useRef(true)
+  const isNavigating = useRef(false)
 
-  // Check reduced motion preference
-  const reducedMotion = typeof window !== 'undefined' && prefersReducedMotion()
+  // Stable refs to avoid effect dependencies changing
+  const childrenRef = useRef(children)
+  childrenRef.current = children
 
-  // Fade in animation when content changes
-  const fadeIn = useCallback(() => {
-    if (!containerRef.current) return
-
-    if (reducedMotion) {
-      gsap.set(containerRef.current, { opacity: 1 })
-      return
-    }
-
-    gsap.fromTo(
-      containerRef.current,
-      { opacity: 0 },
-      {
+  // Initial mount - set opacity immediately before paint
+  useIsomorphicLayoutEffect(() => {
+    if (containerRef.current && isFirstMount.current) {
+      // Set initial opacity to 0, then animate in
+      gsap.set(containerRef.current, { opacity: 0 })
+      gsap.to(containerRef.current, {
         opacity: 1,
         duration: 0.4,
-        ease: 'power2.out',
-        clearProps: 'opacity',
-        onComplete: () => {
-          isAnimatingRef.current = false
-        }
-      }
-    )
-  }, [reducedMotion])
+        ease: 'power2.out'
+      })
+      isFirstMount.current = false
+    }
+  }, [])
 
-  // Handle route changes with proper sequencing
+  // Handle route changes
   useEffect(() => {
     const handleStart = (url) => {
-      // Only animate if navigating to a different page
       if (url === router.asPath || !containerRef.current) return
 
-      isAnimatingRef.current = true
-
-      if (reducedMotion) {
-        gsap.set(containerRef.current, { opacity: 0 })
-        return
-      }
+      isNavigating.current = true
 
       // Quick fade out
       gsap.to(containerRef.current, {
@@ -70,20 +52,35 @@ export function PageTransition({ children }) {
       })
     }
 
-    const handleComplete = (url) => {
-      // Scroll to top immediately (while faded out)
+    const handleComplete = () => {
+      if (!containerRef.current) return
+
+      // Scroll to top while faded out
       window.scrollTo(0, 0)
 
-      // Update path and trigger content swap
-      setCurrentPath(url)
+      // Update content
+      setDisplayedChildren(childrenRef.current)
+
+      // Fade in after a frame to ensure DOM updated
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          gsap.to(containerRef.current, {
+            opacity: 1,
+            duration: 0.4,
+            ease: 'power2.out',
+            onComplete: () => {
+              isNavigating.current = false
+            }
+          })
+        }
+      })
     }
 
     const handleError = () => {
-      // On error, ensure we're visible
       if (containerRef.current) {
         gsap.set(containerRef.current, { opacity: 1 })
       }
-      isAnimatingRef.current = false
+      isNavigating.current = false
     }
 
     router.events.on('routeChangeStart', handleStart)
@@ -95,38 +92,17 @@ export function PageTransition({ children }) {
       router.events.off('routeChangeComplete', handleComplete)
       router.events.off('routeChangeError', handleError)
     }
-  }, [router, reducedMotion])
+  }, [router])
 
-  // Update displayed children when path changes
+  // Sync children when not navigating (for in-page updates)
   useEffect(() => {
-    pendingChildrenRef.current = children
+    if (!isNavigating.current) {
+      setDisplayedChildren(children)
+    }
   }, [children])
 
-  // When path changes, swap content and fade in
-  useEffect(() => {
-    if (pendingChildrenRef.current) {
-      setDisplayedChildren(pendingChildrenRef.current)
-      pendingChildrenRef.current = null
-      // Small delay to ensure DOM has updated before animating
-      requestAnimationFrame(() => {
-        fadeIn()
-      })
-    }
-  }, [currentPath, fadeIn])
-
-  // Initial mount animation
-  useEffect(() => {
-    if (containerRef.current) {
-      fadeIn()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only on mount - fadeIn is stable via useCallback
-
   return (
-    <div
-      ref={containerRef}
-      style={{ opacity: 0 }} // Start invisible, animate in
-    >
+    <div ref={containerRef}>
       {displayedChildren}
     </div>
   )
