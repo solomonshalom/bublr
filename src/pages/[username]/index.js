@@ -320,6 +320,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema, c
     }
   }, [mounted, currentUser, user.id])
 
+  // Use resolvedTheme when mounted, otherwise default to a neutral state
   const isDark = mounted ? resolvedTheme === 'dark' : false
 
   const hasSocialLinks = user.socialLinks && Object.values(user.socialLinks).some(v => v)
@@ -378,13 +379,16 @@ export default function Profile({ user, organizationSchema, profilePageSchema, c
           font-size: 14px;
           font-weight: 400;
           line-height: 1.5;
-          color: ${colors.text};
+          color: ${mounted ? colors.text : 'var(--grey-4)'};
           text-align: left;
-          background-color: ${colors.bg};
+          background-color: var(--grey-1);
           min-height: 100vh;
           -webkit-text-size-adjust: 100%;
           -webkit-tap-highlight-color: transparent;
-          transition: background-color 0.3s ease, color 0.3s ease;
+
+          /* FOUC prevention - fade in once theme is resolved */
+          opacity: ${mounted ? 1 : 0};
+          transition: opacity 0.25s ease-out, background-color 0.3s ease, color 0.3s ease;
 
           *, ::after, ::before {
             box-sizing: border-box;

@@ -250,13 +250,16 @@ export default function Explore() {
           <p>Oops, we&apos;ve had an error:</p>
           <pre>{JSON.stringify(userError)}</pre>
         </>
-      ) : user ? (
+      ) : (
         <>
+          {/* Always render search bar to prevent layout shift */}
           <div css={css`
             display: flex;
             flex-wrap: wrap;
             gap: 1em;
             width: 109%;
+            opacity: ${user ? 1 : 0.5};
+            transition: opacity 0.3s ease;
           `}>
             <Button
               outline
@@ -304,7 +307,7 @@ export default function Explore() {
             />
           </div>
 
-          {shouldShowSpinner ? (
+          {(!user || shouldShowSpinner) ? (
             <LoadingContainer isLoading={true}>
               <div css={css`min-height: 200px;`} />
             </LoadingContainer>
@@ -397,10 +400,6 @@ export default function Explore() {
             </div>
           ) : null}
         </>
-      ) : (
-        <LoadingContainer isLoading={true}>
-          <div css={css`min-height: 200px;`} />
-        </LoadingContainer>
       )}
     </>
   )

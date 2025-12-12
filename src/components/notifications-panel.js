@@ -9,6 +9,7 @@ import { getPostByID, getUserByID } from '../lib/db'
 import { htmlToText } from 'html-to-text'
 import { panelVariants, backdropVariants } from '../lib/animation-config'
 import { LoadingContainer } from './loading-container'
+import { FadeIn } from './fade-in'
 
 // Notification type colors
 const NOTIFICATION_COLORS = {
@@ -1100,20 +1101,31 @@ export default function NotificationsPanel({ isOpen, onClose }) {
         `}
       >
         {isLoading ? (
-          <LoadingContainer isLoading={true}>
-            <div css={css`min-height: 150px;`} />
-          </LoadingContainer>
+          <div
+            css={css`
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 150px;
+              color: var(--grey-3);
+              font-size: 0.9rem;
+            `}
+          >
+            Loading...
+          </div>
         ) : activeTab === 'notifications' ? (
           notifications.length > 0 ? (
-            <div css={css`display: flex; flex-direction: column; gap: 0.25rem;`}>
-              {notifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  onMarkRead={handleMarkRead}
-                />
-              ))}
-            </div>
+            <FadeIn duration={0.3}>
+              <div css={css`display: flex; flex-direction: column; gap: 0.25rem;`}>
+                {notifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onMarkRead={handleMarkRead}
+                  />
+                ))}
+              </div>
+            </FadeIn>
           ) : (
             <div
               css={css`
