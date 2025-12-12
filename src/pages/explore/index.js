@@ -304,8 +304,11 @@ export default function Explore() {
             />
           </div>
 
-          <LoadingContainer isLoading={shouldShowSpinner}>
-          {shouldShowPosts ? (
+          {shouldShowSpinner ? (
+            <LoadingContainer isLoading={true}>
+              <div css={css`min-height: 200px;`} />
+            </LoadingContainer>
+          ) : shouldShowPosts ? (
             <AnimatedList css={css`
               list-style: none;
               text-decoration: none;
@@ -393,7 +396,6 @@ export default function Explore() {
               <p>No posts available yet.</p>
             </div>
           ) : null}
-          </LoadingContainer>
         </>
       ) : (
         <LoadingContainer isLoading={true}>

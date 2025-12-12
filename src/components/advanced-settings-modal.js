@@ -576,6 +576,7 @@ export default function AdvancedSettingsModal({ Trigger, uid }) {
 
         {/* Scrollable Content */}
         <div
+          data-lenis-prevent
           css={css`
             flex: 1;
             overflow-y: auto;

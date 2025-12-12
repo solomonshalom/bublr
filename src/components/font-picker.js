@@ -301,6 +301,7 @@ const FontPicker = ({
 
           {/* Font List */}
           <div
+            data-lenis-prevent
             css={css`
               max-height: 240px;
               overflow-y: auto;

@@ -1083,6 +1083,7 @@ export default function NotificationsPanel({ isOpen, onClose }) {
 
       {/* Content */}
       <div
+        data-lenis-prevent
         css={css`
           flex: 1;
           overflow-y: auto;
@@ -1098,8 +1099,11 @@ export default function NotificationsPanel({ isOpen, onClose }) {
           scrollbar-width: none;
         `}
       >
-        <LoadingContainer isLoading={isLoading}>
-        {activeTab === 'notifications' ? (
+        {isLoading ? (
+          <LoadingContainer isLoading={true}>
+            <div css={css`min-height: 150px;`} />
+          </LoadingContainer>
+        ) : activeTab === 'notifications' ? (
           notifications.length > 0 ? (
             <div css={css`display: flex; flex-direction: column; gap: 0.25rem;`}>
               {notifications.map((notification) => (
@@ -1291,7 +1295,6 @@ export default function NotificationsPanel({ isOpen, onClose }) {
             )}
           </div>
         )}
-        </LoadingContainer>
       </div>
           </motion.div>
         </>

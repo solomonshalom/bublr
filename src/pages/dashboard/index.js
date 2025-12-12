@@ -124,7 +124,7 @@ export default function Dashboard() {
         <pre>{JSON.stringify(userError || postsError)}</pre>
         </>
     ) : (
-        <LoadingContainer isLoading={!user || !filteredPosts || !posts}>
+        <>
         <div css={css`
           display: flex;
           flex-wrap: wrap;
@@ -215,16 +215,21 @@ export default function Dashboard() {
             </Button>
           </Link>
         </div>
-          { posts?.length > 0 ?
-          <div>
-            { filteredPosts?.length === 0 && getSearchInput.length > 0 ? (
-              <p
-                css={css`
-                  margin-top: 2rem;
-                `}
-              >
-                Yep, nothing matches your search results, I wonder why 🤔
-              </p>
+          {/* Show loading placeholder while posts are loading */}
+          {(!posts || postsLoading) ? (
+            <LoadingContainer isLoading={true}>
+              <div css={css`min-height: 200px;`} />
+            </LoadingContainer>
+          ) : posts.length > 0 ? (
+            <div>
+              { filteredPosts?.length === 0 && getSearchInput.length > 0 ? (
+                <p
+                  css={css`
+                    margin-top: 2rem;
+                  `}
+                >
+                  Yep, nothing matches your search results, I wonder why 🤔
+                </p>
               ) : (
                 <AnimatedList
                   css={css`
@@ -300,8 +305,8 @@ export default function Dashboard() {
                     ))}
                 </AnimatedList>
               )}
-          </div>
-          :
+            </div>
+          ) : (
             <div>
               <p
                 css={css`
@@ -311,8 +316,8 @@ export default function Dashboard() {
                 Welcome to Bublr! Click the <b>Explore</b> button to check out other posts or create your own by clicking the <b>Pencil Icon</b> near the search bar, located above the text
               </p>
             </div>
-          }
-        </LoadingContainer>
+          )}
+        </>
       )}
     </>
   )

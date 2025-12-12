@@ -288,7 +288,7 @@ export default function TranslateModal({ title, content }) {
         </div>
 
         {/* Content */}
-        <div css={css`
+        <div data-lenis-prevent css={css`
           flex: 1;
           overflow-y: auto;
           padding: 0 1.5rem 1.5rem 1.5rem;

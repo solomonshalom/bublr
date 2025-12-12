@@ -442,6 +442,7 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
 
           {/* Content */}
           <div
+            data-lenis-prevent
             css={css`
               padding: 20px;
               max-height: calc(85vh - 140px);
