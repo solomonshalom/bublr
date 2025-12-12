@@ -155,13 +155,16 @@ const App = ({ Component, pageProps }) => {
         <I18nProvider>
           <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme">
             <SmoothScrollProvider>
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="wait" initial={false}>
                 <motion.div
-                  key={router.pathname}
-                  variants={enhancedPageVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
+                  key={router.asPath}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }}
                 >
                   {getLayout(<Component {...pageProps} />, pageProps)}
                 </motion.div>

@@ -171,18 +171,17 @@ export const scrollRevealVariants = {
   },
 }
 
-// Enhanced page variants with subtle movement
+// Enhanced page variants with buttery smooth movement
 export const enhancedPageVariants = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: PREMIUM_EASING },
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] }, // Custom ease-out-expo
   },
   exit: {
     opacity: 0,
-    y: -10,
-    transition: { duration: 0.2, ease: EASING.exit },
+    transition: { duration: 0.15, ease: [0.4, 0, 1, 1] }, // Quick fade out
   },
 }
 

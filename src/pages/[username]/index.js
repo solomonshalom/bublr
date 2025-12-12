@@ -379,16 +379,13 @@ export default function Profile({ user, organizationSchema, profilePageSchema, c
           font-size: 14px;
           font-weight: 400;
           line-height: 1.5;
-          color: ${mounted ? colors.text : 'var(--grey-4)'};
+          color: ${colors.text};
           text-align: left;
           background-color: var(--grey-1);
           min-height: 100vh;
           -webkit-text-size-adjust: 100%;
           -webkit-tap-highlight-color: transparent;
-
-          /* FOUC prevention - fade in once theme is resolved */
-          opacity: ${mounted ? 1 : 0};
-          transition: opacity 0.25s ease-out, background-color 0.3s ease, color 0.3s ease;
+          transition: background-color 0.3s ease, color 0.3s ease;
 
           *, ::after, ::before {
             box-sizing: border-box;
