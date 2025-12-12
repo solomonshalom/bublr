@@ -1475,6 +1475,7 @@ function Editor({ post }) {
           >
             {/* Scrollable content wrapper */}
             <div
+              data-lenis-prevent
               css={css`
                 flex: 1;
                 overflow-y: auto;
