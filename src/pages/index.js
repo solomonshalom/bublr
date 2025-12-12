@@ -323,6 +323,23 @@ export async function getServerSideProps({ req }) {
       // Mark as custom domain access
       user.isCustomDomain = true
 
+      // Serialize subscription Firestore Timestamps to avoid JSON serialization errors
+      if (user.subscription) {
+        user.subscription = {
+          ...user.subscription,
+          currentPeriodStart: user.subscription.currentPeriodStart?.toDate?.()
+            ? user.subscription.currentPeriodStart.toDate().getTime()
+            : user.subscription.currentPeriodStart?.toMillis?.()
+              ? user.subscription.currentPeriodStart.toMillis()
+              : user.subscription.currentPeriodStart || null,
+          currentPeriodEnd: user.subscription.currentPeriodEnd?.toDate?.()
+            ? user.subscription.currentPeriodEnd.toDate().getTime()
+            : user.subscription.currentPeriodEnd?.toMillis?.()
+              ? user.subscription.currentPeriodEnd.toMillis()
+              : user.subscription.currentPeriodEnd || null,
+        }
+      }
+
       // Process posts efficiently
       const processedPosts = user.posts
         .filter(p => p.published)
