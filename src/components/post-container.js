@@ -22,7 +22,7 @@ const detectRTL = (text) => {
 const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
   // Extract and sanitize fonts from settings (prevents CSS injection)
   const headingFont = sanitizeFontFamily(fontSettings?.headingFont, 'Inter')
-  const bodyFont = sanitizeFontFamily(fontSettings?.bodyFont, 'Newsreader')
+  const bodyFont = sanitizeFontFamily(fontSettings?.bodyFont, 'Inter')
   const codeFont = sanitizeFontFamily(fontSettings?.codeFont, 'JetBrains Mono')
 
   // Get appropriate fallbacks for each font

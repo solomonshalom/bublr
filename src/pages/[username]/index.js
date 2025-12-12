@@ -915,7 +915,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema, c
                                 font-size: 13px;
                                 color: ${colors.muted};
                                 line-height: 1.5;
-                                font-family: '${sanitizeFontFamily(user.fontSettings?.bodyFont, 'Newsreader')}', Georgia, serif;
+                                font-family: '${sanitizeFontFamily(user.fontSettings?.bodyFont, 'Inter')}', Georgia, serif;
                               `}>
                                 {(() => {
                                   // Check if excerpt has actual content (not just whitespace/empty)
@@ -1234,14 +1234,14 @@ export async function getServerSideProps({ params, req }) {
     if (!user.fontSettings) {
       user.fontSettings = {
         headingFont: 'Inter',
-        bodyFont: 'Newsreader',
+        bodyFont: 'Inter',
         codeFont: 'JetBrains Mono'
       }
     } else {
       // Sanitize existing font settings
       user.fontSettings = {
         headingFont: sanitizeFontFamily(user.fontSettings.headingFont, 'Inter'),
-        bodyFont: sanitizeFontFamily(user.fontSettings.bodyFont, 'Newsreader'),
+        bodyFont: sanitizeFontFamily(user.fontSettings.bodyFont, 'Inter'),
         codeFont: sanitizeFontFamily(user.fontSettings.codeFont, 'JetBrains Mono')
       }
     }

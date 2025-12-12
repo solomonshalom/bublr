@@ -548,7 +548,7 @@ export async function getStaticProps({ params }) {
     const postFontOverrides = post.fontOverrides || {}
     const fontSettings = {
       headingFont: sanitizeFontFamily(postFontOverrides.headingFont || userFontSettings.headingFont, 'Inter'),
-      bodyFont: sanitizeFontFamily(postFontOverrides.bodyFont || userFontSettings.bodyFont, 'Newsreader'),
+      bodyFont: sanitizeFontFamily(postFontOverrides.bodyFont || userFontSettings.bodyFont, 'Inter'),
       codeFont: sanitizeFontFamily(postFontOverrides.codeFont || userFontSettings.codeFont, 'JetBrains Mono'),
     }
 

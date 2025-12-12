@@ -136,7 +136,7 @@ export function getFontsFromSettings(fontSettings) {
 export function mergeFontSettings(userFontSettings = {}, postFontOverrides = {}) {
   return {
     headingFont: postFontOverrides?.headingFont || userFontSettings?.headingFont || 'Inter',
-    bodyFont: postFontOverrides?.bodyFont || userFontSettings?.bodyFont || 'Newsreader',
+    bodyFont: postFontOverrides?.bodyFont || userFontSettings?.bodyFont || 'Inter',
     codeFont: postFontOverrides?.codeFont || userFontSettings?.codeFont || 'JetBrains Mono',
   }
 }
