@@ -4,45 +4,13 @@ import { ThemeProvider } from 'next-themes'
 import { Global, css } from '@emotion/react'
 import { IdProvider } from '@radix-ui/react-id'
 import { useRouter } from 'next/router'
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { I18nProvider } from '../lib/i18n'
 import { SmoothScrollProvider } from '../components/smooth-scroll'
-
-// Premium easing curves
-const EASE_OUT_EXPO = [0.16, 1, 0.3, 1]
-const EASE_OUT = [0.4, 0, 0.2, 1]
+import { PageTransition } from '../components/page-transition'
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || ((page) => page)
   const router = useRouter()
-  const [isNavigating, setIsNavigating] = useState(false)
-  const [displayedPath, setDisplayedPath] = useState(router.asPath)
-
-  // Handle route change loading state
-  useEffect(() => {
-    const handleStart = (url) => {
-      if (url !== router.asPath) {
-        setIsNavigating(true)
-      }
-    }
-    const handleComplete = (url) => {
-      setIsNavigating(false)
-      setDisplayedPath(url)
-      // Scroll to top on route change
-      window.scrollTo(0, 0)
-    }
-
-    router.events.on('routeChangeStart', handleStart)
-    router.events.on('routeChangeComplete', handleComplete)
-    router.events.on('routeChangeError', handleComplete)
-
-    return () => {
-      router.events.off('routeChangeStart', handleStart)
-      router.events.off('routeChangeComplete', handleComplete)
-      router.events.off('routeChangeError', handleComplete)
-    }
-  }, [router])
 
   return (
     <>
@@ -192,24 +160,10 @@ const App = ({ Component, pageProps }) => {
         <I18nProvider>
           <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme">
             <SmoothScrollProvider>
-              {/* Premium page transitions */}
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={displayedPath}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{
-                    opacity: isNavigating ? 0.4 : 1,
-                    y: isNavigating ? 4 : 0,
-                  }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    duration: isNavigating ? 0.1 : 0.35,
-                    ease: EASE_OUT_EXPO,
-                  }}
-                >
-                  {getLayout(<Component {...pageProps} />, pageProps)}
-                </motion.div>
-              </AnimatePresence>
+              {/* Premium page transitions with GSAP */}
+              <PageTransition>
+                {getLayout(<Component {...pageProps} />, pageProps)}
+              </PageTransition>
             </SmoothScrollProvider>
           </ThemeProvider>
         </I18nProvider>

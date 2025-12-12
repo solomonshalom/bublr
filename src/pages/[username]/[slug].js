@@ -540,6 +540,24 @@ export async function getStaticProps({ params }) {
     const userData = userDoc.data()
     post.author = userData
     post.authorId = authorId
+
+    // Serialize author's subscription Firestore Timestamps to avoid JSON serialization errors
+    if (post.author.subscription) {
+      post.author.subscription = {
+        ...post.author.subscription,
+        currentPeriodStart: post.author.subscription.currentPeriodStart?.toDate?.()
+          ? post.author.subscription.currentPeriodStart.toDate().getTime()
+          : post.author.subscription.currentPeriodStart?.toMillis?.()
+            ? post.author.subscription.currentPeriodStart.toMillis()
+            : post.author.subscription.currentPeriodStart || null,
+        currentPeriodEnd: post.author.subscription.currentPeriodEnd?.toDate?.()
+          ? post.author.subscription.currentPeriodEnd.toDate().getTime()
+          : post.author.subscription.currentPeriodEnd?.toMillis?.()
+            ? post.author.subscription.currentPeriodEnd.toMillis()
+            : post.author.subscription.currentPeriodEnd || null,
+      }
+    }
+
     const lastEditedTime = post.lastEdited.toDate().getTime()
     post.lastEdited = lastEditedTime
 

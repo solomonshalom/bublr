@@ -53,6 +53,7 @@ export function SmoothScrollProvider({ children }) {
   }, [])
 
   // Stop Lenis during navigation to prevent scroll interference
+  // Note: Scroll reset is handled by PageTransition component (single source of truth)
   useEffect(() => {
     const handleStart = () => {
       if (lenis) {
@@ -61,8 +62,7 @@ export function SmoothScrollProvider({ children }) {
     }
     const handleComplete = () => {
       if (lenis) {
-        // Reset scroll position immediately without animation
-        lenis.scrollTo(0, { immediate: true })
+        // Just restart Lenis - scroll reset is handled by PageTransition
         lenis.start()
       }
     }
