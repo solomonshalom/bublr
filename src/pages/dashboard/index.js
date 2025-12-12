@@ -19,7 +19,7 @@ import ProfileSettingsModal from '../../components/profile-settings-modal'
 import ThemeToggle from '../../components/theme-toggle'
 import NotificationsPanel, { NotificationsTrigger } from '../../components/notifications-panel'
 import { formatDate } from '../../lib/utils'
-import { SkeletonDashboardItem } from '../../components/skeleton-post-item'
+import { LoadingContainer } from '../../components/loading-container'
 import { AnimatedList, AnimatedListItem } from '../../components/animated-list'
 
 export default function Dashboard() {
@@ -123,8 +123,8 @@ export default function Dashboard() {
         <p>Oop, we&apos;ve had an error:</p>
         <pre>{JSON.stringify(userError || postsError)}</pre>
         </>
-    ) : user && filteredPosts && posts ? (
-        <>
+    ) : (
+        <LoadingContainer isLoading={!user || !filteredPosts || !posts}>
         <div css={css`
           display: flex;
           flex-wrap: wrap;
@@ -215,7 +215,7 @@ export default function Dashboard() {
             </Button>
           </Link>
         </div>
-          { posts.length > 0 ?
+          { posts?.length > 0 ?
           <div>
             { filteredPosts?.length === 0 && getSearchInput.length > 0 ? (
               <p
@@ -232,7 +232,7 @@ export default function Dashboard() {
                     list-style: none;
                   `}
                 >
-                  {[...filteredPosts]
+                  {[...(filteredPosts || [])]
                     .sort(
                       (a, b) =>
                         b.lastEdited.toDate().getTime() -
@@ -312,13 +312,7 @@ export default function Dashboard() {
               </p>
             </div>
           }
-        </>
-      ) : (
-        <ul css={css`list-style: none; margin-top: 0;`}>
-          {[1, 2, 3, 4, 5].map(i => (
-            <SkeletonDashboardItem key={i} />
-          ))}
-        </ul>
+        </LoadingContainer>
       )}
     </>
   )

@@ -8,7 +8,7 @@ import { auth, firestore } from '../lib/firebase'
 import { getPostByID, getUserByID } from '../lib/db'
 import { htmlToText } from 'html-to-text'
 import { panelVariants, backdropVariants } from '../lib/animation-config'
-import SkeletonNotification from './skeleton-notification'
+import { LoadingContainer } from './loading-container'
 
 // Notification type colors
 const NOTIFICATION_COLORS = {
@@ -1098,20 +1098,8 @@ export default function NotificationsPanel({ isOpen, onClose }) {
           scrollbar-width: none;
         `}
       >
-        {isLoading ? (
-          <div
-            css={css`
-              display: flex;
-              flex-direction: column;
-              gap: 0.5rem;
-              padding: 0.5rem;
-            `}
-          >
-            {[1, 2, 3, 4].map(i => (
-              <SkeletonNotification key={i} />
-            ))}
-          </div>
-        ) : activeTab === 'notifications' ? (
+        <LoadingContainer isLoading={isLoading}>
+        {activeTab === 'notifications' ? (
           notifications.length > 0 ? (
             <div css={css`display: flex; flex-direction: column; gap: 0.25rem;`}>
               {notifications.map((notification) => (
@@ -1303,6 +1291,7 @@ export default function NotificationsPanel({ isOpen, onClose }) {
             )}
           </div>
         )}
+        </LoadingContainer>
       </div>
           </motion.div>
         </>

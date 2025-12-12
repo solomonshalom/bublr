@@ -16,7 +16,7 @@ import NotificationsPanel, { NotificationsTrigger } from '../../components/notif
 import { truncate } from '../../lib/utils'
 import { firestore, auth } from '../../lib/firebase'
 import { getPostByID, getUserByID } from '../../lib/db'
-import { SkeletonExploreItem } from '../../components/skeleton-post-item'
+import { LoadingContainer } from '../../components/loading-container'
 import { AnimatedList, AnimatedListItem } from '../../components/animated-list'
 
 function List({ uid }) {
@@ -53,18 +53,9 @@ function List({ uid }) {
     })()
   }, [uid])
 
-  if (isLoading) {
+  if (list.length > 0 || isLoading)
     return (
-      <ul css={css`list-style: none;`}>
-        {[1, 2, 3].map(i => (
-          <SkeletonExploreItem key={i} />
-        ))}
-      </ul>
-    )
-  }
-
-  if (list.length > 0)
-    return (
+      <LoadingContainer isLoading={isLoading}>
       <AnimatedList
         css={css`
           list-style: none;
@@ -132,6 +123,7 @@ function List({ uid }) {
           </AnimatedListItem>
         ))}
       </AnimatedList>
+      </LoadingContainer>
     )
 
   return <p>You have no posts saved to read later 😔</p>
@@ -216,14 +208,10 @@ export default function ReadingList() {
           <p>Oop, we&apos;ve had an error:</p>
           <pre>{JSON.stringify(error)}</pre>
         </>
-      ) : user ? (
-        <List uid={user.uid} />
       ) : (
-        <ul css={css`list-style: none;`}>
-          {[1, 2, 3].map(i => (
-            <SkeletonExploreItem key={i} />
-          ))}
-        </ul>
+        <LoadingContainer isLoading={!user}>
+          {user && <List uid={user.uid} />}
+        </LoadingContainer>
       )}
     </>
   )

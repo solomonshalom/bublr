@@ -10,6 +10,7 @@ import { generateProfilePageSchema, generateOrganizationSchema } from '../lib/se
 import meta from '../components/meta'
 import Spinner from '../components/spinner'
 import Profile from './[username]/index'
+import { FadeIn, FadeInGroup, FadeInItem } from '../components/fade-in'
 
 // Static schema objects for homepage (defined at module level for SSR compatibility)
 const SITE_URL = 'https://bublr.life'
@@ -115,51 +116,59 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
 
   return (
     <div>
-      <div
-        css={css`
-          margin-top: 0rem;
-          margin-bottom: 1.5rem;
-          font-size: 4.5rem;
-          font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji, sans-serif;
-          -webkit-font-feature-settings: "liga" off, "calt" off;
-          font-feature-settings: "liga" off, "calt" off;
+      <FadeInGroup staggerDelay={0.1}>
+        <FadeInItem>
+          <div
+            css={css`
+              margin-top: 0rem;
+              margin-bottom: 1.5rem;
+              font-size: 4.5rem;
+              font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji, sans-serif;
+              -webkit-font-feature-settings: "liga" off, "calt" off;
+              font-feature-settings: "liga" off, "calt" off;
 
-          @media (max-width: 720px) {
-            margin-bottom: 1.5rem;
-          }
-        `}
-      >
-        🍱
-      </div>
-      <h1
-        css={css`
-          font-size: 1.25rem;
-          letter-spacing: -0.02rem;
-          margin-bottom: 1.5rem;
-        `}
-      >
-        An open-source, distraction-free spot for anyone to write anything!
-      </h1>
-      <ul
-        css={css`
-          list-style: none;
-          color: var(--grey-3);
-          margin-bottom: 2.3rem;
+              @media (max-width: 720px) {
+                margin-bottom: 1.5rem;
+              }
+            `}
+          >
+            🍱
+          </div>
+        </FadeInItem>
+        <FadeInItem>
+          <h1
+            css={css`
+              font-size: 1.25rem;
+              letter-spacing: -0.02rem;
+              margin-bottom: 1.5rem;
+            `}
+          >
+            An open-source, distraction-free spot for anyone to write anything!
+          </h1>
+        </FadeInItem>
+        <FadeInItem>
+          <ul
+            css={css`
+              list-style: none;
+              color: var(--grey-3);
+              margin-bottom: 2.3rem;
 
-          li {
-            margin: 0.75rem 0;
-          }
+              li {
+                margin: 0.75rem 0;
+              }
 
-          li::before {
-            display: inline-block;
-            content: '';
-            font-size: 0.9rem;
-            margin-right: 0.5rem;
-          }
-        `}
-      >
-        No Ads, Paywalls, & It's Open-Source!
-      </ul>
+              li::before {
+                display: inline-block;
+                content: '';
+                font-size: 0.9rem;
+                margin-right: 0.5rem;
+              }
+            `}
+          >
+            No Ads, Paywalls, & It's Open-Source!
+          </ul>
+        </FadeInItem>
+        <FadeInItem>
       {loading ? (
           <Spinner />
       ) : user ? (
@@ -225,6 +234,8 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
           </CTAButton>
         </div>
       )}
+        </FadeInItem>
+      </FadeInGroup>
       <div
         css={css`
           position: fixed;

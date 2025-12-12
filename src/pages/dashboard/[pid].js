@@ -91,7 +91,7 @@ const PlatformIcons = {
 
 import Input from '../../components/input'
 import Container from '../../components/container'
-import { SkeletonEditor } from '../../components/skeleton-post-item'
+import { LoadingContainer } from '../../components/loading-container'
 import ModalOverlay from '../../components/modal-overlay'
 import PostContainer from '../../components/post-container'
 import VoiceInput from '../../components/voice-input'
@@ -2376,7 +2376,11 @@ export default function PostEditor() {
     return <Editor post={post} />
   }
 
-  return <SkeletonEditor />
+  return (
+    <LoadingContainer isLoading={true}>
+      <div css={css`min-height: 400px;`} />
+    </LoadingContainer>
+  )
 }
 
 PostEditor.getLayout = function PostEditorLayout(page) {

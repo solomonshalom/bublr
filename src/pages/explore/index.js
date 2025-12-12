@@ -21,7 +21,7 @@ import NotificationsPanel, { NotificationsTrigger } from '../../components/notif
 import { truncate } from '../../lib/utils'
 import { getPostByID } from '../../lib/db'
 import meta from '../../components/meta'
-import { SkeletonExploreItem } from '../../components/skeleton-post-item'
+import { LoadingContainer } from '../../components/loading-container'
 import { AnimatedList, AnimatedListItem } from '../../components/animated-list'
 
 // Static schema for explore page (defined at module level for SSR compatibility)
@@ -304,13 +304,8 @@ export default function Explore() {
             />
           </div>
 
-          {shouldShowSpinner ? (
-            <ul css={css`list-style: none;`}>
-              {[1, 2, 3, 4].map(i => (
-                <SkeletonExploreItem key={i} />
-              ))}
-            </ul>
-          ) : shouldShowPosts ? (
+          <LoadingContainer isLoading={shouldShowSpinner}>
+          {shouldShowPosts ? (
             <AnimatedList css={css`
               list-style: none;
               text-decoration: none;
@@ -398,13 +393,12 @@ export default function Explore() {
               <p>No posts available yet.</p>
             </div>
           ) : null}
+          </LoadingContainer>
         </>
       ) : (
-        <ul css={css`list-style: none;`}>
-          {[1, 2, 3, 4].map(i => (
-            <SkeletonExploreItem key={i} />
-          ))}
-        </ul>
+        <LoadingContainer isLoading={true}>
+          <div css={css`min-height: 200px;`} />
+        </LoadingContainer>
       )}
     </>
   )

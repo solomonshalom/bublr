@@ -6,7 +6,8 @@ import { IdProvider } from '@radix-ui/react-id'
 import { useRouter } from 'next/router'
 import { motion, AnimatePresence } from 'framer-motion'
 import { I18nProvider } from '../lib/i18n'
-import { pageVariants } from '../lib/animation-config'
+import { enhancedPageVariants } from '../lib/animation-config'
+import { SmoothScrollProvider } from '../components/smooth-scroll'
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || ((page) => page)
@@ -135,22 +136,37 @@ const App = ({ Component, pageProps }) => {
               transition-duration: 0.01ms !important;
             }
           }
+
+          /* Lenis smooth scroll */
+          html.lenis {
+            height: auto;
+          }
+
+          .lenis.lenis-smooth {
+            scroll-behavior: auto !important;
+          }
+
+          .lenis.lenis-smooth [data-lenis-prevent] {
+            overscroll-behavior: contain;
+          }
         `}
       />
       <IdProvider>
         <I18nProvider>
           <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={router.pathname}
-                variants={pageVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                {getLayout(<Component {...pageProps} />, pageProps)}
-              </motion.div>
-            </AnimatePresence>
+            <SmoothScrollProvider>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={router.pathname}
+                  variants={enhancedPageVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  {getLayout(<Component {...pageProps} />, pageProps)}
+                </motion.div>
+              </AnimatePresence>
+            </SmoothScrollProvider>
           </ThemeProvider>
         </I18nProvider>
       </IdProvider>
