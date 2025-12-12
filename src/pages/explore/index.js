@@ -23,6 +23,7 @@ import { getPostByID } from '../../lib/db'
 import meta from '../../components/meta'
 import { LoadingContainer } from '../../components/loading-container'
 import { AnimatedList, AnimatedListItem } from '../../components/animated-list'
+import { FadeIn } from '../../components/fade-in'
 
 // Static schema for explore page (defined at module level for SSR compatibility)
 const collectionPageSchema = {
@@ -41,10 +42,11 @@ export default function Explore() {
 
   const [user, userLoading, userError] = useAuthState(auth);
   const [explorePosts, setExplorePosts] = useState([]);
-  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(true); // Start true to prevent flash
   const [hasSearched, setHasSearched] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Fetch unread count
   useEffect(() => {
@@ -130,6 +132,7 @@ export default function Explore() {
       setExplorePosts([]);
     } finally {
       setIsSearchLoading(false);
+      setInitialLoadComplete(true);
     }
   };
 
@@ -201,10 +204,11 @@ export default function Explore() {
     }
   };
 
-  const shouldShowSpinner = isSearchLoading || (!user && userLoading);
-  const shouldShowPosts = user && explorePosts && explorePosts.length > 0;
+  // Show loading when: searching, user loading, or initial posts haven't loaded yet
+  const shouldShowSpinner = isSearchLoading || userLoading || (!initialLoadComplete && user);
+  const shouldShowPosts = user && explorePosts && explorePosts.length > 0 && initialLoadComplete;
   // Show empty state only when user has searched and no results found
-  const shouldShowEmptyState = user && hasSearched && explorePosts.length === 0 && !isSearchLoading;
+  const shouldShowEmptyState = user && hasSearched && explorePosts.length === 0 && !isSearchLoading && initialLoadComplete;
 
   return (
     <>
@@ -312,11 +316,12 @@ export default function Explore() {
               <div css={css`min-height: 200px;`} />
             </LoadingContainer>
           ) : shouldShowPosts ? (
-            <AnimatedList css={css`
-              list-style: none;
-              text-decoration: none;
-            `}>
-              {explorePosts.map(post => (
+            <FadeIn duration={0.3}>
+              <AnimatedList css={css`
+                list-style: none;
+                text-decoration: none;
+              `}>
+                {explorePosts.map(post => (
                 <AnimatedListItem
                   key={post.id}
                   css={css`
@@ -381,7 +386,8 @@ export default function Explore() {
                   </Link>
                 </AnimatedListItem>
               ))}
-            </AnimatedList>
+              </AnimatedList>
+            </FadeIn>
           ) : shouldShowEmptyState ? (
             <div css={css`
               text-align: center;
@@ -390,7 +396,7 @@ export default function Explore() {
             `}>
               <p>No posts found. Try a different search term.</p>
             </div>
-          ) : user && explorePosts.length === 0 && !isSearchLoading ? (
+          ) : user && explorePosts.length === 0 && !isSearchLoading && initialLoadComplete ? (
             <div css={css`
               text-align: center;
               color: var(--grey-3);

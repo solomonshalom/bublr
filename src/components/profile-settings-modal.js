@@ -1717,7 +1717,7 @@ function Editor({ user }) {
     },
     fontSettings: {
       headingFont: 'Inter',
-      bodyFont: 'Newsreader',
+      bodyFont: 'Inter',
       codeFont: 'JetBrains Mono',
     },
   })
@@ -1763,7 +1763,7 @@ function Editor({ user }) {
       },
       fontSettings: user.fontSettings || {
         headingFont: 'Inter',
-        bodyFont: 'Newsreader',
+        bodyFont: 'Inter',
         codeFont: 'JetBrains Mono',
       },
     })
@@ -2095,7 +2095,7 @@ function Editor({ user }) {
     const originalBannerFade = user.bannerFade || 'subtle'
     const originalBannerOverlay = user.bannerOverlay || 'none'
     const originalAvatarFrame = user.avatarFrame || { type: 'none', color: null, gradientColors: null, customUrl: null, size: 'medium' }
-    const originalFontSettings = user.fontSettings || { headingFont: 'Inter', bodyFont: 'Newsreader', codeFont: 'JetBrains Mono' }
+    const originalFontSettings = user.fontSettings || { headingFont: 'Inter', bodyFont: 'Inter', codeFont: 'JetBrains Mono' }
 
     return (
       user.name !== clientUser.name ||
