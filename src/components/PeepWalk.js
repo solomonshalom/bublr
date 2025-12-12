@@ -78,7 +78,8 @@ const PeepWalk = ({ height = '100%', width = '100%' }) => {
         const direction = Math.random() > 0.5 ? 1 : -1;
         // using an ease function to skew random to lower values to help hide that peeps have no legs
         const offsetY = 100 - 250 * gsap.default.parseEase('power2.in')(Math.random());
-        const startY = stage.height - peep.height + offsetY;
+        // Ensure characters are never cut off at the top (min 10 to account for walk bounce animation)
+        const startY = Math.max(10, stage.height - peep.height + offsetY);
         let startX;
         let endX;
         

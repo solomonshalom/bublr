@@ -20,24 +20,27 @@ export const STAGGER = {
 }
 
 // List animation variants
+// Note: List container doesn't animate opacity (PageTransition handles page-level fade)
+// Only children animate, preventing double-fade effect
 export const listVariants = {
-  hidden: { opacity: 0 },
+  hidden: {},
   visible: {
-    opacity: 1,
     transition: {
-      staggerChildren: STAGGER.fast,
+      // Sync with PageTransition: start items as page fade-in is ~40% complete
+      delayChildren: 0.15,
+      staggerChildren: 0.04,
     },
   },
 }
 
 export const itemVariants = {
-  hidden: { opacity: 0, y: 8 },
+  hidden: { opacity: 0, y: 6 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: DURATION.fast,
-      ease: EASING.enter,
+      duration: 0.25,
+      ease: [0.25, 0.46, 0.45, 0.94], // Smooth ease-out
     },
   },
 }

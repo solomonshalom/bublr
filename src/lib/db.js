@@ -376,7 +376,7 @@ export async function getPostByID(id) {
 
 export async function removePostForUser(uid, pid) {
   await firestore.collection('posts').doc(pid).delete()
-  firestore
+  await firestore
     .collection('users')
     .doc(uid)
     .update({ posts: firebase.firestore.FieldValue.arrayRemove(pid) })

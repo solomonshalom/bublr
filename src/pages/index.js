@@ -243,9 +243,10 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
           left: 0;
           right: 0;
           z-index: -1;
+          overflow: hidden;
         `}
       >
-        <PeepWalk height="450px" width="100%" />
+        <PeepWalk height="350px" width="100%" />
       </div>
     </div>
   )

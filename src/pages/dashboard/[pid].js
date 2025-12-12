@@ -887,7 +887,7 @@ function SpamPopup({ isOpen, onClose, reason, category }) {
   )
 }
 
-function Editor({ post }) {
+function Editor({ post, onBeforeDelete }) {
   const [userdata] = useDocumentData(firestore.doc(`users/${post.author}`), {
     idField: 'id',
   })
@@ -1917,6 +1917,7 @@ function Editor({ post }) {
               <Button
                 outline
                 onClick={async () => {
+                  onBeforeDelete?.()
                   await removePostForUser(post.author, post.id)
                   router.push('/dashboard')
                 }}
@@ -2557,6 +2558,7 @@ function Editor({ post }) {
 export default function PostEditor() {
   const router = useRouter()
   const [user, userLoading, userError] = useAuthState(auth)
+  const [isDeletingPost, setIsDeletingPost] = useState(false)
   const [post, postLoading, postError] = useDocumentData(
     firestore.doc(`posts/${router.query.pid}`),
     {
@@ -2565,6 +2567,9 @@ export default function PostEditor() {
   )
 
   useEffect(() => {
+    // Skip redirect if we're in the process of deleting (navigating to /dashboard)
+    if (isDeletingPost) return
+
     if (!user && !userLoading && !userError) {
       router.push('/')
       return
@@ -2572,7 +2577,7 @@ export default function PostEditor() {
       router.push('/')
       return
     }
-  }, [router, user, userLoading, userError, post, postLoading, postError])
+  }, [router, user, userLoading, userError, post, postLoading, postError, isDeletingPost])
 
   if (userError || postError) {
     return (
@@ -2583,7 +2588,7 @@ export default function PostEditor() {
       </>
     )
   } else if (post) {
-    return <Editor post={post} />
+    return <Editor post={post} onBeforeDelete={() => setIsDeletingPost(true)} />
   }
 
   return (
