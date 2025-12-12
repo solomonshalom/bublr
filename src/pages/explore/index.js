@@ -42,7 +42,7 @@ export default function Explore() {
 
   const [user, userLoading, userError] = useAuthState(auth);
   const [explorePosts, setExplorePosts] = useState([]);
-  const [isSearchLoading, setIsSearchLoading] = useState(true); // Start true to prevent flash
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
