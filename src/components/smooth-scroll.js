@@ -1,5 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/router'
 import Lenis from '@studio-freight/lenis'
 import { prefersReducedMotion } from '../lib/animation-config'
 
@@ -12,6 +13,7 @@ export function useSmoothScroll() {
 export function SmoothScrollProvider({ children }) {
   const [lenis, setLenis] = useState(null)
   const rafRef = useRef(null)
+  const router = useRouter()
 
   useEffect(() => {
     // Don't initialize on server or if user prefers reduced motion
@@ -20,10 +22,10 @@ export function SmoothScrollProvider({ children }) {
     }
 
     const lenisInstance = new Lenis({
-      lerp: 0.1, // Smoothness factor (lower = smoother)
-      duration: 1.2, // Scroll duration
+      lerp: 0.12, // Slightly higher for snappier feel
+      duration: 1.0, // Shorter duration
       smoothWheel: true,
-      wheelMultiplier: 0.8, // Slightly reduce wheel speed for premium feel
+      wheelMultiplier: 1, // Normal wheel speed
       touchMultiplier: 1.5,
       infinite: false,
     })
@@ -50,12 +52,31 @@ export function SmoothScrollProvider({ children }) {
     }
   }, [])
 
-  // Handle route changes - scroll to top
+  // Stop Lenis during navigation to prevent scroll interference
   useEffect(() => {
-    if (lenis) {
-      lenis.scrollTo(0, { immediate: true })
+    const handleStart = () => {
+      if (lenis) {
+        lenis.stop()
+      }
     }
-  }, [lenis])
+    const handleComplete = () => {
+      if (lenis) {
+        // Reset scroll position immediately without animation
+        lenis.scrollTo(0, { immediate: true })
+        lenis.start()
+      }
+    }
+
+    router.events.on('routeChangeStart', handleStart)
+    router.events.on('routeChangeComplete', handleComplete)
+    router.events.on('routeChangeError', handleComplete)
+
+    return () => {
+      router.events.off('routeChangeStart', handleStart)
+      router.events.off('routeChangeComplete', handleComplete)
+      router.events.off('routeChangeError', handleComplete)
+    }
+  }, [lenis, router])
 
   return (
     <SmoothScrollContext.Provider value={lenis}>

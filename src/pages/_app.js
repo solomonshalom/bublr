@@ -4,14 +4,39 @@ import { ThemeProvider } from 'next-themes'
 import { Global, css } from '@emotion/react'
 import { IdProvider } from '@radix-ui/react-id'
 import { useRouter } from 'next/router'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { I18nProvider } from '../lib/i18n'
-import { enhancedPageVariants } from '../lib/animation-config'
 import { SmoothScrollProvider } from '../components/smooth-scroll'
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || ((page) => page)
   const router = useRouter()
+  const [isNavigating, setIsNavigating] = useState(false)
+
+  // Handle route change loading state
+  useEffect(() => {
+    const handleStart = (url) => {
+      if (url !== router.asPath) {
+        setIsNavigating(true)
+      }
+    }
+    const handleComplete = () => {
+      setIsNavigating(false)
+      // Scroll to top on route change
+      window.scrollTo(0, 0)
+    }
+
+    router.events.on('routeChangeStart', handleStart)
+    router.events.on('routeChangeComplete', handleComplete)
+    router.events.on('routeChangeError', handleComplete)
+
+    return () => {
+      router.events.off('routeChangeStart', handleStart)
+      router.events.off('routeChangeComplete', handleComplete)
+      router.events.off('routeChangeError', handleComplete)
+    }
+  }, [router])
 
   return (
     <>
@@ -155,20 +180,20 @@ const App = ({ Component, pageProps }) => {
         <I18nProvider>
           <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme">
             <SmoothScrollProvider>
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={router.asPath}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    ease: [0.25, 0.46, 0.45, 0.94]
-                  }}
-                >
-                  {getLayout(<Component {...pageProps} />, pageProps)}
-                </motion.div>
-              </AnimatePresence>
+              {/* Immediate fade feedback when navigation starts */}
+              <motion.div
+                animate={{
+                  opacity: isNavigating ? 0.6 : 1,
+                  scale: isNavigating ? 0.995 : 1,
+                }}
+                transition={{
+                  duration: 0.15,
+                  ease: [0.4, 0, 0.2, 1]
+                }}
+                style={{ transformOrigin: 'top center' }}
+              >
+                {getLayout(<Component {...pageProps} />, pageProps)}
+              </motion.div>
             </SmoothScrollProvider>
           </ThemeProvider>
         </I18nProvider>
