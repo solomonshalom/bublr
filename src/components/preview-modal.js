@@ -17,6 +17,35 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `
 
+// Custom trigger button styled to match other header icons
+const PreviewTrigger = (props) => (
+  <button
+    css={css`
+      background: none;
+      border: none;
+      border-radius: 1rem;
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 200ms ease;
+      color: inherit;
+      padding: 0;
+      outline: none;
+
+      &:hover {
+        background: var(--grey-2);
+        opacity: 0.4;
+      }
+    `}
+    {...props}
+  >
+    <EyeOpenIcon />
+  </button>
+)
+
 export default function PreviewModal({ post, userdata }) {
   const [open, setOpen] = useState(false)
 
@@ -42,11 +71,7 @@ export default function PreviewModal({ post, userdata }) {
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger asChild>
-        <IconButton title="Preview post" aria-label="Preview post">
-          <EyeOpenIcon />
-        </IconButton>
-      </Dialog.Trigger>
+      <Dialog.Trigger as={PreviewTrigger} title="Preview post" aria-label="Preview post" />
 
       <ModalOverlay />
 
@@ -185,17 +210,16 @@ export default function PreviewModal({ post, userdata }) {
         </div>
 
         {/* Close button */}
-        <Dialog.Close asChild>
-          <IconButton
-            css={css`
-              position: absolute;
-              top: 1rem;
-              right: 1rem;
-            `}
-            aria-label="Close preview"
-          >
-            <Cross2Icon />
-          </IconButton>
+        <Dialog.Close
+          as={IconButton}
+          css={css`
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+          `}
+          aria-label="Close preview"
+        >
+          <Cross2Icon />
         </Dialog.Close>
       </Dialog.Content>
     </Dialog.Root>
