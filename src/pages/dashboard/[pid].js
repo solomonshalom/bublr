@@ -47,6 +47,7 @@ import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import SlashCommands from '../../components/editor/slash-commands'
 import EditorFloatingMenu from '../../components/editor/editor-floating-menu'
 import Callout from '../../components/editor/callout-extension'
+import PreviewModal from '../../components/preview-modal'
 
 import * as Dialog from '@radix-ui/react-dialog'
 
@@ -1449,6 +1450,8 @@ function Editor({ post, onBeforeDelete }) {
             </>
           )}
         </span>
+
+        <PreviewModal post={clientPost} userdata={userdata} />
 
         <Dialog.Root>
           <Dialog.Trigger as={IconButton}>

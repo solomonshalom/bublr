@@ -3,7 +3,7 @@ import Head from 'next/head'
 import { css } from '@emotion/react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
-import firebase, { auth } from '../lib/firebase'
+import firebase, { auth, firestore } from '../lib/firebase'
 import { setUser, userWithIDExists, getUserByName } from '../lib/db'
 import { generateProfilePageSchema, generateOrganizationSchema } from '../lib/seo-utils'
 
