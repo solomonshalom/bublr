@@ -17,32 +17,33 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: translate(-50%, -50%) translateY(0); }
 `
 
-// Custom trigger button styled to match other header icons
+// Custom trigger button styled to match header UI
 const PreviewTrigger = (props) => (
   <button
     css={css`
       background: none;
       border: none;
-      border-radius: 1rem;
-      width: 2rem;
-      height: 2rem;
+      border-radius: 0.5rem;
       display: flex;
-      justify-content: center;
       align-items: center;
+      gap: 0.4rem;
       cursor: pointer;
       transition: all 200ms ease;
-      color: inherit;
-      padding: 0;
+      color: var(--grey-3);
+      padding: 0.4rem 0.6rem;
       outline: none;
+      font-size: 0.8rem;
+      font-family: 'Inter', sans-serif;
 
       &:hover {
+        color: var(--grey-4);
         background: var(--grey-2);
-        opacity: 0.4;
       }
     `}
     {...props}
   >
-    <EyeOpenIcon />
+    <EyeOpenIcon width={14} height={14} />
+    Preview
   </button>
 )
 
