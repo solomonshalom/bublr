@@ -13,8 +13,8 @@ import { calculateReadingTime, cleanTitle } from '../lib/seo-utils'
 import { sanitizeFontFamily } from '../lib/fonts'
 
 const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate(-50%, -50%) translateY(10px); }
+  to { opacity: 1; transform: translate(-50%, -50%) translateY(0); }
 `
 
 // Custom trigger button styled to match other header icons
