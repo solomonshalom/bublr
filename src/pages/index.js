@@ -3,6 +3,7 @@ import Head from 'next/head'
 import { css } from '@emotion/react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
+import { useState, useEffect } from 'react'
 import firebase, { auth, firestore } from '../lib/firebase'
 import { setUser, userWithIDExists, getUserByName } from '../lib/db'
 import { generateProfilePageSchema, generateOrganizationSchema } from '../lib/seo-utils'
@@ -99,6 +100,88 @@ function generateDiceBearAvatar(uid) {
 
 export default function Home({ customDomainUser, organizationSchema: orgSchema, profilePageSchema }) {
   const [user, loading, error] = useAuthState(auth)
+  const [isSigningIn, setIsSigningIn] = useState(false)
+  const [signInError, setSignInError] = useState(null)
+
+  const handleSignIn = async () => {
+    // Prevent double-clicks
+    if (isSigningIn) return
+
+    setIsSigningIn(true)
+    setSignInError(null)
+
+    const googleAuthProvider = new firebase.auth.GoogleAuthProvider()
+    googleAuthProvider.addScope('email')
+    googleAuthProvider.addScope('profile')
+
+    try {
+      // Try popup first
+      const cred = await auth.signInWithPopup(googleAuthProvider)
+      await handleAuthSuccess(cred)
+    } catch (err) {
+      console.error('Sign-in popup error:', err)
+
+      // For network errors or popup blocked, try redirect as fallback
+      if (err.code === 'auth/network-request-failed' ||
+          err.code === 'auth/popup-blocked' ||
+          err.code === 'auth/operation-not-supported-in-this-environment') {
+        try {
+          // Fallback to redirect-based auth (works better on mobile/Safari)
+          await auth.signInWithRedirect(googleAuthProvider)
+          return // Page will redirect, no need to reset state
+        } catch (redirectErr) {
+          console.error('Sign-in redirect error:', redirectErr)
+          setSignInError('Unable to sign in. Please check your internet connection and try again.')
+        }
+      } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        setSignInError(err.message || 'Failed to sign in. Please try again.')
+      }
+      setIsSigningIn(false)
+    }
+  }
+
+  const handleAuthSuccess = async (cred) => {
+    try {
+      let userExists = await userWithIDExists(cred.user.uid)
+      if (!userExists) {
+        await setUser(cred.user.uid, {
+          name: cred.user.uid,
+          displayName: cred.user.displayName || 'Anonymous',
+          email: cred.user.email || null,
+          about: 'Nothing to say about you.',
+          posts: [],
+          photo: generateDiceBearAvatar(cred.user.uid),
+          readingList: [],
+        })
+      } else if (cred.user.email) {
+        const userDoc = await firestore.collection('users').doc(cred.user.uid).get()
+        const userData = userDoc.data()
+        if (!userData?.email) {
+          await firestore.collection('users').doc(cred.user.uid).update({
+            email: cred.user.email
+          })
+        }
+      }
+    } catch (dbErr) {
+      console.error('Database error after auth:', dbErr)
+    } finally {
+      setIsSigningIn(false)
+    }
+  }
+
+  // Handle redirect result on page load (for signInWithRedirect fallback)
+  useEffect(() => {
+    auth.getRedirectResult().then((result) => {
+      if (result?.user) {
+        handleAuthSuccess(result)
+      }
+    }).catch((err) => {
+      if (err.code && err.code !== 'auth/popup-closed-by-user') {
+        console.error('Redirect result error:', err)
+        setSignInError('Sign-in was interrupted. Please try again.')
+      }
+    })
+  }, [])
 
   // If this is a custom domain request, render the Profile component directly
   if (customDomainUser) {
@@ -199,39 +282,22 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
           `}
         >
           <CTAButton
-            onClick={() => {
-              const googleAuthProvider = new firebase.auth.GoogleAuthProvider()
-              // Explicitly request email and profile scopes to ensure email is captured
-              googleAuthProvider.addScope('email')
-              googleAuthProvider.addScope('profile')
-              auth.signInWithPopup(googleAuthProvider).then(async cred => {
-                let userExists = await userWithIDExists(cred.user.uid)
-                if (!userExists) {
-                  // New user - create full profile with email
-                  await setUser(cred.user.uid, {
-                    name: cred.user.uid,
-                    displayName: cred.user.displayName || 'Anonymous',
-                    email: cred.user.email || null,
-                    about: 'Nothing to say about you.',
-                    posts: [],
-                    photo: generateDiceBearAvatar(cred.user.uid),
-                    readingList: [],
-                  })
-                } else if (cred.user.email) {
-                  // Existing user - update email if available (handles pre-existing users missing email)
-                  const userDoc = await firestore.collection('users').doc(cred.user.uid).get()
-                  const userData = userDoc.data()
-                  if (!userData?.email) {
-                    await firestore.collection('users').doc(cred.user.uid).update({
-                      email: cred.user.email
-                    })
-                  }
-                }
-              })
-            }}
+            disabled={isSigningIn}
+            onClick={handleSignIn}
           >
-            Sign Up
+            {isSigningIn ? 'Signing in...' : 'Sign Up'}
           </CTAButton>
+          {signInError && (
+            <p
+              css={css`
+                color: #e53e3e;
+                font-size: 0.875rem;
+                margin-top: 0.5rem;
+              `}
+            >
+              {signInError}
+            </p>
+          )}
         </div>
       )}
         </FadeInItem>

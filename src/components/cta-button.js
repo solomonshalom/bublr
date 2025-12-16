@@ -279,6 +279,19 @@ const ctaButtonStyles = css`
       width: 351px;
     }
   }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+
+    .arrow {
+      animation: none;
+    }
+
+    &:hover .arrow {
+      width: 48px;
+    }
+  }
 `
 
 export default function CTAButton({ children = 'Sign Up', ...props }) {
