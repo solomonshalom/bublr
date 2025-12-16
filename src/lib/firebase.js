@@ -6,7 +6,7 @@ import FIREBASE_CONFIG from './firebase-config'
 
 if (firebase.apps.length === 0) {
   firebase.initializeApp(FIREBASE_CONFIG)
-  firebase.firestore().settings({ experimentalForceLongPolling: true })
+  firebase.firestore().settings({ experimentalForceLongPolling: true, merge: true })
 } 
 
 export const auth = firebase.auth()
