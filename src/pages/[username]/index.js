@@ -14,6 +14,7 @@ import { hasActiveAccess } from '../../lib/subscription'
 import meta from '../../components/meta'
 import { generateProfilePageSchema, generateOrganizationSchema, generateBreadcrumbSchema, generateNewsletterSchema } from '../../lib/seo-utils'
 import SubscribeNewsletter from '../../components/subscribe-newsletter'
+import { SubscribeOrSign, GuestBookEntries } from '../../components/guestbook'
 import FollowButton from '../../components/follow-button'
 import { ProfileCanvas } from '../../components/profile-canvas'
 import { sanitizeFontFamily } from '../../lib/fonts'
@@ -287,7 +288,7 @@ const AvatarWithFrame = ({ user, size = 48 }) => {
   )
 }
 
-export default function Profile({ user, organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts }) {
+export default function Profile({ user, organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts, guestbookEntries }) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [currentUser] = useAuthState(auth)
@@ -811,12 +812,49 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                         ) : null
                       }
                       if (btn === 'newsletter') {
+                        // Check button style preference
+                        const guestbookEnabled = user.guestbookVisibility !== false
+                        const isSeparateStyle = user.guestbookButtonStyle === 'separate'
+
+                        if (isSeparateStyle) {
+                          // Separate buttons for newsletter and guestbook
+                          return (
+                            <div key="newsletter" css={css`display: flex; flex-direction: column; gap: 8px; width: 100%;`}>
+                              <SubscribeOrSign
+                                authorUsername={user.name}
+                                authorDisplayName={user.displayName}
+                                colors={colors}
+                                enableNewsletter={true}
+                                enableGuestbook={false}
+                                newsletterButtonText={user.newsletterButtonText || ''}
+                                guestbookButtonText={user.guestbookButtonText || ''}
+                              />
+                              {guestbookEnabled && (
+                                <SubscribeOrSign
+                                  authorUsername={user.name}
+                                  authorDisplayName={user.displayName}
+                                  colors={colors}
+                                  enableNewsletter={false}
+                                  enableGuestbook={true}
+                                  newsletterButtonText={user.newsletterButtonText || ''}
+                                  guestbookButtonText={user.guestbookButtonText || ''}
+                                />
+                              )}
+                            </div>
+                          )
+                        }
+
+                        // Combined button (default)
                         return (
-                          <SubscribeNewsletter
+                          <SubscribeOrSign
                             key="newsletter"
                             authorUsername={user.name}
                             authorDisplayName={user.displayName}
                             colors={colors}
+                            enableNewsletter={true}
+                            enableGuestbook={guestbookEnabled}
+                            newsletterButtonText={user.newsletterButtonText || ''}
+                            guestbookButtonText={user.guestbookButtonText || ''}
                           />
                         )
                       }
@@ -827,7 +865,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
               })()}
 
               {/* Render sections based on sectionOrder */}
-              {(user.sectionOrder || ['skills', 'writing', 'custom']).map((sectionType) => {
+              {(user.sectionOrder || ['skills', 'writing', 'guestbook', 'custom']).map((sectionType) => {
                 // Skills/Tags Section
                 if (sectionType === 'skills' && hasSkills) {
                   return (
@@ -934,6 +972,26 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                           </Link>
                         ))}
                       </div>
+                    </div>
+                  )
+                }
+
+                // Guest Book Section - render if visibility is enabled (allow client-side fetch if SSR returns empty)
+                if (sectionType === 'guestbook' && user.guestbookVisibility !== false) {
+                  return (
+                    <div key="guestbook">
+                      {user.dividersVisibility?.guestbook !== false && (
+                        <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      )}
+                      {user.dividersVisibility?.guestbook === false && (
+                        <div css={css`margin-top: 32px;`} />
+                      )}
+                      <GuestBookEntries
+                        authorUsername={user.name}
+                        initialEntries={guestbookEntries || []}
+                        colors={colors}
+                        sectionTitle={user.guestbookSectionTitle || 'Guest Book'}
+                      />
                     </div>
                   )
                 }
@@ -1172,9 +1230,37 @@ export async function getServerSideProps({ params, req }) {
       user.skillsSectionTitle = ''
     }
 
-    // Ensure sectionOrder exists
+    // Ensure sectionOrder exists and includes guestbook
     if (!user.sectionOrder) {
-      user.sectionOrder = ['skills', 'writing', 'custom']
+      user.sectionOrder = ['skills', 'writing', 'guestbook', 'custom']
+    } else if (!user.sectionOrder.includes('guestbook')) {
+      // Add guestbook to existing sectionOrder (for users who had custom order before guestbook feature)
+      // Insert after 'writing' if it exists, otherwise at the end before 'custom'
+      const writingIndex = user.sectionOrder.indexOf('writing')
+      const customIndex = user.sectionOrder.indexOf('custom')
+      if (writingIndex !== -1) {
+        user.sectionOrder.splice(writingIndex + 1, 0, 'guestbook')
+      } else if (customIndex !== -1) {
+        user.sectionOrder.splice(customIndex, 0, 'guestbook')
+      } else {
+        user.sectionOrder.push('guestbook')
+      }
+    }
+
+    // Guest book defaults
+    if (user.guestbookVisibility === undefined) {
+      user.guestbookVisibility = true
+    }
+    if (!user.guestbookSectionTitle) {
+      user.guestbookSectionTitle = 'Guest Book'
+    }
+
+    // Custom button text defaults (empty string means use default text)
+    if (user.newsletterButtonText === undefined) {
+      user.newsletterButtonText = ''
+    }
+    if (user.guestbookButtonText === undefined) {
+      user.guestbookButtonText = ''
     }
 
     // Include customBranding if it exists (for premium users)
@@ -1228,7 +1314,7 @@ export async function getServerSideProps({ params, req }) {
 
     // Ensure dividersVisibility exists
     if (!user.dividersVisibility) {
-      user.dividersVisibility = { skills: true, writing: true, custom: true }
+      user.dividersVisibility = { skills: true, writing: true, guestbook: true, custom: true }
     }
 
     // Banner defaults
@@ -1326,8 +1412,48 @@ export async function getServerSideProps({ params, req }) {
         })
       : null
 
+    // Fetch guestbook entries if guestbook is enabled
+    // Using simple query without composite index to maximize compatibility
+    let guestbookEntries = []
+    if (user.guestbookVisibility !== false) {
+      try {
+        // Fetch ALL guestbook entries (no filtering) to avoid needing composite indexes
+        const guestbookSnapshot = await firestore
+          .collection('users')
+          .doc(user.id)
+          .collection('guestbook')
+          .limit(100)
+          .get()
+
+        // Filter and transform in memory
+        guestbookEntries = guestbookSnapshot.docs
+          .map((doc) => {
+            const data = doc.data()
+            return {
+              id: doc.id,
+              name: data.name,
+              message: data.message || '',
+              signaturePath: data.signaturePath,
+              signatureViewBox: data.signatureViewBox,
+              moderationStatus: data.moderationStatus,
+              createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+            }
+          })
+          // Filter for approved entries only
+          .filter(entry => entry.moderationStatus === 'approved')
+          // Remove moderationStatus from final output (not needed on client)
+          .map(({ moderationStatus, ...entry }) => entry)
+          // Sort by createdAt descending
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 12)
+      } catch (guestbookError) {
+        // Continue without guestbook entries - client-side will try to fetch
+        console.error('Failed to fetch guestbook entries:', guestbookError.message)
+      }
+    }
+
     return {
-      props: { user, organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts },
+      props: { user, organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts, guestbookEntries },
     }
   } catch (err) {
     console.log(err)

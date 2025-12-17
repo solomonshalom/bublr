@@ -1696,7 +1696,11 @@ function Editor({ user }) {
     skills: [],
     skillsSectionTitle: '',
     customSections: [],
-    sectionOrder: ['skills', 'writing', 'custom'],
+    sectionOrder: ['skills', 'writing', 'guestbook', 'custom'],
+    guestbookVisibility: true,
+    guestbookButtonStyle: 'combined', // 'combined' or 'separate'
+    newsletterButtonText: '',
+    guestbookButtonText: '',
     statsVisibility: { followers: false, following: false, subscribers: false },
     statsOrder: ['followers', 'following', 'subscribers'],
     statsStyle: 'separator',
@@ -1741,14 +1745,20 @@ function Editor({ user }) {
       skills: user.skills || [],
       skillsSectionTitle: user.skillsSectionTitle || '',
       customSections: user.customSections || [],
-      sectionOrder: user.sectionOrder || ['skills', 'writing', 'custom'],
+      sectionOrder: user.sectionOrder?.includes('guestbook')
+        ? user.sectionOrder
+        : [...(user.sectionOrder || ['skills', 'writing', 'custom']).slice(0, 2), 'guestbook', ...(user.sectionOrder || ['skills', 'writing', 'custom']).slice(2)],
+      guestbookVisibility: user.guestbookVisibility !== false,
+      guestbookButtonStyle: user.guestbookButtonStyle || 'combined',
+      newsletterButtonText: user.newsletterButtonText || '',
+      guestbookButtonText: user.guestbookButtonText || '',
       statsVisibility: user.statsVisibility || { followers: false, following: false, subscribers: false },
       statsOrder: user.statsOrder || ['followers', 'following', 'subscribers'],
       statsStyle: user.statsStyle || 'separator',
       statsAlignment: user.statsAlignment || 'center',
       buttonsVisibility: user.buttonsVisibility || { follow: false, newsletter: true },
       buttonsOrder: user.buttonsOrder || ['follow', 'newsletter'],
-      dividersVisibility: user.dividersVisibility || { skills: true, writing: true, custom: true },
+      dividersVisibility: user.dividersVisibility || { skills: true, writing: true, guestbook: true, custom: true },
       banner: user.banner || null,
       bannerPosition: user.bannerPosition || 'center',
       bannerStyle: user.bannerStyle || 'rounded',
@@ -1769,11 +1779,12 @@ function Editor({ user }) {
     })
   }, [user])
 
-  const DEFAULT_SECTION_ORDER = ['skills', 'writing', 'custom']
+  const DEFAULT_SECTION_ORDER = ['skills', 'writing', 'guestbook', 'custom']
 
   const SECTION_LABELS = {
     skills: 'Skills & Tags',
     writing: 'Writing',
+    guestbook: 'Guest Book',
     custom: 'Custom Sections',
   }
 
@@ -1792,11 +1803,12 @@ function Editor({ user }) {
     newsletter: 'Newsletter Button',
   }
 
-  const DEFAULT_DIVIDERS_VISIBILITY = { skills: true, writing: true, custom: true }
+  const DEFAULT_DIVIDERS_VISIBILITY = { skills: true, writing: true, guestbook: true, custom: true }
 
   const DIVIDERS_LABELS = {
     skills: 'Before Skills',
     writing: 'Before Writing',
+    guestbook: 'Before Guest Book',
     custom: 'Before Custom Sections',
   }
 
@@ -1818,6 +1830,7 @@ function Editor({ user }) {
       dividersVisibility: {
         skills: show,
         writing: show,
+        guestbook: show,
         custom: show
       }
     }))
@@ -2081,14 +2094,18 @@ function Editor({ user }) {
     const originalSkills = user.skills || []
     const originalSkillsSectionTitle = user.skillsSectionTitle || ''
     const originalCustomSections = user.customSections || []
-    const originalSectionOrder = user.sectionOrder || ['skills', 'writing', 'custom']
+    const originalSectionOrder = user.sectionOrder || ['skills', 'writing', 'guestbook', 'custom']
+    const originalGuestbookVisibility = user.guestbookVisibility !== false
+    const originalGuestbookButtonStyle = user.guestbookButtonStyle || 'combined'
+    const originalNewsletterButtonText = user.newsletterButtonText || ''
+    const originalGuestbookButtonText = user.guestbookButtonText || ''
     const originalStatsVisibility = user.statsVisibility || { followers: false, following: false, subscribers: false }
     const originalStatsOrder = user.statsOrder || ['followers', 'following', 'subscribers']
     const originalStatsStyle = user.statsStyle || 'separator'
     const originalStatsAlignment = user.statsAlignment || 'center'
     const originalButtonsVisibility = user.buttonsVisibility || { follow: false, newsletter: true }
     const originalButtonsOrder = user.buttonsOrder || ['follow', 'newsletter']
-    const originalDividersVisibility = user.dividersVisibility || { skills: true, writing: true, custom: true }
+    const originalDividersVisibility = user.dividersVisibility || { skills: true, writing: true, guestbook: true, custom: true }
     const originalBanner = user.banner || null
     const originalBannerPosition = user.bannerPosition || 'center'
     const originalBannerStyle = user.bannerStyle || 'rounded'
@@ -2108,6 +2125,10 @@ function Editor({ user }) {
       originalSkillsSectionTitle !== clientUser.skillsSectionTitle ||
       JSON.stringify(originalCustomSections) !== JSON.stringify(clientUser.customSections) ||
       JSON.stringify(originalSectionOrder) !== JSON.stringify(clientUser.sectionOrder) ||
+      originalGuestbookVisibility !== clientUser.guestbookVisibility ||
+      originalGuestbookButtonStyle !== clientUser.guestbookButtonStyle ||
+      originalNewsletterButtonText !== clientUser.newsletterButtonText ||
+      originalGuestbookButtonText !== clientUser.guestbookButtonText ||
       JSON.stringify(originalStatsVisibility) !== JSON.stringify(clientUser.statsVisibility) ||
       JSON.stringify(originalStatsOrder) !== JSON.stringify(clientUser.statsOrder) ||
       originalStatsStyle !== clientUser.statsStyle ||
@@ -3834,6 +3855,169 @@ function Editor({ user }) {
         </div>
             </div>
           )}
+        </div>
+
+        {/* Guest Book Settings */}
+        <SectionHeader>Guest Book</SectionHeader>
+
+        <div css={css`
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        `}>
+          {/* Enable/Disable Guest Book */}
+          <div css={css`
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          `}>
+            <div>
+              <p css={css`font-size: 0.85rem; color: var(--grey-4); margin: 0;`}>
+                Enable Guest Book
+              </p>
+              <p css={css`font-size: 0.75rem; color: var(--grey-3); margin: 0;`}>
+                Allow visitors to sign your guest book
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setClientUser(prev => ({ ...prev, guestbookVisibility: !prev.guestbookVisibility }))}
+              css={css`
+                position: relative;
+                width: 44px;
+                height: 24px;
+                background: ${clientUser.guestbookVisibility ? '#6BCB77' : 'var(--grey-2)'};
+                border: none;
+                border-radius: 12px;
+                cursor: pointer;
+                transition: background 0.2s ease;
+
+                &::after {
+                  content: '';
+                  position: absolute;
+                  top: 2px;
+                  left: ${clientUser.guestbookVisibility ? '22px' : '2px'};
+                  width: 20px;
+                  height: 20px;
+                  background: white;
+                  border-radius: 50%;
+                  transition: left 0.2s ease;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                }
+              `}
+            />
+          </div>
+
+          {/* Button Style (only show if guestbook is enabled) */}
+          {clientUser.guestbookVisibility && (
+            <div>
+              <p css={css`font-size: 0.85rem; color: var(--grey-4); margin: 0 0 0.5rem 0;`}>
+                Button Style
+              </p>
+              <div css={css`
+                display: flex;
+                gap: 0.5rem;
+              `}>
+                <button
+                  type="button"
+                  onClick={() => setClientUser(prev => ({ ...prev, guestbookButtonStyle: 'combined' }))}
+                  css={css`
+                    flex: 1;
+                    padding: 0.5rem 0.75rem;
+                    background: ${clientUser.guestbookButtonStyle === 'combined' ? 'var(--grey-3)' : 'var(--grey-1)'};
+                    color: ${clientUser.guestbookButtonStyle === 'combined' ? 'var(--grey-1)' : 'var(--grey-4)'};
+                    border: 1px solid ${clientUser.guestbookButtonStyle === 'combined' ? 'var(--grey-3)' : 'var(--grey-2)'};
+                    border-radius: 0.375rem;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+
+                    &:hover {
+                      border-color: var(--grey-3);
+                    }
+                  `}
+                >
+                  Combined with Newsletter
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClientUser(prev => ({ ...prev, guestbookButtonStyle: 'separate' }))}
+                  css={css`
+                    flex: 1;
+                    padding: 0.5rem 0.75rem;
+                    background: ${clientUser.guestbookButtonStyle === 'separate' ? 'var(--grey-3)' : 'var(--grey-1)'};
+                    color: ${clientUser.guestbookButtonStyle === 'separate' ? 'var(--grey-1)' : 'var(--grey-4)'};
+                    border: 1px solid ${clientUser.guestbookButtonStyle === 'separate' ? 'var(--grey-3)' : 'var(--grey-2)'};
+                    border-radius: 0.375rem;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+
+                    &:hover {
+                      border-color: var(--grey-3);
+                    }
+                  `}
+                >
+                  Separate Button
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Custom Button Text */}
+          <div>
+            <p css={css`font-size: 0.85rem; color: var(--grey-4); margin: 0 0 0.5rem 0;`}>
+              Custom Button Text
+            </p>
+            <p css={css`font-size: 0.75rem; color: var(--grey-3); margin: 0 0 0.75rem 0;`}>
+              Leave empty to use default text
+            </p>
+            <div css={css`display: flex; flex-direction: column; gap: 0.5rem;`}>
+              <input
+                type="text"
+                placeholder={`Subscribe to ${clientUser.displayName || 'your'}'s newsletter`}
+                value={clientUser.newsletterButtonText || ''}
+                onChange={(e) => setClientUser(prev => ({ ...prev, newsletterButtonText: e.target.value }))}
+                maxLength={60}
+                css={css`
+                  width: 100%;
+                  padding: 0.5rem 0.75rem;
+                  border: 1px solid var(--grey-2);
+                  border-radius: 0.375rem;
+                  background: var(--grey-1);
+                  color: var(--grey-4);
+                  font-size: 0.8rem;
+                  outline: none;
+                  transition: border-color 0.15s ease;
+                  &:focus { border-color: var(--grey-3); }
+                  &::placeholder { color: var(--grey-3); }
+                `}
+              />
+              {clientUser.guestbookVisibility && (
+                <input
+                  type="text"
+                  placeholder={`Sign ${clientUser.displayName || 'your'}'s Guest Book`}
+                  value={clientUser.guestbookButtonText || ''}
+                  onChange={(e) => setClientUser(prev => ({ ...prev, guestbookButtonText: e.target.value }))}
+                  maxLength={60}
+                  css={css`
+                    width: 100%;
+                    padding: 0.5rem 0.75rem;
+                    border: 1px solid var(--grey-2);
+                    border-radius: 0.375rem;
+                    background: var(--grey-1);
+                    color: var(--grey-4);
+                    font-size: 0.8rem;
+                    outline: none;
+                    transition: border-color 0.15s ease;
+                    &:focus { border-color: var(--grey-3); }
+                    &::placeholder { color: var(--grey-3); }
+                  `}
+                />
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Layout Order Section */}
