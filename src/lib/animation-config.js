@@ -116,6 +116,21 @@ export const prefersReducedMotion = () => {
 // Premium easing curve (smooth and natural)
 export const PREMIUM_EASING = [0.25, 0.46, 0.45, 0.94]
 
+// GSAP entrance/exit feel — shared by PageTransition (page navigation) and
+// GsapReveal (content that arrives AFTER the transition, e.g. async data loads),
+// so navigation and content-load reveals animate identically.
+// power3.out ≈ cubic-bezier(0.22, 1, 0.36, 1) used by the framer-motion pages.
+export const GSAP_ENTER = {
+  duration: 0.4,
+  y: 8,
+  ease: 'power3.out',
+}
+
+export const GSAP_EXIT = {
+  duration: 0.15,
+  ease: 'power1.in',
+}
+
 // Fade-in-up for hero sections and headings
 export const fadeInUpVariants = {
   hidden: { opacity: 0, y: 20 },

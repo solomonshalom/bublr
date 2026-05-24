@@ -106,6 +106,7 @@ const PlatformIcons = {
 import Input from '../../components/input'
 import Container from '../../components/container'
 import { LoadingContainer } from '../../components/loading-container'
+import { GsapReveal } from '../../components/gsap-reveal'
 import ModalOverlay from '../../components/modal-overlay'
 import PostContainer from '../../components/post-container'
 import VoiceInput from '../../components/voice-input'
@@ -2602,7 +2603,13 @@ export default function PostEditor() {
       </>
     )
   } else if (post) {
-    return <Editor post={post} onBeforeDelete={() => setIsDeletingPost(true)} />
+    // Post just finished loading — reveal the editor with a slow, premium fade
+    // (longer + gentler than page navigation) so it eases in instead of popping.
+    return (
+      <GsapReveal duration={0.8} ease="power2.out">
+        <Editor post={post} onBeforeDelete={() => setIsDeletingPost(true)} />
+      </GsapReveal>
+    )
   }
 
   return (

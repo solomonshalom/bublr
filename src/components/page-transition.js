@@ -1,16 +1,34 @@
 /** @jsxImportSource @emotion/react */
-import { useRef, useEffect, useLayoutEffect, useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+import { prefersReducedMotion, GSAP_ENTER, GSAP_EXIT } from '../lib/animation-config'
 
-// Use useLayoutEffect on client, useEffect on server (to avoid SSR warnings)
-const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+// Entrance/exit feel lives in lib/animation-config (GSAP_ENTER / GSAP_EXIT) so
+// page navigation and content-load reveals (GsapReveal) stay perfectly in sync.
+// Enter = opacity 0→1 + an 8px upward settle; exit = quick opacity fade only.
+const { duration: ENTER_DURATION, y: ENTER_Y, ease: ENTER_EASE } = GSAP_ENTER
+const { duration: EXIT_DURATION, ease: EXIT_EASE } = GSAP_EXIT
 
 /**
- * PageTransition - Buttery smooth page transitions using GSAP
+ * PageTransition — global, buttery page transitions (GSAP).
  *
- * Uses opacity-only crossfade to avoid conflicts with scroll reset.
- * Proper sequencing: fade out → scroll reset → content swap → fade in
+ * Wraps the whole app in _app.js, so it runs on every client-side navigation:
+ *   • Enter: opacity 0→1 + y 8→0 (subtle settle)
+ *   • Exit:  opacity 1→0 only (no transform) so leaving never offsets overlays
+ *   • Sequence: fade out → scroll reset → swap content → fade + settle in
+ *
+ * Built on the official useGSAP() hook from @gsap/react: it's SSR-safe (uses the
+ * isomorphic layout effect under the hood) and auto-reverts tweens via
+ * gsap.context() on unmount. Tweens fired from router-event handlers are wrapped
+ * in contextSafe() so they're tracked by that context.
+ *
+ * IMPORTANT: the entrance animates `transform` (y). An inline transform turns the
+ * container into a containing block for `position: fixed` descendants (modals,
+ * notification panel, etc.). We clearProps:'transform' the moment the entrance
+ * finishes, so the container returns to transform:none and fixed overlays stay
+ * anchored to the viewport. The exit is opacity-only for the same reason.
  */
 export function PageTransition({ children }) {
   const containerRef = useRef(null)
@@ -19,93 +37,114 @@ export function PageTransition({ children }) {
   const isFirstMount = useRef(true)
   const isNavigating = useRef(false)
 
-  // Stable refs to avoid effect dependencies changing
+  // Always-current children, without retriggering the route effect
   const childrenRef = useRef(children)
   childrenRef.current = children
 
-  // Initial mount - set opacity immediately before paint
-  useIsomorphicLayoutEffect(() => {
-    if (containerRef.current && isFirstMount.current) {
-      // Set initial opacity to 0, then animate in
-      gsap.set(containerRef.current, { opacity: 0 })
+  // Initial mount: animate the first paint in (SSR-safe via useGSAP)
+  useGSAP(
+    () => {
+      if (!containerRef.current || !isFirstMount.current) return
+      isFirstMount.current = false
+
+      if (prefersReducedMotion()) {
+        gsap.set(containerRef.current, { opacity: 1, clearProps: 'transform' })
+        return
+      }
+
+      gsap.set(containerRef.current, { opacity: 0, y: ENTER_Y })
       gsap.to(containerRef.current, {
         opacity: 1,
-        duration: 0.4,
-        ease: 'power2.out'
+        y: 0,
+        duration: ENTER_DURATION,
+        ease: ENTER_EASE,
+        clearProps: 'transform',
       })
-      isFirstMount.current = false
-    }
-  }, [])
+    },
+    { scope: containerRef }
+  )
 
-  // Handle route changes
-  useEffect(() => {
-    const handleStart = (url) => {
-      if (url === router.asPath || !containerRef.current) return
+  // Route changes: fade out → swap → fade + settle in
+  useGSAP(
+    (context, contextSafe) => {
+      const fadeOut = contextSafe(() =>
+        gsap.to(containerRef.current, {
+          opacity: 0,
+          duration: EXIT_DURATION,
+          ease: EXIT_EASE,
+        })
+      )
 
-      isNavigating.current = true
+      const fadeIn = contextSafe(() =>
+        gsap.to(containerRef.current, {
+          opacity: 1,
+          y: 0,
+          duration: ENTER_DURATION,
+          ease: ENTER_EASE,
+          clearProps: 'transform', // drop inline transform so fixed overlays aren't contained
+          onComplete: () => {
+            isNavigating.current = false
+          },
+        })
+      )
 
-      // Quick fade out
-      gsap.to(containerRef.current, {
-        opacity: 0,
-        duration: 0.15,
-        ease: 'power1.in'
-      })
-    }
-
-    const handleComplete = () => {
-      if (!containerRef.current) return
-
-      // Scroll to top while faded out
-      window.scrollTo(0, 0)
-
-      // Update content
-      setDisplayedChildren(childrenRef.current)
-
-      // Fade in after a frame to ensure DOM updated
-      requestAnimationFrame(() => {
-        if (containerRef.current) {
-          gsap.to(containerRef.current, {
-            opacity: 1,
-            duration: 0.4,
-            ease: 'power2.out',
-            onComplete: () => {
-              isNavigating.current = false
-            }
-          })
-        }
-      })
-    }
-
-    const handleError = () => {
-      if (containerRef.current) {
-        gsap.set(containerRef.current, { opacity: 1 })
+      const handleStart = (url) => {
+        if (url === router.asPath || !containerRef.current) return
+        isNavigating.current = true
+        if (prefersReducedMotion()) return // reduced motion: swap instantly in handleComplete
+        fadeOut()
       }
-      isNavigating.current = false
-    }
 
-    router.events.on('routeChangeStart', handleStart)
-    router.events.on('routeChangeComplete', handleComplete)
-    router.events.on('routeChangeError', handleError)
+      const handleComplete = () => {
+        if (!containerRef.current) return
 
-    return () => {
-      router.events.off('routeChangeStart', handleStart)
-      router.events.off('routeChangeComplete', handleComplete)
-      router.events.off('routeChangeError', handleError)
-    }
-  }, [router])
+        // Scroll to top while faded out (single source of truth for scroll reset)
+        window.scrollTo(0, 0)
 
-  // Sync children when not navigating (for in-page updates)
+        if (prefersReducedMotion()) {
+          setDisplayedChildren(childrenRef.current)
+          gsap.set(containerRef.current, { opacity: 1, clearProps: 'transform' })
+          isNavigating.current = false
+          return
+        }
+
+        // Hide + offset the incoming content before it paints, then settle it in
+        gsap.set(containerRef.current, { opacity: 0, y: ENTER_Y })
+        setDisplayedChildren(childrenRef.current)
+        requestAnimationFrame(() => {
+          if (containerRef.current) fadeIn()
+        })
+      }
+
+      const handleError = () => {
+        if (containerRef.current) {
+          gsap.set(containerRef.current, { opacity: 1, clearProps: 'transform' })
+        }
+        isNavigating.current = false
+      }
+
+      router.events.on('routeChangeStart', handleStart)
+      router.events.on('routeChangeComplete', handleComplete)
+      router.events.on('routeChangeError', handleError)
+
+      return () => {
+        router.events.off('routeChangeStart', handleStart)
+        router.events.off('routeChangeComplete', handleComplete)
+        router.events.off('routeChangeError', handleError)
+      }
+    },
+    { scope: containerRef, dependencies: [router] }
+  )
+
+  // Reflect in-page children updates while we're NOT mid-navigation
+  // (plain effect — this is React state sync, not animation)
   useEffect(() => {
     if (!isNavigating.current) {
       setDisplayedChildren(children)
     }
   }, [children])
 
-  return (
-    <div ref={containerRef}>
-      {displayedChildren}
-    </div>
-  )
+  return <div ref={containerRef}>{displayedChildren}</div>
 }
 
 export default PageTransition
