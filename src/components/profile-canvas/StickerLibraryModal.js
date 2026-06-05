@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Cross2Icon } from '@radix-ui/react-icons'
 
-import { uploadToImgBB } from '../../lib/utils'
+import { uploadToCloudinary } from '../../lib/utils'
 
 // Animation
 const fadeIn = keyframes`
@@ -246,8 +246,7 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
     setIsUploading(true)
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_IMGBB_API
-      const imageUrl = await uploadToImgBB(file, apiKey)
+      const imageUrl = await uploadToCloudinary(file)
 
       if (!imageUrl) {
         setUploadError('Failed to upload image. Please try again.')

@@ -55,6 +55,33 @@ const App = ({ Component, pageProps }) => {
             --code-bg: #f5f5f5;
             --code-text: #374151;
             --border: rgb(222, 223, 223);
+
+            /* Dashboard system tokens (chord.so-inspired, Bublr-toned) */
+            --muted: #f6f6f6;
+            --accent-bg: rgba(0, 0, 0, 0.025);
+            --accent-bg-strong: rgba(0, 0, 0, 0.05);
+            --sidebar-bg: rgba(0, 0, 0, 0.018);
+            --border-dashed: rgba(0, 0, 0, 0.16);
+            --sidebar-width: 17rem;
+            --page-header-height: 3.25rem;
+
+            /* Chord.so iris accent (Radix iris scale) */
+            --accent: #5b5bd6;
+            --accent-hover: #4747b8;
+            --accent-soft: rgba(91, 91, 214, 0.08);
+            --accent-soft-strong: rgba(91, 91, 214, 0.14);
+            --accent-border: rgba(91, 91, 214, 0.32);
+            --accent-foreground: #5b5bd6;
+
+            /* Green — used for "on" toggle states (Radix green-9) */
+            --green: #30a46c;
+            --green-hover: #2b9a66;
+            --green-border: #2b9a66;
+            --green-soft: rgba(48, 164, 108, 0.1);
+
+            /* Chord elevation tokens (chord.so design language) */
+            --chord-shadow-sm: 2px 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+            --chord-shadow-md: 0 4px 16px 0 rgba(0, 0, 0, 0.06), 0 1.5px 6px 0 rgba(0, 0, 0, 0.04);
           }
 
           [data-theme='dark'] {
@@ -65,6 +92,31 @@ const App = ({ Component, pageProps }) => {
             --code-bg: #262626;
             --code-text: #e5e7eb;
             --border: rgba(255, 255, 255, 0.15);
+
+            /* Dashboard system tokens (dark) */
+            --muted: #1c1c1c;
+            --accent-bg: rgba(255, 255, 255, 0.035);
+            --accent-bg-strong: rgba(255, 255, 255, 0.06);
+            --sidebar-bg: rgba(255, 255, 255, 0.022);
+            --border-dashed: rgba(255, 255, 255, 0.18);
+
+            /* Chord.so iris accent (dark) */
+            --accent: #9b9ef0;
+            --accent-hover: #b1b4f5;
+            --accent-soft: rgba(155, 158, 240, 0.1);
+            --accent-soft-strong: rgba(155, 158, 240, 0.18);
+            --accent-border: rgba(155, 158, 240, 0.35);
+            --accent-foreground: #b1b4f5;
+
+            /* Green (dark) */
+            --green: #3dd68c;
+            --green-hover: #46d68c;
+            --green-border: #2b9a66;
+            --green-soft: rgba(61, 214, 140, 0.15);
+
+            /* Chord elevation tokens (dark) */
+            --chord-shadow-sm: 2px 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
+            --chord-shadow-md: 0 4px 16px 0 rgba(0, 0, 0, 0.35), 0 1.5px 6px 0 rgba(0, 0, 0, 0.25);
           }
 
           *,
@@ -72,6 +124,42 @@ const App = ({ Component, pageProps }) => {
           *::after {
             margin: 0;
             padding: 0;
+          }
+
+          /* Global cursor policy — interactive elements get the hand cursor */
+          button,
+          a,
+          summary,
+          label[for],
+          select,
+          [role='button'],
+          [role='link'],
+          [role='tab'],
+          [role='menuitem'],
+          [role='option'],
+          [role='checkbox'],
+          [role='radio'],
+          [role='switch'],
+          [data-clickable='true'] {
+            cursor: pointer;
+          }
+
+          button:disabled,
+          [aria-disabled='true'],
+          [disabled] {
+            cursor: not-allowed;
+          }
+
+          input[type='text'],
+          input[type='email'],
+          input[type='password'],
+          input[type='search'],
+          input[type='url'],
+          input[type='number'],
+          input[type='tel'],
+          textarea,
+          [contenteditable='true'] {
+            cursor: text;
           }
 
           /* Hide scrollbar globally while keeping scroll functionality */
@@ -87,6 +175,34 @@ const App = ({ Component, pageProps }) => {
           html {
             font-size: 100%;
             color: var(--grey-4);
+          }
+
+          /* App-wide: images (including avatars) never carry a background fill */
+          img {
+            background: transparent;
+          }
+
+          /* Settings sub-page slicing — when a parent has data-settings-active set,
+             only descendants whose data-settings-section matches are shown. Used by
+             /dashboard/settings/[section] to drill into Personal/Customization/Advanced
+             without splitting the 5000-line ProfileEditor render. */
+          [data-settings-active] [data-settings-section] {
+            display: none;
+          }
+          [data-settings-active='personal'] [data-settings-section='personal'],
+          [data-settings-active='customization'] [data-settings-section='customization'],
+          [data-settings-active='advanced'] [data-settings-section='advanced'] {
+            display: block;
+          }
+
+          /* PFP/avatar transparency: hide baked-in dark bg pixels in dark mode by
+             blending lighter pixels through. Light mode keeps default rendering. */
+          [data-theme='dark'] [data-pfp='true'] img,
+          [data-theme='dark'] img[data-pfp='true'],
+          [data-theme='dark'] img[alt='Profile'],
+          [data-theme='dark'] img[alt='Profile picture'],
+          [data-theme='dark'] img[alt='Avatar preview'] {
+            mix-blend-mode: lighten;
           }
 
           body {
@@ -133,14 +249,14 @@ const App = ({ Component, pageProps }) => {
             box-shadow: 0 0 1rem var(--grey-2);
           }
 
-          /* Tippy.js Slash Command Theme */
+          /* Tippy.js Slash Command Theme (chord.so-aligned) */
           .tippy-box[data-theme~='slash-command'] {
             background-color: var(--grey-1);
-            border: 1px solid var(--grey-2);
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.04);
             font-family: 'Inter', sans-serif;
-            min-width: 240px;
+            min-width: 260px;
             max-width: 320px;
             max-height: none;
             overflow: visible;
@@ -148,13 +264,13 @@ const App = ({ Component, pageProps }) => {
 
           .tippy-box[data-theme~='slash-command'] .tippy-content {
             padding: 0;
-            max-height: 250px;
+            max-height: 260px;
             overflow-y: auto;
             overflow-x: hidden;
           }
 
           [data-theme='dark'] .tippy-box[data-theme~='slash-command'] {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
           }
 
           /* ProseMirror Gapcursor */
@@ -214,10 +330,14 @@ const App = ({ Component, pageProps }) => {
         <I18nProvider>
           <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme" disableTransitionOnChange>
             <SmoothScrollProvider>
-              {/* Premium page transitions with GSAP */}
-              <PageTransition>
-                {getLayout(<Component {...pageProps} />, pageProps)}
-              </PageTransition>
+              {/* Dashboard owns its own scoped fade (only animates main area, not sidebar) */}
+              {router.pathname.startsWith('/dashboard') ? (
+                getLayout(<Component {...pageProps} />, pageProps)
+              ) : (
+                <PageTransition>
+                  {getLayout(<Component {...pageProps} />, pageProps)}
+                </PageTransition>
+              )}
             </SmoothScrollProvider>
           </ThemeProvider>
         </I18nProvider>

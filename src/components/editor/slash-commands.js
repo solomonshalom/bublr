@@ -353,17 +353,14 @@ const CommandList = forwardRef(({ items, command }, ref) => {
                   align-items: center;
                   gap: 0.625rem;
                   width: 100%;
-                  padding: 0.375rem 0.5rem;
-                  border: none;
-                  border-radius: 0.25rem;
-                  background: ${selectedIndex === currentIndex ? 'var(--grey-2)' : 'transparent'};
+                  padding: 0.45rem 0.55rem;
+                  border: 1px solid ${selectedIndex === currentIndex ? 'var(--accent-border)' : 'transparent'};
+                  border-radius: 4px;
+                  background: ${selectedIndex === currentIndex ? 'var(--accent-soft)' : 'transparent'};
                   cursor: pointer;
                   text-align: left;
-                  transition: background 0.1s ease;
-
-                  &:hover {
-                    background: var(--grey-2);
-                  }
+                  font-family: 'Inter', sans-serif;
+                  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
                 `}
               >
                 {/* Icon - minimal, no container */}
@@ -374,8 +371,9 @@ const CommandList = forwardRef(({ items, command }, ref) => {
                     justify-content: center;
                     width: 18px;
                     height: 18px;
-                    color: var(--grey-3);
+                    color: ${selectedIndex === currentIndex ? 'var(--accent-foreground)' : 'var(--grey-3)'};
                     flex-shrink: 0;
+                    transition: color 120ms ease;
                   `}
                 >
                   {item.icon}
@@ -385,9 +383,10 @@ const CommandList = forwardRef(({ items, command }, ref) => {
                 <div css={css`min-width: 0; flex: 1;`}>
                   <div
                     css={css`
-                      font-size: 0.8125rem;
+                      font-size: 0.825rem;
                       font-weight: 500;
-                      color: var(--grey-5);
+                      color: ${selectedIndex === currentIndex ? 'var(--accent-foreground)' : 'var(--grey-4)'};
+                      transition: color 120ms ease;
                     `}
                   >
                     {item.title}

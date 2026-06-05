@@ -7,16 +7,16 @@ import { useDocumentData } from 'react-firebase-hooks/firestore'
 
 import { firestore, auth } from '../lib/firebase'
 import { userWithNameExists } from '../lib/db'
-import { uploadToImgBB } from '../lib/utils'
+import { uploadToCloudinary } from '../lib/utils'
 
 import Spinner from './spinner'
 import Input, { Textarea } from './input'
 import ModalOverlay from './modal-overlay'
 import Button, { IconButton } from './button'
-import ApiKeySection from './api-key-section'
 import { useI18n, SUPPORTED_UI_LANGUAGES } from '../lib/i18n'
 import FontPicker from './font-picker'
 import { DEFAULT_FONTS } from '../lib/fonts'
+import DsSwitch from './dashboard/ds-switch'
 
 // Status badge component for domain status
 const StatusBadge = ({ status }) => {
@@ -56,9 +56,12 @@ const StyledLabel = props => (
   <label
     css={css`
       display: block;
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-      color: var(--grey-3);
+      margin-bottom: 0.4rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--grey-4);
+      line-height: 1.4;
     `}
     {...props}
   >
@@ -69,14 +72,15 @@ const StyledLabel = props => (
 const SectionHeader = ({ children }) => (
   <h3
     css={css`
-      font-size: 0.85rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
       font-weight: 500;
-      color: var(--grey-3);
-      margin: 2rem 0 1rem 0;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--grey-2);
+      color: var(--accent-foreground);
+      margin: 2rem 0 1.1rem 0;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px dashed var(--border-dashed);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.09em;
     `}
   >
     {children}
@@ -84,12 +88,39 @@ const SectionHeader = ({ children }) => (
 )
 
 const SmallInput = props => (
-  <Input
+  <input
     {...props}
     css={css`
+      display: block;
       width: 100%;
-      padding: 0.5em 0.75em;
+      font-family: 'Inter', sans-serif;
       font-size: 0.85rem;
+      line-height: 1.4;
+      color: var(--grey-4);
+      background: var(--grey-1);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      outline: none;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+
+      &::placeholder {
+        color: var(--grey-3);
+      }
+
+      &:hover:not(:focus):not(:disabled) {
+        border-color: var(--grey-3);
+      }
+
+      &:focus {
+        border-color: var(--accent-border);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
     `}
   />
 )
@@ -223,16 +254,18 @@ const CustomDropdown = ({ value, onChange, options, placeholder, onOpen, onClose
                 align-items: center;
                 gap: 0.5rem;
                 padding: 0.6rem 0.75rem;
-                background: ${value === option.value ? 'var(--grey-2)' : 'transparent'};
-                color: var(--grey-4);
+                background: ${value === option.value ? 'var(--accent-soft)' : 'transparent'};
+                color: ${value === option.value ? 'var(--accent-foreground)' : 'var(--grey-4)'};
                 border: none;
+                font-family: 'Inter', sans-serif;
                 font-size: 0.8rem;
                 cursor: pointer;
                 text-align: left;
-                transition: background 0.1s ease;
+                transition: background 150ms ease, color 150ms ease;
 
                 &:hover {
-                  background: var(--grey-2);
+                  background: var(--accent-soft);
+                  color: var(--accent-foreground);
                 }
 
                 &:first-of-type {
@@ -284,13 +317,7 @@ const ProfilePictureUpload = ({ currentPhoto, onPhotoChange }) => {
     setUploading(true)
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_IMGBB_API
-      if (!apiKey) {
-        setError('Image upload not configured')
-        return
-      }
-
-      const imageUrl = await uploadToImgBB(file, apiKey)
+      const imageUrl = await uploadToCloudinary(file)
 
       if (imageUrl) {
         onPhotoChange(imageUrl)
@@ -321,6 +348,7 @@ const ProfilePictureUpload = ({ currentPhoto, onPhotoChange }) => {
       >
         {/* Avatar Preview with Overlay */}
         <div
+          data-pfp="true"
           css={css`
             position: relative;
             width: 72px;
@@ -343,7 +371,7 @@ const ProfilePictureUpload = ({ currentPhoto, onPhotoChange }) => {
               width: 100%;
               height: 100%;
               object-fit: cover;
-              background: var(--grey-2);
+              background: transparent;
             `}
           />
           <div
@@ -351,13 +379,15 @@ const ProfilePictureUpload = ({ currentPhoto, onPhotoChange }) => {
             css={css`
               position: absolute;
               inset: 0;
-              background: rgba(0, 0, 0, 0.5);
+              background: transparent;
               display: flex;
               align-items: center;
               justify-content: center;
               opacity: 0;
               transition: opacity 0.2s ease;
               color: white;
+              text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+              filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
             `}
           >
             {uploading ? (
@@ -387,25 +417,34 @@ const ProfilePictureUpload = ({ currentPhoto, onPhotoChange }) => {
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             css={css`
-              background: none;
-              color: var(--grey-4);
-              border: 1px solid var(--grey-2);
-              padding: 0.5rem 0.75rem;
-              border-radius: 0.5rem;
-              font-size: 0.8rem;
-              cursor: pointer;
-              transition: all 0.2s ease;
-              display: flex;
+              display: inline-flex;
               align-items: center;
-              gap: 0.4rem;
+              gap: 0.5rem;
+              font-family: 'Inter', sans-serif;
+              font-size: 0.8rem;
+              font-weight: 500;
+              background: var(--grey-1);
+              color: var(--grey-4);
+              border: 1px solid var(--border);
+              padding: 0.45rem 0.85rem;
+              border-radius: 6px;
+              cursor: pointer;
+              transition: background 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
 
               &:hover:not(:disabled) {
-                border-color: var(--grey-3);
-                color: var(--grey-5);
+                background: var(--accent-soft);
+                color: var(--accent-foreground);
+                border-color: var(--accent-border);
+              }
+
+              &:focus-visible {
+                outline: none;
+                box-shadow: 0 0 0 3px var(--accent-soft);
+                border-color: var(--accent-border);
               }
 
               &:disabled {
-                opacity: 0.6;
+                opacity: 0.55;
                 cursor: not-allowed;
               }
             `}
@@ -552,6 +591,439 @@ const TagInput = ({ tags, onChange, placeholder }) => {
     </div>
   )
 }
+
+// Ensure the section order contains every known section, injecting newer ones
+// (guest book, work, education) for profiles created before those features shipped.
+const normalizeSectionOrder = order => {
+  let result =
+    Array.isArray(order) && order.length
+      ? [...order]
+      : ['skills', 'work', 'education', 'writing', 'guestbook', 'custom']
+
+  if (!result.includes('guestbook')) {
+    result = [...result.slice(0, 2), 'guestbook', ...result.slice(2)]
+  }
+  if (!result.includes('work')) {
+    const i = result.indexOf('skills')
+    result.splice(i >= 0 ? i + 1 : 0, 0, 'work')
+  }
+  if (!result.includes('education')) {
+    result.splice(result.indexOf('work') + 1, 0, 'education')
+  }
+  return result
+}
+
+// Reusable editor for an "Experience" style section (Work / Education). Each entry
+// shares the same shape: { title, organization, startDate, endDate, current, description }.
+const ExperienceSection = ({
+  headerLabel,
+  description,
+  titleId,
+  sectionTitle,
+  sectionTitlePlaceholder,
+  onSectionTitleChange,
+  style,
+  onStyleChange,
+  entries,
+  titleLabel,
+  titlePlaceholder,
+  orgLabel,
+  orgPlaceholder,
+  urlPlaceholder,
+  locationPlaceholder,
+  currentLabel,
+  addLabel,
+  addRoleLabel,
+  onAdd,
+  onUpdate,
+  onRemove,
+  onMove,
+  onAddRole,
+}) => (
+  <>
+    <SectionHeader>{headerLabel}</SectionHeader>
+
+    {description && (
+      <p
+        css={css`
+          font-size: 0.8rem;
+          color: var(--grey-3);
+          margin-bottom: 1rem;
+        `}
+      >
+        {description}
+      </p>
+    )}
+
+    <div css={css`margin-bottom: 1.25rem;`}>
+      <StyledLabel htmlFor={titleId}>Section Title</StyledLabel>
+      <SmallInput
+        id={titleId}
+        type="text"
+        value={sectionTitle || ''}
+        onChange={e => onSectionTitleChange(e.target.value)}
+        placeholder={sectionTitlePlaceholder}
+      />
+    </div>
+
+    <div css={css`margin-bottom: 1.25rem;`}>
+      <StyledLabel>Layout</StyledLabel>
+      <div css={css`display: flex; gap: 0.5rem; flex-wrap: wrap;`}>
+        {[
+          { value: 'timeline', label: 'Timeline' },
+          { value: 'dots', label: 'Dots' },
+        ].map(opt => {
+          const active = (style || 'timeline') === opt.value
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onStyleChange(opt.value)}
+              css={css`
+                padding: 0.4rem 0.85rem;
+                border: 1px solid ${active ? 'var(--accent-border)' : 'var(--border)'};
+                border-radius: 6px;
+                background: var(--grey-1);
+                color: var(--grey-4);
+                font-family: 'Inter', sans-serif;
+                font-size: 0.8rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: border-color 150ms ease, box-shadow 150ms ease;
+                &:hover:not(:disabled) {
+                  border-color: var(--accent-border);
+                }
+                &:focus-visible {
+                  outline: none;
+                  box-shadow: 0 0 0 3px var(--accent-soft);
+                  border-color: var(--accent-border);
+                }
+              `}
+            >
+              {opt.label}
+            </button>
+          )
+        })}
+      </div>
+      <p
+        css={css`
+          font-size: 0.7rem;
+          color: var(--grey-3);
+          margin-top: 0.5rem;
+        `}
+      >
+        Timeline shows a logo with a connecting line and groups roles at the same place; Dots shows a simple colored dot per entry.
+      </p>
+    </div>
+
+    {entries?.map((entry, index) => (
+      <div
+        key={index}
+        css={css`
+          background: var(--grey-1);
+          border: 1px solid var(--grey-2);
+          border-radius: 0.5rem;
+          padding: 1rem;
+          margin-bottom: 1rem;
+          position: relative;
+        `}
+      >
+        <div
+          css={css`
+            position: absolute;
+            top: 0.6rem;
+            right: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.125rem;
+          `}
+        >
+          <button
+            type="button"
+            onClick={() => onMove(index, -1)}
+            disabled={index === 0}
+            aria-label="Move up"
+            css={css`
+              background: none;
+              border: none;
+              cursor: ${index === 0 ? 'not-allowed' : 'pointer'};
+              color: ${index === 0 ? 'var(--grey-2)' : 'var(--grey-3)'};
+              padding: 0.25rem;
+              display: flex;
+              align-items: center;
+              &:hover:not(:disabled) {
+                color: var(--grey-4);
+              }
+            `}
+          >
+            <ChevronUpIcon width={14} height={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove(index, 1)}
+            disabled={index === entries.length - 1}
+            aria-label="Move down"
+            css={css`
+              background: none;
+              border: none;
+              cursor: ${index === entries.length - 1 ? 'not-allowed' : 'pointer'};
+              color: ${index === entries.length - 1 ? 'var(--grey-2)' : 'var(--grey-3)'};
+              padding: 0.25rem;
+              display: flex;
+              align-items: center;
+              &:hover:not(:disabled) {
+                color: var(--grey-4);
+              }
+            `}
+          >
+            <ChevronDownIcon width={14} height={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            aria-label="Remove entry"
+            css={css`
+              background: none;
+              border: none;
+              cursor: pointer;
+              color: var(--grey-3);
+              padding: 0.25rem;
+              display: flex;
+              align-items: center;
+              &:hover {
+                color: #e55050;
+              }
+            `}
+          >
+            <TrashIcon width={14} height={14} />
+          </button>
+        </div>
+
+        <div css={css`margin-bottom: 0.75rem; padding-right: 4.75rem;`}>
+          <StyledLabel>{titleLabel}</StyledLabel>
+          <SmallInput
+            type="text"
+            value={entry.title || ''}
+            onChange={e => onUpdate(index, 'title', e.target.value)}
+            placeholder={titlePlaceholder}
+          />
+        </div>
+
+        <div css={css`margin-bottom: 0.75rem;`}>
+          <StyledLabel>{orgLabel}</StyledLabel>
+          <SmallInput
+            type="text"
+            value={entry.organization || ''}
+            onChange={e => onUpdate(index, 'organization', e.target.value)}
+            placeholder={orgPlaceholder}
+          />
+        </div>
+
+        <div css={css`margin-bottom: 0.75rem;`}>
+          <StyledLabel>
+            Website{' '}
+            <span css={css`color: var(--grey-3); font-weight: 400;`}>(optional)</span>
+          </StyledLabel>
+          <SmallInput
+            type="url"
+            inputMode="url"
+            value={entry.url || ''}
+            onChange={e => onUpdate(index, 'url', e.target.value)}
+            placeholder={urlPlaceholder}
+          />
+          <p
+            css={css`
+              font-size: 0.7rem;
+              color: var(--grey-3);
+              margin-top: 0.35rem;
+            `}
+          >
+            Links the {orgLabel.toLowerCase()} name on your profile.
+          </p>
+        </div>
+
+        <div css={css`margin-bottom: 0.75rem;`}>
+          <StyledLabel>Logo</StyledLabel>
+          <div css={css`display: flex; gap: 0.5rem; flex-wrap: wrap;`}>
+            {[
+              { value: 'glass', label: 'Glass' },
+              { value: 'favicon', label: 'Website favicon' },
+            ].map(opt => {
+              const active = (entry.avatarSource || 'glass') === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onUpdate(index, 'avatarSource', opt.value)}
+                  css={css`
+                    padding: 0.4rem 0.85rem;
+                    border: 1px solid ${active ? 'var(--accent-border)' : 'var(--border)'};
+                    border-radius: 6px;
+                    background: var(--grey-1);
+                    color: var(--grey-4);
+                    font-family: 'Inter', sans-serif;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: border-color 150ms ease, box-shadow 150ms ease;
+                    &:hover:not(:disabled) {
+                      border-color: var(--accent-border);
+                    }
+                    &:focus-visible {
+                      outline: none;
+                      box-shadow: 0 0 0 3px var(--accent-soft);
+                      border-color: var(--accent-border);
+                    }
+                  `}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+          {(entry.avatarSource || 'glass') === 'favicon' && !(entry.url || '').trim() && (
+            <p
+              css={css`
+                font-size: 0.7rem;
+                color: var(--grey-3);
+                margin-top: 0.35rem;
+              `}
+            >
+              Add a website above to use its favicon — otherwise a Glass avatar is shown.
+            </p>
+          )}
+        </div>
+
+        <div css={css`display: flex; gap: 0.75rem; margin-bottom: 0.75rem;`}>
+          <div css={css`flex: 1;`}>
+            <StyledLabel>Start</StyledLabel>
+            <SmallInput
+              type="text"
+              value={entry.startDate || ''}
+              onChange={e => onUpdate(index, 'startDate', e.target.value)}
+              placeholder="2021"
+            />
+          </div>
+          <div css={css`flex: 1;`}>
+            <StyledLabel>End</StyledLabel>
+            {entry.current ? (
+              <div
+                css={css`
+                  display: flex;
+                  align-items: center;
+                  font-family: 'Inter', sans-serif;
+                  font-size: 0.85rem;
+                  line-height: 1.4;
+                  padding: 0.5rem 0.75rem;
+                  background: var(--accent-bg);
+                  border: 1px solid var(--border);
+                  border-radius: 6px;
+                  color: var(--grey-3);
+                  box-sizing: border-box;
+                `}
+              >
+                Present
+              </div>
+            ) : (
+              <SmallInput
+                type="text"
+                value={entry.endDate || ''}
+                onChange={e => onUpdate(index, 'endDate', e.target.value)}
+                placeholder="2024"
+              />
+            )}
+          </div>
+        </div>
+
+        <div css={css`margin-bottom: 0.75rem;`}>
+          <DsSwitch
+            checked={!!entry.current}
+            onChange={next => onUpdate(index, 'current', next)}
+            label={currentLabel}
+          />
+        </div>
+
+        <div css={css`margin-bottom: 0.75rem;`}>
+          <StyledLabel>
+            Location{' '}
+            <span css={css`color: var(--grey-3); font-weight: 400;`}>(optional)</span>
+          </StyledLabel>
+          <SmallInput
+            type="text"
+            value={entry.location || ''}
+            onChange={e => onUpdate(index, 'location', e.target.value)}
+            placeholder={locationPlaceholder}
+          />
+        </div>
+
+        <div>
+          <StyledLabel>
+            Description{' '}
+            <span css={css`color: var(--grey-3); font-weight: 400;`}>(optional)</span>
+          </StyledLabel>
+          <Textarea
+            value={entry.description || ''}
+            onChange={e => onUpdate(index, 'description', e.target.value)}
+            placeholder="A short note about this role..."
+            css={css`min-height: 4em;`}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onAddRole(index)}
+          css={css`
+            margin-top: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            color: var(--grey-3);
+            font-size: 0.78rem;
+            transition: color 0.15s ease;
+            &:hover {
+              color: var(--grey-4);
+            }
+          `}
+        >
+          <PlusIcon width={12} height={12} />
+          {addRoleLabel}
+        </button>
+      </div>
+    ))}
+
+    <button
+      type="button"
+      onClick={onAdd}
+      css={css`
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: 1px dashed var(--grey-2);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        color: var(--grey-3);
+        cursor: pointer;
+        width: 100%;
+        justify-content: center;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: var(--grey-3);
+          color: var(--grey-4);
+        }
+      `}
+    >
+      <PlusIcon width={14} height={14} />
+      {addLabel}
+    </button>
+  </>
+)
 
 // Default email template for reference
 const DEFAULT_EMAIL_TEMPLATE = `<!DOCTYPE html>
@@ -1675,7 +2147,7 @@ function LanguageSection() {
 // Color palette for avatar frames (matching profile page)
 const COLOR_PALETTE = ['#cf52f2', '#6BCB77', '#4D96FF', '#A66CFF', '#E23E57', '#ff3e00']
 
-function Editor({ user }) {
+function Editor({ user, section }) {
   const { t } = useI18n()
   const [clientUser, setClientUser] = useState({
     name: '',
@@ -1695,8 +2167,14 @@ function Editor({ user }) {
     },
     skills: [],
     skillsSectionTitle: '',
+    workExperience: [],
+    education: [],
+    workSectionTitle: '',
+    educationSectionTitle: '',
+    workStyle: 'timeline',
+    educationStyle: 'timeline',
     customSections: [],
-    sectionOrder: ['skills', 'writing', 'guestbook', 'custom'],
+    sectionOrder: ['skills', 'work', 'education', 'writing', 'guestbook', 'custom'],
     guestbookVisibility: true,
     guestbookButtonStyle: 'combined', // 'combined' or 'separate'
     newsletterButtonText: '',
@@ -1744,10 +2222,14 @@ function Editor({ user }) {
       },
       skills: user.skills || [],
       skillsSectionTitle: user.skillsSectionTitle || '',
+      workExperience: user.workExperience || [],
+      education: user.education || [],
+      workSectionTitle: user.workSectionTitle || '',
+      educationSectionTitle: user.educationSectionTitle || '',
+      workStyle: user.workStyle || 'timeline',
+      educationStyle: user.educationStyle || 'timeline',
       customSections: user.customSections || [],
-      sectionOrder: user.sectionOrder?.includes('guestbook')
-        ? user.sectionOrder
-        : [...(user.sectionOrder || ['skills', 'writing', 'custom']).slice(0, 2), 'guestbook', ...(user.sectionOrder || ['skills', 'writing', 'custom']).slice(2)],
+      sectionOrder: normalizeSectionOrder(user.sectionOrder),
       guestbookVisibility: user.guestbookVisibility !== false,
       guestbookButtonStyle: user.guestbookButtonStyle || 'combined',
       newsletterButtonText: user.newsletterButtonText || '',
@@ -1758,7 +2240,7 @@ function Editor({ user }) {
       statsAlignment: user.statsAlignment || 'center',
       buttonsVisibility: user.buttonsVisibility || { follow: false, newsletter: true },
       buttonsOrder: user.buttonsOrder || ['follow', 'newsletter'],
-      dividersVisibility: user.dividersVisibility || { skills: true, writing: true, guestbook: true, custom: true },
+      dividersVisibility: user.dividersVisibility || { skills: true, work: true, education: true, writing: true, guestbook: true, custom: true },
       banner: user.banner || null,
       bannerPosition: user.bannerPosition || 'center',
       bannerStyle: user.bannerStyle || 'rounded',
@@ -1779,10 +2261,12 @@ function Editor({ user }) {
     })
   }, [user])
 
-  const DEFAULT_SECTION_ORDER = ['skills', 'writing', 'guestbook', 'custom']
+  const DEFAULT_SECTION_ORDER = ['skills', 'work', 'education', 'writing', 'guestbook', 'custom']
 
   const SECTION_LABELS = {
     skills: 'Skills & Tags',
+    work: 'Work',
+    education: 'Education',
     writing: 'Writing',
     guestbook: 'Guest Book',
     custom: 'Custom Sections',
@@ -1803,10 +2287,12 @@ function Editor({ user }) {
     newsletter: 'Newsletter Button',
   }
 
-  const DEFAULT_DIVIDERS_VISIBILITY = { skills: true, writing: true, guestbook: true, custom: true }
+  const DEFAULT_DIVIDERS_VISIBILITY = { skills: true, work: true, education: true, writing: true, guestbook: true, custom: true }
 
   const DIVIDERS_LABELS = {
     skills: 'Before Skills',
+    work: 'Before Work',
+    education: 'Before Education',
     writing: 'Before Writing',
     guestbook: 'Before Guest Book',
     custom: 'Before Custom Sections',
@@ -1829,6 +2315,8 @@ function Editor({ user }) {
       ...prev,
       dividersVisibility: {
         skills: show,
+        work: show,
+        education: show,
         writing: show,
         guestbook: show,
         custom: show
@@ -2089,10 +2577,74 @@ function Editor({ user }) {
     }))
   }
 
+  // Experience helpers (shared by Work and Education sections via the `field` arg)
+  const addExperienceEntry = field => {
+    setClientUser(prev => ({
+      ...prev,
+      [field]: [
+        ...(prev[field] || []),
+        { title: '', organization: '', url: '', avatarSource: 'glass', startDate: '', endDate: '', current: false, location: '', description: '' },
+      ],
+    }))
+  }
+
+  const updateExperienceEntry = (field, index, key, value) => {
+    setClientUser(prev => ({
+      ...prev,
+      [field]: (prev[field] || []).map((entry, i) =>
+        i === index ? { ...entry, [key]: value } : entry
+      ),
+    }))
+  }
+
+  const removeExperienceEntry = (field, index) => {
+    setClientUser(prev => ({
+      ...prev,
+      [field]: (prev[field] || []).filter((_, i) => i !== index),
+    }))
+  }
+
+  const moveExperienceEntry = (field, index, dir) => {
+    setClientUser(prev => {
+      const list = [...(prev[field] || [])]
+      const target = index + dir
+      if (target < 0 || target >= list.length) return prev
+      ;[list[index], list[target]] = [list[target], list[index]]
+      return { ...prev, [field]: list }
+    })
+  }
+
+  // Insert a new role directly after `index`, carrying over the company + website so
+  // consecutive same-company entries group into a promotion track on the profile.
+  const addRoleAfter = (field, index) => {
+    setClientUser(prev => {
+      const list = [...(prev[field] || [])]
+      const base = list[index] || {}
+      list.splice(index + 1, 0, {
+        title: '',
+        organization: base.organization || '',
+        url: base.url || '',
+        avatarSource: base.avatarSource || 'glass',
+        startDate: '',
+        endDate: '',
+        current: false,
+        location: base.location || '',
+        description: '',
+      })
+      return { ...prev, [field]: list }
+    })
+  }
+
   const hasChanges = useCallback(() => {
     const originalSocialLinks = user.socialLinks || {}
     const originalSkills = user.skills || []
     const originalSkillsSectionTitle = user.skillsSectionTitle || ''
+    const originalWorkExperience = user.workExperience || []
+    const originalEducation = user.education || []
+    const originalWorkSectionTitle = user.workSectionTitle || ''
+    const originalEducationSectionTitle = user.educationSectionTitle || ''
+    const originalWorkStyle = user.workStyle || 'timeline'
+    const originalEducationStyle = user.educationStyle || 'timeline'
     const originalCustomSections = user.customSections || []
     const originalSectionOrder = user.sectionOrder || ['skills', 'writing', 'guestbook', 'custom']
     const originalGuestbookVisibility = user.guestbookVisibility !== false
@@ -2123,6 +2675,12 @@ function Editor({ user }) {
       JSON.stringify(originalSocialLinks) !== JSON.stringify(clientUser.socialLinks) ||
       JSON.stringify(originalSkills) !== JSON.stringify(clientUser.skills) ||
       originalSkillsSectionTitle !== clientUser.skillsSectionTitle ||
+      JSON.stringify(originalWorkExperience) !== JSON.stringify(clientUser.workExperience) ||
+      JSON.stringify(originalEducation) !== JSON.stringify(clientUser.education) ||
+      originalWorkSectionTitle !== clientUser.workSectionTitle ||
+      originalEducationSectionTitle !== clientUser.educationSectionTitle ||
+      originalWorkStyle !== clientUser.workStyle ||
+      originalEducationStyle !== clientUser.educationStyle ||
       JSON.stringify(originalCustomSections) !== JSON.stringify(clientUser.customSections) ||
       JSON.stringify(originalSectionOrder) !== JSON.stringify(clientUser.sectionOrder) ||
       originalGuestbookVisibility !== clientUser.guestbookVisibility ||
@@ -2206,6 +2764,7 @@ function Editor({ user }) {
   return (
     <>
       <div
+        data-settings-active={section || undefined}
         css={css`
           font-size: 0.9rem;
 
@@ -2220,6 +2779,7 @@ function Editor({ user }) {
           }
         `}
       >
+        <div data-settings-section="personal">
         {/* Basic Info Section */}
         <SectionHeader>{t('profileSettings.basicInfo')}</SectionHeader>
 
@@ -2230,7 +2790,9 @@ function Editor({ user }) {
             setClientUser(prev => ({ ...prev, photo: newPhotoUrl }))
           }}
         />
+        </div>
 
+        <div data-settings-section="customization">
         {/* Banner & Avatar Frame Section */}
         <SectionHeader>{t('profileSettings.bannerAvatarFrame')}</SectionHeader>
 
@@ -2352,9 +2914,7 @@ function Editor({ user }) {
                       return
                     }
                     try {
-                      const apiKey = process.env.NEXT_PUBLIC_IMGBB_API
-                      if (!apiKey) return
-                      const imageUrl = await uploadToImgBB(file, apiKey)
+                      const imageUrl = await uploadToCloudinary(file)
                       if (imageUrl) {
                         setClientUser(prev => ({ ...prev, banner: imageUrl }))
                       }
@@ -2474,19 +3034,27 @@ function Editor({ user }) {
                   avatarFrame: { ...prev.avatarFrame, type }
                 }))}
                 css={css`
-                  padding: 0.5rem;
-                  border: 2px solid ${clientUser.avatarFrame?.type === type ? 'var(--grey-4)' : 'var(--grey-2)'};
-                  border-radius: 0.5rem;
-                  background: ${clientUser.avatarFrame?.type === type ? 'var(--grey-2)' : 'var(--grey-1)'};
+                  padding: 0.55rem 0.5rem;
+                  border: 1px solid ${clientUser.avatarFrame?.type === type ? 'var(--accent-border)' : 'var(--border)'};
+                  border-radius: 6px;
+                  background: var(--grey-1);
                   color: var(--grey-4);
-                  font-size: 0.75rem;
+                  font-family: 'Inter', sans-serif;
+                  font-size: 0.8rem;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.2s ease;
-                  text-transform: capitalize;
+                  transition: border-color 150ms ease, box-shadow 150ms ease;
 
-                  &:hover {
-                    border-color: var(--grey-3);
+                  &:hover:not(:disabled) {
+                    border-color: var(--accent-border);
                   }
+
+                  &:focus-visible {
+                    outline: none;
+                    box-shadow: 0 0 0 3px var(--accent-soft);
+                    border-color: var(--accent-border);
+                  }
+                  text-transform: capitalize;
                 `}
               >
                 {type}
@@ -2615,7 +3183,7 @@ function Editor({ user }) {
                   border: 1px solid var(--grey-2);
                   border-radius: 0.5rem;
                 `}>
-                  <div css={css`
+                  <div data-pfp="true" css={css`
                     position: relative;
                     width: 48px;
                     height: 48px;
@@ -2704,9 +3272,7 @@ function Editor({ user }) {
                         return
                       }
                       try {
-                        const apiKey = process.env.NEXT_PUBLIC_IMGBB_API
-                        if (!apiKey) return
-                        const imageUrl = await uploadToImgBB(file, apiKey)
+                        const imageUrl = await uploadToCloudinary(file)
                         if (imageUrl) {
                           setClientUser(prev => ({
                             ...prev,
@@ -2740,18 +3306,26 @@ function Editor({ user }) {
                       avatarFrame: { ...prev.avatarFrame, size }
                     }))}
                     css={css`
-                      padding: 0.35rem 0.75rem;
-                      border: 1px solid ${clientUser.avatarFrame?.size === size ? 'var(--grey-4)' : 'var(--grey-2)'};
-                      border-radius: 0.375rem;
-                      background: ${clientUser.avatarFrame?.size === size ? 'var(--grey-2)' : 'var(--grey-1)'};
+                      padding: 0.4rem 0.85rem;
+                      border: 1px solid ${clientUser.avatarFrame?.size === size ? 'var(--accent-border)' : 'var(--border)'};
+                      border-radius: 6px;
+                      background: var(--grey-1);
                       color: var(--grey-4);
-                      font-size: 0.75rem;
+                      font-family: 'Inter', sans-serif;
+                      font-size: 0.8rem;
+                      font-weight: 500;
                       cursor: pointer;
                       text-transform: capitalize;
-                      transition: all 0.2s ease;
+                      transition: border-color 150ms ease, box-shadow 150ms ease;
 
-                      &:hover {
-                        border-color: var(--grey-3);
+                      &:hover:not(:disabled) {
+                        border-color: var(--accent-border);
+                      }
+
+                      &:focus-visible {
+                        outline: none;
+                        box-shadow: 0 0 0 3px var(--accent-soft);
+                        border-color: var(--accent-border);
                       }
                     `}
                   >
@@ -2775,7 +3349,7 @@ function Editor({ user }) {
               gap: 1rem;
             `}>
               <p css={css`font-size: 0.75rem; color: var(--grey-3);`}>Preview:</p>
-              <div css={css`
+              <div data-pfp="true" css={css`
                 ${clientUser.avatarFrame?.type === 'solid' && `
                   img {
                     border: ${clientUser.avatarFrame?.size === 'small' ? '2px' : clientUser.avatarFrame?.size === 'large' ? '4px' : '3px'} solid ${clientUser.avatarFrame?.color || COLOR_PALETTE[0]};
@@ -2812,7 +3386,9 @@ function Editor({ user }) {
             </div>
           )}
         </div>
+        </div>{/* end customization (Banner & Avatar Frame) */}
 
+        <div data-settings-section="personal">
         <div css={css`margin-bottom: 1.25rem;`}>
           <StyledLabel htmlFor="profile-display-name">Display Name</StyledLabel>
           <Input
@@ -2885,7 +3461,9 @@ function Editor({ user }) {
             placeholder="yourwebsite.com"
           />
         </div>
+        </div>{/* end personal (Display Name / Username / About / Website) */}
 
+        <div data-settings-section="customization">
         {/* Typography Section */}
         <SectionHeader>Typography</SectionHeader>
         <p css={css`
@@ -3068,6 +3646,60 @@ function Editor({ user }) {
           </p>
         </div>
 
+        {/* Work Experience Section */}
+        <ExperienceSection
+          headerLabel={t('profileSettings.work', 'Work')}
+          description="Add roles you've held. Reorder with the arrows — most recent first looks best."
+          titleId="work-section-title"
+          sectionTitle={clientUser.workSectionTitle}
+          sectionTitlePlaceholder="Work"
+          onSectionTitleChange={value => setClientUser(prev => ({ ...prev, workSectionTitle: value }))}
+          style={clientUser.workStyle}
+          onStyleChange={value => setClientUser(prev => ({ ...prev, workStyle: value }))}
+          entries={clientUser.workExperience || []}
+          titleLabel="Role"
+          titlePlaceholder="e.g. Senior Engineer"
+          orgLabel="Company"
+          orgPlaceholder="e.g. Acme Corp"
+          urlPlaceholder="https://acme.com"
+          locationPlaceholder="e.g. Bangalore, India (or Remote)"
+          currentLabel="I currently work here"
+          addLabel="Add Job"
+          addRoleLabel="Add another role at this company (promotion)"
+          onAdd={() => addExperienceEntry('workExperience')}
+          onUpdate={(index, key, value) => updateExperienceEntry('workExperience', index, key, value)}
+          onRemove={index => removeExperienceEntry('workExperience', index)}
+          onMove={(index, dir) => moveExperienceEntry('workExperience', index, dir)}
+          onAddRole={index => addRoleAfter('workExperience', index)}
+        />
+
+        {/* Education Section */}
+        <ExperienceSection
+          headerLabel={t('profileSettings.education', 'Education')}
+          description="Add schools, degrees, or courses. Reorder with the arrows."
+          titleId="education-section-title"
+          sectionTitle={clientUser.educationSectionTitle}
+          sectionTitlePlaceholder="Education"
+          onSectionTitleChange={value => setClientUser(prev => ({ ...prev, educationSectionTitle: value }))}
+          style={clientUser.educationStyle}
+          onStyleChange={value => setClientUser(prev => ({ ...prev, educationStyle: value }))}
+          entries={clientUser.education || []}
+          titleLabel="Degree or field of study"
+          titlePlaceholder="e.g. BSc Computer Science"
+          orgLabel="School"
+          orgPlaceholder="e.g. MIT"
+          urlPlaceholder="https://mit.edu"
+          locationPlaceholder="e.g. Cambridge, MA"
+          currentLabel="I'm currently studying here"
+          addLabel="Add Education"
+          addRoleLabel="Add another program at this school"
+          onAdd={() => addExperienceEntry('education')}
+          onUpdate={(index, key, value) => updateExperienceEntry('education', index, key, value)}
+          onRemove={index => removeExperienceEntry('education', index)}
+          onMove={(index, dir) => moveExperienceEntry('education', index, dir)}
+          onAddRole={index => addRoleAfter('education', index)}
+        />
+
         {/* Custom Sections */}
         <SectionHeader>{t('profileSettings.customSections')}</SectionHeader>
 
@@ -3140,16 +3772,23 @@ function Editor({ user }) {
                       type="button"
                       onClick={() => updateCustomSection(index, 'width', option.value)}
                       css={css`
-                        padding: 0.35rem 0.75rem;
-                        border: 1px solid ${section.width === option.value ? 'var(--grey-4)' : 'var(--grey-2)'};
-                        border-radius: 0.375rem;
-                        background: ${section.width === option.value ? 'var(--grey-2)' : 'var(--grey-1)'};
+                        padding: 0.4rem 0.85rem;
+                        border: 1px solid ${section.width === option.value ? 'var(--accent-border)' : 'var(--border)'};
+                        border-radius: 6px;
+                        background: var(--grey-1);
                         color: var(--grey-4);
-                        font-size: 0.75rem;
+                        font-family: 'Inter', sans-serif;
+                        font-size: 0.8rem;
+                        font-weight: 500;
                         cursor: pointer;
-                        transition: all 0.2s ease;
-                        &:hover {
-                          border-color: var(--grey-3);
+                        transition: border-color 150ms ease, box-shadow 150ms ease;
+                        &:hover:not(:disabled) {
+                          border-color: var(--accent-border);
+                        }
+                        &:focus-visible {
+                          outline: none;
+                          box-shadow: 0 0 0 3px var(--accent-soft);
+                          border-color: var(--accent-border);
                         }
                       `}
                     >
@@ -3254,40 +3893,34 @@ function Editor({ user }) {
           </button>
         </div>
 
-        {/* Profile Customization - Collapsible Section */}
-        <div css={css`
-          margin-top: 2rem;
-          background: var(--grey-1);
-          border: 1px solid var(--grey-2);
-          border-radius: 0.75rem;
-          overflow: hidden;
-        `}>
+        {/* Profile Customization - Collapsible Section (matches Advanced API Keys pattern) */}
+        <div css={css`margin-top: 1.5rem;`}>
           <button
             type="button"
             onClick={() => setIsCustomizationExpanded(!isCustomizationExpanded)}
             css={css`
               display: flex;
               align-items: center;
-              gap: 0.75rem;
-              background: ${isCustomizationExpanded ? 'var(--grey-2)' : 'transparent'};
+              gap: 0.5rem;
+              background: none;
               border: none;
-              padding: 1rem 1.25rem;
-              font-size: 0.9rem;
-              font-weight: 500;
-              color: var(--grey-4);
+              padding: 0;
+              font-family: 'Inter', sans-serif;
+              font-size: 0.85rem;
+              color: var(--grey-3);
               cursor: pointer;
-              transition: all 0.2s ease;
+              transition: color 0.15s ease;
               width: 100%;
               text-align: left;
 
               &:hover {
-                background: var(--grey-2);
+                color: var(--grey-4);
               }
             `}
           >
             <svg
-              width="16"
-              height="16"
+              width="14"
+              height="14"
               viewBox="0 0 15 15"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -3300,21 +3933,15 @@ function Editor({ user }) {
               />
             </svg>
             <span>Advanced Customization</span>
-            <span css={css`
-              margin-left: auto;
-              display: flex;
-              align-items: center;
-              color: var(--grey-3);
-              transition: transform 0.2s ease;
-              transform: ${isCustomizationExpanded ? 'rotate(180deg)' : 'rotate(0deg)'};
-            `}>
-              <ChevronDownIcon width={16} height={16} />
+            <span css={css`margin-left: auto;`}>
+              {isCustomizationExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
             </span>
           </button>
 
           {isCustomizationExpanded && (
             <div css={css`
-              padding: 1.25rem;
+              margin-top: 1rem;
+              padding-top: 1rem;
               border-top: 1px solid var(--grey-2);
             `}>
               {/* Section Dividers */}
@@ -3389,7 +4016,7 @@ function Editor({ user }) {
                   flex-direction: column;
                   gap: 0.5rem;
                 `}>
-                  {['skills', 'writing', 'custom'].map((divider) => (
+                  {['skills', 'work', 'education', 'writing', 'custom'].map((divider) => (
                     <div
                       key={divider}
                       css={css`
@@ -3409,32 +4036,10 @@ function Editor({ user }) {
                       `}>
                         {DIVIDERS_LABELS[divider]}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => toggleDividerVisibility(divider)}
-                        css={css`
-                          background: ${clientUser.dividersVisibility?.[divider] !== false ? 'var(--grey-4)' : 'var(--grey-2)'};
-                          border: none;
-                          border-radius: 10px;
-                          width: 36px;
-                          height: 20px;
-                          cursor: pointer;
-                          position: relative;
-                          transition: all 0.2s ease;
-
-                          &::after {
-                            content: '';
-                            position: absolute;
-                            top: 2px;
-                            left: ${clientUser.dividersVisibility?.[divider] !== false ? '18px' : '2px'};
-                            width: 16px;
-                            height: 16px;
-                            background: white;
-                            border-radius: 50%;
-                            transition: left 0.2s ease;
-                          }
-                        `}
-                        title={clientUser.dividersVisibility?.[divider] !== false ? 'Click to hide' : 'Click to show'}
+                      <DsSwitch
+                        checked={clientUser.dividersVisibility?.[divider] !== false}
+                        onChange={() => toggleDividerVisibility(divider)}
+                        aria-label={clientUser.dividersVisibility?.[divider] !== false ? 'Hide divider' : 'Show divider'}
                       />
                     </div>
                   ))}
@@ -3508,37 +4113,16 @@ function Editor({ user }) {
               </span>
 
               {/* Visibility toggle */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleStatVisibility(stat)
-                }}
-                css={css`
-                  background: ${clientUser.statsVisibility?.[stat] !== false ? 'var(--grey-4)' : 'var(--grey-2)'};
-                  border: none;
-                  border-radius: 10px;
-                  width: 36px;
-                  height: 20px;
-                  cursor: pointer;
-                  position: relative;
-                  transition: all 0.2s ease;
-                  margin-right: 0.5rem;
-
-                  &::after {
-                    content: '';
-                    position: absolute;
-                    top: 2px;
-                    left: ${clientUser.statsVisibility?.[stat] !== false ? '18px' : '2px'};
-                    width: 16px;
-                    height: 16px;
-                    background: white;
-                    border-radius: 50%;
-                    transition: left 0.2s ease;
-                  }
-                `}
-                title={clientUser.statsVisibility?.[stat] !== false ? 'Click to hide' : 'Click to show'}
-              />
+              <div
+                onClick={(e) => e.stopPropagation()}
+                css={css`margin-right: 0.5rem;`}
+              >
+                <DsSwitch
+                  checked={clientUser.statsVisibility?.[stat] !== false}
+                  onChange={() => toggleStatVisibility(stat)}
+                  aria-label={clientUser.statsVisibility?.[stat] !== false ? 'Hide stat' : 'Show stat'}
+                />
+              </div>
 
               {/* Move buttons */}
               <div css={css`
@@ -3623,16 +4207,23 @@ function Editor({ user }) {
                   flex: 1;
                   min-width: 120px;
                   padding: 0.75rem 0.5rem;
-                  background: ${clientUser.statsStyle === style.value ? 'var(--grey-4)' : 'var(--grey-1)'};
-                  color: ${clientUser.statsStyle === style.value ? 'white' : 'var(--grey-4)'};
-                  border: 1px solid ${clientUser.statsStyle === style.value ? 'var(--grey-4)' : 'var(--grey-2)'};
-                  border-radius: 0.5rem;
+                  font-family: 'Inter', sans-serif;
+                  background: var(--grey-1);
+                  color: var(--grey-4);
+                  border: 1px solid ${clientUser.statsStyle === style.value ? 'var(--accent-border)' : 'var(--border)'};
+                  border-radius: 6px;
                   cursor: pointer;
-                  transition: all 0.2s ease;
+                  transition: border-color 150ms ease, box-shadow 150ms ease;
                   text-align: center;
 
-                  &:hover {
-                    border-color: var(--grey-3);
+                  &:hover:not(:disabled) {
+                    border-color: var(--accent-border);
+                  }
+
+                  &:focus-visible {
+                    outline: none;
+                    box-shadow: 0 0 0 3px var(--accent-soft);
+                    border-color: var(--accent-border);
                   }
                 `}
               >
@@ -3674,16 +4265,23 @@ function Editor({ user }) {
                 css={css`
                   flex: 1;
                   padding: 0.5rem 0.75rem;
-                  background: ${clientUser.statsAlignment === align.value ? 'var(--grey-4)' : 'var(--grey-1)'};
-                  color: ${clientUser.statsAlignment === align.value ? 'white' : 'var(--grey-4)'};
-                  border: 1px solid ${clientUser.statsAlignment === align.value ? 'var(--grey-4)' : 'var(--grey-2)'};
-                  border-radius: 0.5rem;
+                  font-family: 'Inter', sans-serif;
+                  background: var(--grey-1);
+                  color: var(--grey-4);
+                  border: 1px solid ${clientUser.statsAlignment === align.value ? 'var(--accent-border)' : 'var(--border)'};
+                  border-radius: 6px;
                   cursor: pointer;
-                  transition: all 0.2s ease;
+                  transition: border-color 150ms ease, box-shadow 150ms ease;
                   font-size: 0.8rem;
 
-                  &:hover {
-                    border-color: var(--grey-3);
+                  &:hover:not(:disabled) {
+                    border-color: var(--accent-border);
+                  }
+
+                  &:focus-visible {
+                    outline: none;
+                    box-shadow: 0 0 0 3px var(--accent-soft);
+                    border-color: var(--accent-border);
                   }
                 `}
               >
@@ -3760,37 +4358,16 @@ function Editor({ user }) {
               </span>
 
               {/* Visibility toggle */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleButtonVisibility(button)
-                }}
-                css={css`
-                  background: ${clientUser.buttonsVisibility?.[button] !== false ? 'var(--grey-4)' : 'var(--grey-2)'};
-                  border: none;
-                  border-radius: 10px;
-                  width: 36px;
-                  height: 20px;
-                  cursor: pointer;
-                  position: relative;
-                  transition: all 0.2s ease;
-                  margin-right: 0.5rem;
-
-                  &::after {
-                    content: '';
-                    position: absolute;
-                    top: 2px;
-                    left: ${clientUser.buttonsVisibility?.[button] !== false ? '18px' : '2px'};
-                    width: 16px;
-                    height: 16px;
-                    background: white;
-                    border-radius: 50%;
-                    transition: left 0.2s ease;
-                  }
-                `}
-                title={clientUser.buttonsVisibility?.[button] !== false ? 'Click to hide' : 'Click to show'}
-              />
+              <div
+                onClick={(e) => e.stopPropagation()}
+                css={css`margin-right: 0.5rem;`}
+              >
+                <DsSwitch
+                  checked={clientUser.buttonsVisibility?.[button] !== false}
+                  onChange={() => toggleButtonVisibility(button)}
+                  aria-label={clientUser.buttonsVisibility?.[button] !== false ? 'Hide button' : 'Show button'}
+                />
+              </div>
 
               {/* Move buttons */}
               <div css={css`
@@ -4141,15 +4718,17 @@ function Editor({ user }) {
           ))}
         </div>
       </div>
+      </div>{/* end customization (Typography through Layout Order) */}
 
+      <div data-settings-section="advanced">
       {/* Language Selector Section */}
       <LanguageSection />
 
       {/* Custom Domain Section */}
       <CustomDomainSection userId={user.id} userName={user.name} />
+      </div>{/* end advanced (Language, Domain, Branding, Newsletter) */}
 
-      {/* Advanced Settings (API Keys) - Inline Expandable */}
-      <ApiKeySection userId={user.id} />
+      {/* API keys moved to dedicated /dashboard/settings/developer page */}
 
       <div css={css`
         margin-top: 1.5rem;
@@ -4267,7 +4846,7 @@ function Editor({ user }) {
   )
 }
 
-function ProfileEditor({ uid, authEmail }) {
+export function ProfileEditor({ uid, authEmail, section }) {
   // Only create Firestore reference if uid is valid
   const userRef = uid ? firestore.doc(`users/${uid}`) : null
 
@@ -4311,7 +4890,7 @@ function ProfileEditor({ uid, authEmail }) {
   }
 
   // Pass authEmail to Editor so CustomDomainSection can use it
-  return <Editor user={{ ...user, email: authEmail }} />
+  return <Editor user={{ ...user, email: authEmail }} section={section} />
 }
 
 export default function ProfileSettingsModal(props) {

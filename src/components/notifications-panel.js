@@ -298,6 +298,7 @@ function ReadingListItem({ post }) {
           <img
             src={post.author.photo}
             alt={post.author.displayName}
+            data-pfp="true"
             css={css`
               width: 1.25rem;
               height: 1.25rem;
@@ -427,6 +428,7 @@ function FollowingItem({ user: profile, onClose }) {
         <img
           src={profile.photo || `https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(profile.name)}`}
           alt={profile.displayName}
+          data-pfp="true"
           css={css`
             width: 32px;
             height: 32px;

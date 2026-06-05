@@ -20,7 +20,7 @@ const StyledLabel = props => (
   </label>
 )
 
-function ApiKeyManager({ userId }) {
+export function ApiKeyManager({ userId }) {
   const [keys, setKeys] = useState([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)

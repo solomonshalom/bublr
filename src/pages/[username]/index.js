@@ -81,6 +81,345 @@ const ColorDot = ({ color }) => (
   </svg>
 )
 
+// Format an experience entry's date range, e.g. "2021 – Present" or "2017 – 2021"
+const formatExperienceDates = (entry) => {
+  const start = (entry.startDate || '').trim()
+  const end = entry.current ? 'Present' : (entry.endDate || '').trim()
+  if (start && end) return `${start} – ${end}`
+  return start || end || ''
+}
+
+// An entry is only worth rendering if it actually identifies something (a role or a
+// company/school). Blank entries left behind in the editor are skipped on the profile.
+const isMeaningfulEntry = (entry) =>
+  !!((entry?.title || '').trim() || (entry?.organization || '').trim())
+
+// Group consecutive entries that share the same organization, so multiple roles at
+// one company render under a single node with branching connectors (à la Peerlist).
+const groupExperience = (entries) => {
+  const groups = []
+  for (const entry of entries) {
+    const key = (entry.organization || '').trim().toLowerCase()
+    const last = groups[groups.length - 1]
+    if (last && key && last.key === key) {
+      last.roles.push(entry)
+    } else {
+      groups.push({
+        key,
+        organization: entry.organization || '',
+        url: entry.url || '',
+        avatarSource: entry.avatarSource || 'glass',
+        roles: [entry],
+      })
+    }
+  }
+  return groups
+}
+
+// Avatar at the top of each company node. Defaults to a DiceBear "Glass" mark seeded
+// by the company name; can opt into the site's favicon (source: 'favicon') when a
+// website is set. Falls back to the organization's initial if the image fails.
+const OrgAvatar = ({ label, url, source, colors }) => {
+  const [broken, setBroken] = useState(false)
+  let host = null
+  if (url) {
+    try {
+      host = new URL(url.startsWith('http') ? url : `https://${url}`).hostname
+    } catch (e) {
+      host = null
+    }
+  }
+  const useFavicon = source === 'favicon' && host
+  const src = useFavicon
+    ? `https://www.google.com/s2/favicons?domain=${host}&sz=64`
+    : `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(label || 'bublr')}`
+  const initial = (label || '?').trim().charAt(0).toUpperCase() || '?'
+  return (
+    <span
+      css={css`
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        overflow: hidden;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: ${colors.border};
+        color: ${colors.muted};
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1;
+      `}
+    >
+      {!broken ? (
+        <img
+          src={src}
+          alt=""
+          width="28"
+          height="28"
+          css={css`width: 28px; height: 28px; object-fit: cover; display: block;`}
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        initial
+      )}
+    </span>
+  )
+}
+
+// Renders a Work or Education list as a Peerlist-style timeline: each company is a
+// node (avatar + name) with a rounded green rail connecting down to its role(s).
+const ExperienceList = ({ sectionTitle, entries, colors, style, lineColor, dotColor, headingFont, bodyFont }) => {
+  const meaningful = (entries || []).filter(isMeaningfulEntry)
+  const headingStack = `'${headingFont}', -apple-system, BlinkMacSystemFont, sans-serif`
+  const bodyStack = `'${bodyFont}', Georgia, serif`
+
+  if (meaningful.length === 0) return null
+
+  const sectionLabel = <p css={css`font-weight: 500; margin-bottom: 8px;`}>{sectionTitle}</p>
+
+  // Minimal "dots" style — the original look: a colored dot + role, then a muted
+  // "company · dates · location" line. Flat: no grouping, avatars, or rail.
+  if (style === 'dots') {
+    return (
+      <>
+        {sectionLabel}
+        <div css={css`display: flex; flex-direction: column; gap: 20px; margin-top: 16px;`}>
+          {meaningful.map((entry, index) => {
+            const dateRange = formatExperienceDates(entry)
+            const tail = [dateRange, (entry.location || '').trim()].filter(Boolean).join(' · ')
+            const headline = entry.title || entry.organization || 'Untitled'
+            const orgInMeta = entry.title ? entry.organization : ''
+            const normalizedUrl = entry.url
+              ? (entry.url.startsWith('http') ? entry.url : `https://${entry.url}`)
+              : null
+            return (
+              <div key={index}>
+                <p
+                  css={css`
+                    font-weight: 500;
+                    color: ${colors.text};
+                    margin-bottom: 4px;
+                    font-size: 14px;
+                    font-family: ${headingStack};
+                  `}
+                >
+                  <ColorDot color={dotColor} />
+                  {headline}
+                </p>
+                {(orgInMeta || tail) && (
+                  <p
+                    css={css`
+                      font-size: 13px;
+                      color: ${colors.muted};
+                      line-height: 1.5;
+                      font-family: ${bodyStack};
+                    `}
+                  >
+                    {orgInMeta && normalizedUrl ? (
+                      <a
+                        href={normalizedUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        css={css`
+                          color: inherit;
+                          text-decoration: none;
+                          border-bottom: 1px dotted currentColor;
+                          transition: 0.2s ease-in-out;
+                          &:hover {
+                            color: ${colors.hoverText};
+                          }
+                        `}
+                      >
+                        {orgInMeta}
+                      </a>
+                    ) : (
+                      orgInMeta
+                    )}
+                    {orgInMeta && tail ? ' · ' : ''}
+                    {tail}
+                  </p>
+                )}
+                {entry.description && (
+                  <p
+                    css={css`
+                      font-size: 13px;
+                      color: ${colors.muted};
+                      line-height: 1.5;
+                      margin-top: 4px;
+                      font-family: ${bodyStack};
+                    `}
+                  >
+                    {entry.description}
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </>
+    )
+  }
+
+  // Default "timeline" style (Peerlist-like): group by company, avatar + green rail.
+  const groups = groupExperience(meaningful)
+
+  return (
+    <>
+      {sectionLabel}
+      <div css={css`display: flex; flex-direction: column; gap: 28px; margin-top: 16px;`}>
+        {groups.map((group, gi) => {
+          const headerLabel = group.organization || group.roles[0]?.title || 'Experience'
+          const normalizedUrl = group.url
+            ? (group.url.startsWith('http') ? group.url : `https://${group.url}`)
+            : null
+          // Without an organization, the role title becomes the node label, so we don't
+          // repeat it as a child row underneath.
+          const showRoleTitles = !!group.organization
+
+          const header = (
+            <>
+              <OrgAvatar label={headerLabel} url={group.url} source={group.avatarSource} colors={colors} />
+              <span
+                className="org-name"
+                css={css`
+                  font-weight: 600;
+                  color: ${colors.text};
+                  font-size: 15px;
+                  font-family: ${headingStack};
+                  transition: 0.2s ease-in-out;
+                `}
+              >
+                {headerLabel}
+              </span>
+            </>
+          )
+
+          return (
+            <div key={gi}>
+              {/* Company node */}
+              <div css={css`display: flex; align-items: center; gap: 10px; min-height: 28px;`}>
+                {normalizedUrl ? (
+                  <a
+                    href={normalizedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    css={css`
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      text-decoration: none;
+                      color: inherit;
+                      .org-name {
+                        border-bottom: 1px dotted ${colors.muted};
+                      }
+                      &:hover .org-name {
+                        color: ${colors.hoverText};
+                        border-bottom-color: ${colors.hoverText};
+                      }
+                    `}
+                  >
+                    {header}
+                  </a>
+                ) : (
+                  header
+                )}
+              </div>
+
+              {/* Role(s), connected by the green rail */}
+              <div>
+                {group.roles.map((role, ri) => {
+                  const isLast = ri === group.roles.length - 1
+                  const dateRange = formatExperienceDates(role)
+                  const meta = [dateRange, (role.location || '').trim()].filter(Boolean).join(' · ')
+                  return (
+                    <div
+                      key={ri}
+                      css={css`
+                        position: relative;
+                        padding-left: 34px;
+                        padding-bottom: ${isLast ? '0' : '22px'};
+                      `}
+                    >
+                      {/* Continuous rail through to the next role */}
+                      {!isLast && (
+                        <span
+                          css={css`
+                            position: absolute;
+                            left: 13px;
+                            top: 0;
+                            bottom: 0;
+                            width: 2px;
+                            background: ${lineColor};
+                          `}
+                        />
+                      )}
+                      {/* Elbow: drops from the rail, then curves into the role */}
+                      <span
+                        css={css`
+                          position: absolute;
+                          left: 13px;
+                          top: 0;
+                          width: 15px;
+                          height: 22px;
+                          border-left: 2px solid ${lineColor};
+                          border-bottom: 2px solid ${lineColor};
+                          border-bottom-left-radius: 10px;
+                        `}
+                      />
+                      <div css={css`padding-top: 11px;`}>
+                        {showRoleTitles && (
+                          <p
+                            css={css`
+                              font-weight: 500;
+                              color: ${colors.text};
+                              font-size: 14px;
+                              margin-bottom: 4px;
+                              font-family: ${headingStack};
+                            `}
+                          >
+                            {role.title || 'Untitled'}
+                          </p>
+                        )}
+                        {meta && (
+                          <p
+                            css={css`
+                              font-size: 13px;
+                              color: ${colors.muted};
+                              line-height: 1.5;
+                              font-family: ${bodyStack};
+                            `}
+                          >
+                            {meta}
+                          </p>
+                        )}
+                        {role.description && (
+                          <p
+                            css={css`
+                              font-size: 13px;
+                              color: ${colors.muted};
+                              line-height: 1.5;
+                              margin-top: 4px;
+                              font-family: ${bodyStack};
+                            `}
+                          >
+                            {role.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
 // Social icon components (exactly like berrysauce - 18px, using 1em)
 const GitHubIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16">
@@ -326,7 +665,24 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
 
   const hasSocialLinks = user.socialLinks && Object.values(user.socialLinks).some(v => v)
   const hasSkills = user.skills && user.skills.length > 0
+  const hasWork = (user.workExperience || []).some(isMeaningfulEntry)
+  const hasEducation = (user.education || []).some(isMeaningfulEntry)
   const hasCustomSections = user.customSections && user.customSections.length > 0
+
+  // Build the render order, injecting work/education for profiles saved before the feature existed
+  const sectionRenderOrder = (() => {
+    const base = user.sectionOrder && user.sectionOrder.length
+      ? [...user.sectionOrder]
+      : ['skills', 'work', 'education', 'writing', 'guestbook', 'custom']
+    if (!base.includes('work')) {
+      const i = base.indexOf('skills')
+      base.splice(i >= 0 ? i + 1 : 0, 0, 'work')
+    }
+    if (!base.includes('education')) {
+      base.splice(base.indexOf('work') + 1, 0, 'education')
+    }
+    return base
+  })()
 
   // Theme-aware colors (matching app's --grey-1)
   const colors = {
@@ -338,6 +694,9 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
     hoverText: isDark ? 'rgb(229, 231, 235)' : 'rgb(33, 37, 41)',
     hoverIcon: isDark ? '#ffffff' : '#000000',
   }
+
+  // Green rail color for the experience timeline (Peerlist-style connectors)
+  const experienceLineColor = isDark ? '#22c55e' : '#16a34a'
 
   return (
     <>
@@ -865,7 +1224,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
               })()}
 
               {/* Render sections based on sectionOrder */}
-              {(user.sectionOrder || ['skills', 'writing', 'guestbook', 'custom']).map((sectionType) => {
+              {sectionRenderOrder.map((sectionType) => {
                 // Skills/Tags Section
                 if (sectionType === 'skills' && hasSkills) {
                   return (
@@ -905,6 +1264,54 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                           </span>
                         ))}
                       </div>
+                    </div>
+                  )
+                }
+
+                // Work Experience Section
+                if (sectionType === 'work' && hasWork) {
+                  return (
+                    <div key="work">
+                      {user.dividersVisibility?.work !== false && (
+                        <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      )}
+                      {user.dividersVisibility?.work === false && (
+                        <div css={css`margin-top: 32px;`} />
+                      )}
+                      <ExperienceList
+                        sectionTitle={user.workSectionTitle || 'Work'}
+                        entries={user.workExperience}
+                        colors={colors}
+                        style={user.workStyle || 'timeline'}
+                        lineColor={experienceLineColor}
+                        dotColor={COLOR_PALETTE[2]}
+                        headingFont={sanitizeFontFamily(user.fontSettings?.headingFont, 'Inter')}
+                        bodyFont={sanitizeFontFamily(user.fontSettings?.bodyFont, 'Inter')}
+                      />
+                    </div>
+                  )
+                }
+
+                // Education Section
+                if (sectionType === 'education' && hasEducation) {
+                  return (
+                    <div key="education">
+                      {user.dividersVisibility?.education !== false && (
+                        <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      )}
+                      {user.dividersVisibility?.education === false && (
+                        <div css={css`margin-top: 32px;`} />
+                      )}
+                      <ExperienceList
+                        sectionTitle={user.educationSectionTitle || 'Education'}
+                        entries={user.education}
+                        colors={colors}
+                        style={user.educationStyle || 'timeline'}
+                        lineColor={experienceLineColor}
+                        dotColor={COLOR_PALETTE[1]}
+                        headingFont={sanitizeFontFamily(user.fontSettings?.headingFont, 'Inter')}
+                        bodyFont={sanitizeFontFamily(user.fontSettings?.bodyFont, 'Inter')}
+                      />
                     </div>
                   )
                 }
@@ -1230,6 +1637,34 @@ export async function getServerSideProps({ params, req }) {
       user.skillsSectionTitle = ''
     }
 
+    // Ensure experience (work/education) fields exist and are JSON-serializable
+    const normalizeExperience = (list) =>
+      (Array.isArray(list) ? list : []).map(e => ({
+        title: e?.title || '',
+        organization: e?.organization || '',
+        url: e?.url || '',
+        avatarSource: e?.avatarSource || 'glass',
+        startDate: e?.startDate || '',
+        endDate: e?.endDate || '',
+        current: e?.current || false,
+        location: e?.location || '',
+        description: e?.description || '',
+      }))
+    user.workExperience = normalizeExperience(user.workExperience)
+    user.education = normalizeExperience(user.education)
+    if (!user.workSectionTitle) {
+      user.workSectionTitle = ''
+    }
+    if (!user.educationSectionTitle) {
+      user.educationSectionTitle = ''
+    }
+    if (!user.workStyle) {
+      user.workStyle = 'timeline'
+    }
+    if (!user.educationStyle) {
+      user.educationStyle = 'timeline'
+    }
+
     // Ensure sectionOrder exists and includes guestbook
     if (!user.sectionOrder) {
       user.sectionOrder = ['skills', 'writing', 'guestbook', 'custom']
@@ -1314,7 +1749,7 @@ export async function getServerSideProps({ params, req }) {
 
     // Ensure dividersVisibility exists
     if (!user.dividersVisibility) {
-      user.dividersVisibility = { skills: true, writing: true, guestbook: true, custom: true }
+      user.dividersVisibility = { skills: true, work: true, education: true, writing: true, guestbook: true, custom: true }
     }
 
     // Banner defaults

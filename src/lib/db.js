@@ -411,6 +411,56 @@ export async function setUser(id, data) {
   await firestore.collection('users').doc(id).set(data)
 }
 
+// DiceBear avatar styles used for auto-generated profile pictures on signup
+const DICEBEAR_STYLES = [
+  'notionists-neutral',
+  'notionists',
+  'lorelei-neutral',
+  'lorelei',
+  'dylan',
+]
+
+export function generateDiceBearAvatar(uid) {
+  const hash = uid.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const style = DICEBEAR_STYLES[hash % DICEBEAR_STYLES.length]
+  return `https://api.dicebear.com/9.x/${style}/svg?seed=${uid}`
+}
+
+/**
+ * Ensure a Firestore user document exists for an authenticated Firebase user.
+ * Creates a fresh profile (with a generated avatar) for first-time users, and
+ * backfills the email field for older accounts that predate email capture.
+ * Returns true when a new profile was created.
+ */
+export async function ensureUserDocument(user, overrides = {}) {
+  const exists = await userWithIDExists(user.uid)
+
+  if (!exists) {
+    await setUser(user.uid, {
+      name: user.uid,
+      displayName: overrides.displayName || user.displayName || 'Anonymous',
+      email: user.email || null,
+      about: 'Nothing to say about you.',
+      posts: [],
+      photo: generateDiceBearAvatar(user.uid),
+      readingList: [],
+    })
+    return true
+  }
+
+  if (user.email) {
+    const doc = await firestore.collection('users').doc(user.uid).get()
+    if (!doc.data()?.email) {
+      await firestore
+        .collection('users')
+        .doc(user.uid)
+        .update({ email: user.email })
+    }
+  }
+
+  return false
+}
+
 export async function setPost(id, data) {
   await firestore.collection('posts').doc(id).set(data)
 }

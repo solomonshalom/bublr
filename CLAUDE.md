@@ -79,7 +79,9 @@ PageComponent.getLayout = function PageLayout(page) {
 
 Required in `.env.local`:
 - Firebase config (see `src/lib/firebase-config.js`)
-- `NEXT_PUBLIC_IMGBB_API` - ImgBB API key for image uploads in posts
+- `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for image/video uploads
+- `CLOUDINARY_API_KEY` - Cloudinary API key
+- `CLOUDINARY_API_SECRET` - Cloudinary API secret (server-side only; used by `/api/cloudinary-sign` to sign direct uploads)
 - `GROQ_API_KEY` - Groq API key for AI content moderation
 - `MODERATION_SECRET_KEY` - Secret key for moderation API endpoints
 - `RESEND_API_KEY` - Resend API key for newsletter email notifications

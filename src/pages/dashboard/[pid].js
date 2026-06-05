@@ -22,6 +22,7 @@ import {
   ListBulletIcon,
   UnderlineIcon,
   QuoteIcon,
+  ExternalLinkIcon,
 } from '@radix-ui/react-icons'
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
 
@@ -47,9 +48,6 @@ import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import SlashCommands from '../../components/editor/slash-commands'
 import EditorFloatingMenu from '../../components/editor/editor-floating-menu'
 import Callout from '../../components/editor/callout-extension'
-import PreviewModal from '../../components/preview-modal'
-
-import * as Dialog from '@radix-ui/react-dialog'
 
 import firebase, { auth, firestore } from '../../lib/firebase'
 import { postWithUserIDAndSlugExists, removePostForUser } from '../../lib/db'
@@ -103,17 +101,20 @@ const PlatformIcons = {
   ),
 }
 
-import Input from '../../components/input'
-import Container from '../../components/container'
 import { LoadingContainer } from '../../components/loading-container'
 import { GsapReveal } from '../../components/gsap-reveal'
-import ModalOverlay from '../../components/modal-overlay'
 import PostContainer from '../../components/post-container'
 import VoiceInput from '../../components/voice-input'
-import Button, { IconButton, LinkIconButton } from '../../components/button'
+import { IconButton, LinkIconButton } from '../../components/button'
 import FontPicker from '../../components/font-picker'
 import SEOAnalyzer from '../../components/seo-analyzer'
 import { DEFAULT_FONTS } from '../../lib/fonts'
+
+// Dashboard design system (chord.so-inspired, shared with /dashboard pages)
+import DsButton from '../../components/dashboard/ds-button'
+import DsSwitch from '../../components/dashboard/ds-switch'
+import { DsInput, DsLabel, DsField } from '../../components/dashboard/ds-input'
+import { DsTray, DsTile } from '../../components/dashboard/ds-section'
 
 function SelectionMenu({ editor }) {
   const [editingLink, setEditingLink] = useState(false)
@@ -144,22 +145,26 @@ function SelectionMenu({ editor }) {
         flex-wrap: wrap;
         max-width: 500px;
 
-        border-radius: 0.5rem;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-        background: var(--grey-5);
-        color: var(--grey-1);
-        padding: 0.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+        background: var(--grey-1);
+        color: var(--grey-4);
+        padding: 0.35rem;
+        gap: 0.15rem;
         transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
 
         input {
           background: none;
           border: none;
           margin: 0;
-          padding: 0.5rem;
-          color: var(--grey-2);
+          padding: 0.4rem 0.55rem;
+          color: var(--grey-4);
           font-family: 'Inter', sans-serif;
           font-size: 0.8rem;
-          transition: color 0.2s ease;
+          transition: color 0.15s ease, background 0.15s ease;
+          border-radius: 4px;
+          min-width: 12rem;
         }
 
         input::placeholder {
@@ -170,49 +175,46 @@ function SelectionMenu({ editor }) {
 
         input:focus {
           outline: none;
-          color: var(--grey-1);
+          background: var(--accent-soft);
+          color: var(--grey-5);
         }
 
         button {
-          margin: 0 0.25rem;
-          background: none;
-          border: none;
-          width: 1.5rem;
-          height: 1.5rem;
-          border-radius: 0.25rem;
+          background: transparent;
+          border: 1px solid transparent;
+          width: 1.65rem;
+          height: 1.65rem;
+          border-radius: 4px;
           color: var(--grey-3);
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.15s ease;
+          transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
           cursor: pointer;
         }
 
         button:hover {
-          background: rgba(0, 0, 0, 0.1);
-          color: var(--grey-1);
+          background: var(--accent-soft);
+          color: var(--accent-foreground);
         }
 
-        button:focus,
+        button:focus-visible {
+          outline: none;
+          border-color: var(--accent-border);
+          box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
         button.is-active {
-          color: var(--grey-1);
-          background: rgba(0, 0, 0, 0.08);
-        }
-
-        html[data-theme='dark'] button:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        html[data-theme='dark'] button.is-active {
-          background: rgba(255, 255, 255, 0.15);
+          color: var(--accent-foreground);
+          background: var(--accent-soft-strong);
+          border-color: var(--accent-border);
         }
 
         .separator {
-          width: 1px;
+          width: 0;
           height: 1.25rem;
-          background-color: var(--grey-3);
+          border-left: 1px dashed var(--border-dashed);
           margin: 0 0.25rem;
-          opacity: 0.5;
         }
       `}
     >
@@ -378,398 +380,6 @@ const SPAM_MESSAGES = [
   "Error 418: I'm a teapot, and I refuse to brew spam.",
 ]
 
-// Medium Import Popup - same style as SpamPopup (berrysauce inspired)
-function MediumImportPopup({ isOpen, onClose, onImport }) {
-  const [mounted, setMounted] = useState(false)
-  const [username, setUsername] = useState('')
-  const [articles, setArticles] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [selectedArticle, setSelectedArticle] = useState(null)
-  const [importing, setImporting] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    if (!isOpen) {
-      setUsername('')
-      setArticles([])
-      setError('')
-      setSelectedArticle(null)
-    }
-  }, [isOpen])
-
-  const fetchArticles = async () => {
-    if (!username.trim()) {
-      setError('Please enter a Medium username')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-    setArticles([])
-
-    try {
-      const response = await fetch('/api/medium/fetch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim() }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to fetch articles')
-        return
-      }
-
-      if (data.articles.length === 0) {
-        setError('No articles found for this user')
-        return
-      }
-
-      setArticles(data.articles)
-    } catch (err) {
-      setError('Failed to connect to Medium')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleImport = async () => {
-    if (!selectedArticle) return
-
-    setImporting(true)
-    try {
-      const response = await fetch('/api/medium/convert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: selectedArticle.content,
-          title: selectedArticle.title,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        onImport({
-          title: selectedArticle.title,
-          content: data.content,
-        })
-        onClose()
-      } else {
-        setError('Failed to convert article')
-      }
-    } catch (err) {
-      setError('Failed to import article')
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  if (!isOpen || !mounted) return null
-
-  return createPortal(
-    <div
-      css={css`
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 99999;
-        backdrop-filter: blur(2px);
-      `}
-      onClick={onClose}
-    >
-      <div
-        css={css`
-          background: var(--grey-1);
-          border-radius: 8px;
-          padding: 2rem;
-          max-width: 420px;
-          width: 90%;
-          max-height: 80vh;
-          overflow-y: auto;
-          border: 1px solid var(--grey-2);
-
-          &::-webkit-scrollbar {
-            display: none;
-          }
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        `}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p
-          css={css`
-            font-weight: 500;
-            font-size: 1rem;
-            margin-bottom: 8px;
-            color: var(--grey-5);
-          `}
-        >
-          Import from Medium
-        </p>
-
-        <p
-          css={css`
-            color: var(--grey-3);
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-            line-height: 1.5;
-          `}
-        >
-          Bring your Medium articles to Bublr. Enter your Medium username to fetch your latest posts.
-        </p>
-
-        {/* Username input */}
-        <div
-          css={css`
-            margin-bottom: 16px;
-          `}
-        >
-          <div
-            css={css`
-              display: flex;
-              gap: 8px;
-            `}
-          >
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchArticles()}
-              placeholder="@username"
-              css={css`
-                flex: 1;
-                padding: 10px 14px;
-                border: 1px solid var(--grey-2);
-                border-radius: 4px;
-                background: var(--grey-1);
-                color: var(--grey-5);
-                font-size: 0.9rem;
-                outline: none;
-                transition: border-color 0.2s ease;
-
-                &:focus {
-                  border-color: var(--grey-3);
-                }
-
-                &::placeholder {
-                  color: var(--grey-3);
-                }
-              `}
-            />
-            <button
-              onClick={fetchArticles}
-              disabled={loading}
-              css={css`
-                padding: 10px 16px;
-                background: var(--grey-5);
-                color: var(--grey-1);
-                border: none;
-                border-radius: 4px;
-                font-size: 0.85rem;
-                cursor: pointer;
-                transition: opacity 0.2s ease;
-
-                &:hover:not(:disabled) {
-                  opacity: 0.9;
-                }
-
-                &:disabled {
-                  opacity: 0.5;
-                  cursor: not-allowed;
-                }
-              `}
-            >
-              {loading ? 'Loading...' : 'Fetch'}
-            </button>
-          </div>
-        </div>
-
-        {/* Error message */}
-        {error && (
-          <div
-            css={css`
-              border: 1px solid var(--grey-2);
-              border-radius: 4px;
-              padding: 10px 14px;
-              margin-bottom: 16px;
-            `}
-          >
-            <p
-              css={css`
-                color: #e55050;
-                font-size: 0.85rem;
-                margin: 0;
-              `}
-            >
-              {error}
-            </p>
-          </div>
-        )}
-
-        {/* Articles list */}
-        {articles.length > 0 && (
-          <div
-            css={css`
-              margin-bottom: 16px;
-            `}
-          >
-            <p
-              css={css`
-                font-size: 0.8rem;
-                color: var(--grey-3);
-                margin-bottom: 8px;
-              `}
-            >
-              Select an article to import:
-            </p>
-            <div
-              css={css`
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                max-height: 200px;
-                overflow-y: auto;
-
-                &::-webkit-scrollbar {
-                  width: 4px;
-                }
-                &::-webkit-scrollbar-thumb {
-                  background: var(--grey-2);
-                  border-radius: 2px;
-                }
-              `}
-            >
-              {articles.map((article, index) => (
-                <button
-                  key={article.guid || index}
-                  onClick={() => setSelectedArticle(article)}
-                  css={css`
-                    text-align: left;
-                    padding: 10px 14px;
-                    border: 1px solid ${selectedArticle === article ? 'var(--grey-4)' : 'var(--grey-2)'};
-                    border-radius: 4px;
-                    background: ${selectedArticle === article ? 'var(--grey-2)' : 'transparent'};
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-
-                    &:hover {
-                      border-color: var(--grey-3);
-                    }
-                  `}
-                >
-                  <p
-                    css={css`
-                      font-size: 0.85rem;
-                      color: var(--grey-5);
-                      margin: 0 0 4px 0;
-                      font-weight: 500;
-                    `}
-                  >
-                    {article.title}
-                  </p>
-                  <p
-                    css={css`
-                      font-size: 0.75rem;
-                      color: var(--grey-3);
-                      margin: 0;
-                    `}
-                  >
-                    {new Date(article.pubDate).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div
-          css={css`
-            display: flex;
-            gap: 8px;
-          `}
-        >
-          <button
-            onClick={onClose}
-            css={css`
-              flex: 1;
-              background: var(--grey-1);
-              color: var(--grey-4);
-              border: 1px solid var(--grey-2);
-              padding: 10px 16px;
-              border-radius: 4px;
-              font-size: 0.9rem;
-              cursor: pointer;
-              transition: all 0.2s ease;
-
-              &:hover {
-                border-color: var(--grey-3);
-                color: var(--grey-5);
-              }
-            `}
-          >
-            Cancel
-          </button>
-          {selectedArticle && (
-            <button
-              onClick={handleImport}
-              disabled={importing}
-              css={css`
-                flex: 1;
-                background: var(--grey-5);
-                color: var(--grey-1);
-                border: none;
-                padding: 10px 16px;
-                border-radius: 4px;
-                font-size: 0.9rem;
-                cursor: pointer;
-                transition: opacity 0.2s ease;
-
-                &:hover:not(:disabled) {
-                  opacity: 0.9;
-                }
-
-                &:disabled {
-                  opacity: 0.5;
-                  cursor: not-allowed;
-                }
-              `}
-            >
-              {importing ? 'Importing...' : 'Import'}
-            </button>
-          )}
-        </div>
-
-        {/* Attribution */}
-        <p
-          css={css`
-            font-size: 0.7rem;
-            color: var(--grey-3);
-            margin-top: 16px;
-            text-align: center;
-          `}
-        >
-          GYD (Get Your Data) - Import your content from other platforms
-        </p>
-      </div>
-    </div>,
-    document.body
-  )
-}
-
 // Custom spam popup component - berrysauce inspired clean design
 function SpamPopup({ isOpen, onClose, reason, category }) {
   const [mounted, setMounted] = useState(false)
@@ -787,32 +397,37 @@ function SpamPopup({ isOpen, onClose, reason, category }) {
       css={css`
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.4);
+        background: rgba(0, 0, 0, 0.45);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 99999;
-        backdrop-filter: blur(2px);
+        backdrop-filter: blur(4px);
       `}
       onClick={onClose}
     >
       <div
         css={css`
           background: var(--grey-1);
-          border-radius: 8px;
-          padding: 2rem;
-          max-width: 380px;
+          border-radius: 10px;
+          padding: 1.5rem;
+          max-width: 400px;
           width: 90%;
-          border: 1px solid var(--grey-2);
+          border: 1px solid var(--border);
+          box-shadow: var(--chord-shadow-md), 0 18px 48px rgba(0, 0, 0, 0.12);
+          font-family: 'Inter', sans-serif;
         `}
         onClick={(e) => e.stopPropagation()}
       >
         <p
           css={css`
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
             font-weight: 500;
-            font-size: 1rem;
-            margin-bottom: 12px;
-            color: var(--grey-5);
+            color: var(--grey-3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.4rem;
           `}
         >
           Post Not Published
@@ -820,10 +435,10 @@ function SpamPopup({ isOpen, onClose, reason, category }) {
 
         <p
           css={css`
-            color: var(--grey-3);
+            color: var(--grey-4);
             font-size: 0.9rem;
-            margin-bottom: 16px;
-            line-height: 1.5;
+            margin-bottom: 1rem;
+            line-height: 1.55;
           `}
         >
           {funnyMessage}
@@ -831,10 +446,11 @@ function SpamPopup({ isOpen, onClose, reason, category }) {
 
         <div
           css={css`
-            border: 1px solid var(--grey-2);
-            border-radius: 4px;
-            padding: 10px 14px;
-            margin-bottom: 20px;
+            background: var(--accent-bg);
+            border: 1px dashed var(--border-dashed);
+            border-radius: 6px;
+            padding: 0.7rem 0.9rem;
+            margin-bottom: 1.25rem;
           `}
         >
           <p
@@ -851,11 +467,15 @@ function SpamPopup({ isOpen, onClose, reason, category }) {
               css={css`
                 display: inline-block;
                 margin-top: 8px;
-                font-size: 0.75rem;
+                font-size: 0.7rem;
+                font-weight: 500;
                 color: var(--grey-3);
-                border: 1px solid var(--grey-2);
+                background: var(--accent-bg-strong);
+                border: 1px solid var(--border);
                 border-radius: 4px;
                 padding: 2px 8px;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
               `}
             >
               {category}
@@ -863,34 +483,65 @@ function SpamPopup({ isOpen, onClose, reason, category }) {
           )}
         </div>
 
-        <button
+        <DsButton
+          variant="outline"
           onClick={onClose}
-          css={css`
-            width: 100%;
-            background: var(--grey-1);
-            color: var(--grey-4);
-            border: 1px solid var(--grey-2);
-            padding: 10px 16px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-
-            &:hover {
-              border-color: var(--grey-3);
-              color: var(--grey-5);
-            }
-          `}
+          css={css`width: 100%;`}
         >
-          Got it, I'll fix it
-        </button>
+          Got it, I&apos;ll fix it
+        </DsButton>
       </div>
     </div>,
     document.body
   )
 }
 
+function SaveStatusPill({ status, hasChanges }) {
+  // Only two states: persisted ("Saved") or anything else ("Unsaved").
+  // While the save is in flight the change still isn't on disk, so we keep
+  // it labelled Unsaved until status flips to 'saved'.
+  const isSaved = status === 'saved' && !hasChanges
+  const dotColor = isSaved ? 'var(--green)' : '#f59e0b'
+  const label = isSaved ? 'Saved' : 'Unsaved'
+
+  return (
+    <span
+      aria-live="polite"
+      css={css`
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 500;
+        line-height: 1;
+        color: var(--grey-3);
+        user-select: none;
+      `}
+    >
+      <span
+        aria-hidden="true"
+        css={css`
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: ${dotColor};
+          flex-shrink: 0;
+        `}
+      />
+      {label}
+    </span>
+  )
+}
+
 function Editor({ post, onBeforeDelete }) {
+  // Right-side post settings sidebar — chord-style focused writing chrome.
+  // Closed by default so the writing column is uninterrupted; user toggles
+  // with ⌘B or the ⋮ icon in the top bar.
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const toggleSettings = useCallback(() => setSettingsOpen(prev => !prev), [])
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
+
   const [userdata] = useDocumentData(firestore.doc(`users/${post.author}`), {
     idField: 'id',
   })
@@ -907,7 +558,6 @@ function Editor({ post, onBeforeDelete }) {
   const [slugValidating, setSlugValidating] = useState(false)
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
   const [spamPopup, setSpamPopup] = useState({ isOpen: false, reason: '', category: '' })
-  const [mediumImportOpen, setMediumImportOpen] = useState(false)
   const [settingsView, setSettingsView] = useState('settings') // 'settings', 'import', or 'import-articles'
   const [selectedPlatform, setSelectedPlatform] = useState(null)
   const [importUsername, setImportUsername] = useState('')
@@ -1076,12 +726,19 @@ function Editor({ post, onBeforeDelete }) {
         e.preventDefault()
         saveChanges()
       },
+      '$mod+KeyB': e => {
+        e.preventDefault()
+        toggleSettings()
+      },
+      Escape: () => {
+        if (settingsOpen) closeSettings()
+      },
     })
 
     return () => {
       unsubscribe()
     }
-  }, [saveChanges])
+  }, [saveChanges, toggleSettings, closeSettings, settingsOpen])
 
   // Handle fetching articles from selected platform
   const handleFetchArticles = async () => {
@@ -1332,19 +989,10 @@ function Editor({ post, onBeforeDelete }) {
       
       try {
         // Import the function to avoid module issues
-        const { uploadToImgBB } = await import('../../lib/utils')
-        
-        // Get API key from environment variable
-        // This ensures we're not hardcoding sensitive keys in the source code
-        const apiKey = process.env.NEXT_PUBLIC_IMGBB_API
-        
-        if (!apiKey) {
-          alert('ImgBB API key not configured. Please check your environment variables.')
-          return
-        }
-        
-        // Upload image
-        const imageUrl = await uploadToImgBB(file, apiKey)
+        const { uploadToCloudinary } = await import('../../lib/utils')
+
+        // Upload image (signature generated server-side via /api/cloudinary-sign)
+        const imageUrl = await uploadToCloudinary(file)
         
         if (imageUrl) {
           // Insert the image into the editor
@@ -1383,170 +1031,307 @@ function Editor({ post, onBeforeDelete }) {
         />
       </Head>
 
+      {/* Editor top bar — back + title left, save/preview/settings right */}
       <header
         css={css`
+          position: sticky;
+          top: 0;
+          z-index: 10;
           display: flex;
           align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+          height: var(--page-header-height);
+          padding: 0 0.75rem 0 0.75rem;
+          background: var(--muted);
+          border-bottom: 1px dashed var(--border-dashed);
+          font-family: 'Inter', sans-serif;
+        `}
+      >
+        <div css={css`display: flex; align-items: center; gap: 0.4rem; min-width: 0;`}>
+          <LinkIconButton href="/dashboard" aria-label="Back to dashboard">
+            <ArrowLeftIcon />
+          </LinkIconButton>
+          <h2 css={css`
+            font-size: 0.825rem;
+            font-weight: 500;
+            color: var(--grey-5);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: -0.005em;
+          `}>
+            {clientPost.title ? clientPost.title.replace(/<[^>]+>/g, '').trim() || 'Untitled' : 'Untitled'}
+          </h2>
+        </div>
+        <div css={css`display: flex; align-items: center; gap: 0.75rem;`}>
+          <SaveStatusPill status={saveStatus} hasChanges={hasChanges()} />
+          <IconButton
+            onClick={toggleSettings}
+            aria-pressed={settingsOpen}
+            aria-label="Toggle post settings (⌘B)"
+            title="Toggle post settings (⌘B)"
+            css={settingsOpen ? css`
+              background: var(--accent-soft);
+              color: var(--accent-foreground);
+              border-color: var(--accent-border);
+            ` : null}
+          >
+            <DotsVerticalIcon />
+          </IconButton>
+        </div>
+      </header>
 
-          button:first-of-type {
-            margin-left: auto;
+      {/* Post settings sidebar — chord-style right panel, ⌘B to toggle */}
+      <aside
+        data-open={settingsOpen ? 'true' : 'false'}
+        aria-hidden={!settingsOpen}
+        css={css`
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          width: 22rem;
+          background: var(--grey-1);
+          border-left: 1px dashed var(--border-dashed);
+          display: flex;
+          flex-direction: column;
+          z-index: 40;
+          transform: translateX(100%);
+          transition: transform 240ms cubic-bezier(0.32, 0.72, 0, 1);
+          font-family: 'Inter', sans-serif;
+
+          &[data-open='true'] {
+            transform: translateX(0);
+            box-shadow: var(--chord-shadow-md), -8px 0 24px rgba(0, 0, 0, 0.06);
           }
 
-          button:last-child {
-            margin-left: 1rem;
+          @media (max-width: 720px) {
+            width: 100vw;
           }
         `}
       >
-        <LinkIconButton href="/dashboard">
-          <ArrowLeftIcon />
-        </LinkIconButton>
-
-        {/* Auto-save status indicator */}
-        <span
+        <header
           css={css`
-            margin-left: auto;
-            margin-right: 1rem;
-            font-size: 0.8rem;
-            color: var(--grey-3);
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            justify-content: space-between;
+            gap: 0.5rem;
+            height: var(--page-header-height);
+            padding: 0 0.5rem 0 1rem;
+            background: var(--muted);
+            border-bottom: 1px dashed var(--border-dashed);
+            flex-shrink: 0;
           `}
         >
-          {saveStatus === 'saving' && (
-            <>
-              <span css={css`
-                width: 8px;
-                height: 8px;
-                border: 1.5px solid var(--grey-3);
-                border-bottom-color: transparent;
-                border-radius: 50%;
-                display: inline-block;
-                animation: spin 0.8s linear infinite;
-                @keyframes spin {
-                  to { transform: rotate(360deg); }
-                }
-              `} />
-              Saving...
-            </>
-          )}
-          {saveStatus === 'saved' && !hasChanges() && (
-            <>
-              <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M11.4669 3.72684C11.7558 3.91574 11.8369 4.30308 11.648 4.59198L7.39799 11.092C7.29783 11.2452 7.13556 11.3467 6.95402 11.3699C6.77247 11.3931 6.58989 11.3355 6.45446 11.2124L3.70446 8.71241C3.44905 8.48022 3.43023 8.08494 3.66242 7.82953C3.89461 7.57412 4.28989 7.55529 4.5453 7.78749L6.75292 9.79441L10.6018 3.90792C10.7907 3.61902 11.178 3.53795 11.4669 3.72684Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd" />
-              </svg>
-              Saved
-            </>
-          )}
-          {saveStatus === 'unsaved' && hasChanges() && (
-            <>
-              <span css={css`
-                width: 6px;
-                height: 6px;
-                background: #f59e0b;
-                border-radius: 50%;
-                display: inline-block;
-              `} />
-              Unsaved
-            </>
-          )}
-        </span>
+          <h3 css={css`
+            font-family: 'Inter', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--grey-3);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin: 0;
+          `}>
+            Post Settings
+          </h3>
+          <IconButton onClick={closeSettings} aria-label="Close (⌘B)">
+            <Cross2Icon />
+          </IconButton>
+        </header>
+        <div
+          data-lenis-prevent
+          css={css`
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem 1rem 2.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
 
-        <PreviewModal post={clientPost} userdata={userdata} />
-
-        <Dialog.Root>
-          <Dialog.Trigger as={IconButton}>
-            <DotsVerticalIcon />
-          </Dialog.Trigger>
-
-          <ModalOverlay />
-
-          <Dialog.Content
-            css={css`
-              background: var(--grey-1);
-              border-radius: 0.5rem;
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              min-width: 320px;
-              max-width: 420px;
-              overflow: hidden;
-              z-index: 100;
-              max-height: 85vh;
-              display: flex;
-              flex-direction: column;
-            `}
-          >
-            {/* Scrollable content wrapper */}
-            <div
-              data-lenis-prevent
-              css={css`
-                flex: 1;
-                overflow-y: auto;
-                padding: 1.5rem;
-
-                /* Sleek pill scrollbar */
-                &::-webkit-scrollbar {
-                  width: 6px;
-                }
-                &::-webkit-scrollbar-track {
-                  background: transparent;
-                }
-                &::-webkit-scrollbar-thumb {
-                  background: var(--grey-2);
-                  border-radius: 3px;
-                  opacity: 0;
-                  transition: opacity 0.2s ease, background 0.2s ease;
-                }
-                &:hover::-webkit-scrollbar-thumb,
-                &::-webkit-scrollbar-thumb:active {
-                  background: var(--grey-3);
-                }
-
-                /* Firefox */
-                scrollbar-width: thin;
-                scrollbar-color: var(--grey-2) transparent;
-              `}
-            >
+            &::-webkit-scrollbar { width: 6px; }
+            &::-webkit-scrollbar-track { background: transparent; }
+            &::-webkit-scrollbar-thumb {
+              background: var(--grey-2);
+              border-radius: 3px;
+            }
+            scrollbar-width: thin;
+            scrollbar-color: var(--grey-2) transparent;
+          `}
+        >
             {/* Settings View */}
             {settingsView === 'settings' && (
-            <div>
-            <Dialog.Title>Post Settings</Dialog.Title>
-            <Dialog.Description
-              css={css`
-                margin: 1rem 0 0.5rem 0;
-                max-width: 20rem;
-                color: var(--grey-3);
-                font-size: 0.9rem;
-              `}
-            >
-              Make changes to your post&apos;s metadata.
-            </Dialog.Description>
+            <div css={css`display: flex; flex-direction: column; gap: 1.5rem;`}>
 
-            {/* SEO Analyzer - helps users optimize for search engines and AI */}
-            <div css={css`margin: 1.5rem 0;`}>
+            {/* Visibility — chord-style tray with DsSwitch for publish toggle */}
+            <section css={css`display: flex; flex-direction: column; gap: 0.5rem;`}>
+              <h4 css={css`
+                font-family: 'Inter', sans-serif;
+                font-size: 0.625rem;
+                font-weight: 500;
+                color: var(--grey-3);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin: 0;
+                padding: 0 0.25rem;
+              `}>
+                Visibility
+              </h4>
+              <DsTray>
+                <DsTile css={css`display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;`}>
+                  <div css={css`min-width: 0;`}>
+                    <p css={css`font-size: 0.85rem; font-weight: 500; color: var(--grey-5); margin: 0;`}>
+                      Published
+                    </p>
+                    <p css={css`font-size: 0.72rem; color: var(--grey-3); margin: 0.15rem 0 0 0; line-height: 1.4;`}>
+                      {post.published
+                        ? 'Live and discoverable to readers'
+                        : 'Hidden — saved as a private draft'}
+                    </p>
+                  </div>
+                  <DsSwitch
+                    checked={!!post.published}
+                    onChange={async () => {
+                      const willPublish = !post.published
+                      try {
+                        const response = await fetch('/api/posts/publish', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ postId: post.id, publish: willPublish }),
+                        })
+                        const result = await response.json()
+                        if (result.moderated && !result.published) {
+                          setSpamPopup({
+                            isOpen: true,
+                            reason: result.reason,
+                            category: result.category,
+                          })
+                        }
+                      } catch (error) {
+                        console.error('Publish error:', error)
+                        await firestore.collection('posts').doc(post.id).update({ published: willPublish })
+                      }
+                    }}
+                  />
+                </DsTile>
+                {/* Preview tile — same shape as Published, links to /dashboard/[pid]/preview */}
+                <DsTile
+                  as="a"
+                  href={`/dashboard/${post.id}/preview`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  hoverable
+                  css={css`
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 0.75rem;
+                    text-decoration: none;
+                    color: inherit;
+                  `}
+                >
+                  <div css={css`min-width: 0;`}>
+                    <p css={css`font-size: 0.85rem; font-weight: 500; color: var(--grey-5); margin: 0;`}>
+                      Preview
+                    </p>
+                    <p css={css`font-size: 0.72rem; color: var(--grey-3); margin: 0.15rem 0 0 0; line-height: 1.4;`}>
+                      See your post as readers will
+                    </p>
+                  </div>
+                  <span
+                    css={css`
+                      flex-shrink: 0;
+                      display: inline-flex;
+                      align-items: center;
+                      justify-content: center;
+                      width: 1.75rem;
+                      height: 1rem;
+                      color: var(--grey-3);
+                    `}
+                  >
+                    <ExternalLinkIcon width={14} height={14} />
+                  </span>
+                </DsTile>
+                {post.published && userdata && (
+                  <DsTile>
+                    <p css={css`
+                      font-family: 'Inter', sans-serif;
+                      font-size: 0.625rem;
+                      font-weight: 500;
+                      color: var(--grey-3);
+                      text-transform: uppercase;
+                      letter-spacing: 0.1em;
+                      margin: 0 0 0.35rem 0;
+                    `}>
+                      Live URL
+                    </p>
+                    <a
+                      target="_blank"
+                      rel="noreferrer"
+                      href={`/${userdata.name}/${post.slug}`}
+                      css={css`
+                        display: block;
+                        font-size: 0.8rem;
+                        color: var(--grey-4);
+                        text-decoration: none;
+                        word-break: break-all;
+                        border-bottom: 1px dotted var(--grey-3);
+                        padding-bottom: 1px;
+                        width: fit-content;
+                        max-width: 100%;
+
+                        &:hover {
+                          color: var(--accent-foreground);
+                          border-bottom-color: var(--accent-border);
+                        }
+                      `}
+                    >
+                      bublr.life/{userdata.name}/{post.slug}
+                    </a>
+                  </DsTile>
+                )}
+              </DsTray>
+            </section>
+
+            {/* SEO Analyzer — collapsible insight into search-engine readiness */}
+            <section css={css`display: flex; flex-direction: column; gap: 0.5rem;`}>
+              <h4 css={css`
+                font-family: 'Inter', sans-serif;
+                font-size: 0.625rem;
+                font-weight: 500;
+                color: var(--grey-3);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin: 0;
+                padding: 0 0.25rem;
+              `}>
+                SEO
+              </h4>
               <SEOAnalyzer
                 title={clientPost.title}
                 content={clientPost.content}
                 excerpt={clientPost.excerpt}
               />
-            </div>
+            </section>
 
-            <div
-              css={css`
-                margin: 1.5rem 0;
-              `}
-            >
-              <label
-                htmlFor="post-slug"
-                css={css`
-                  display: block;
-                  margin-bottom: 0.5rem;
-                `}
-              >
-                Slug
-              </label>
+            {/* Metadata — slug, dot color, text direction */}
+            <section css={css`display: flex; flex-direction: column; gap: 1rem;`}>
+              <h4 css={css`
+                font-family: 'Inter', sans-serif;
+                font-size: 0.625rem;
+                font-weight: 500;
+                color: var(--grey-3);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin: 0;
+                padding: 0 0.25rem;
+              `}>
+                Metadata
+              </h4>
+
+            <DsField css={css`margin: 0;`}>
+              <DsLabel htmlFor="post-slug">Slug</DsLabel>
               <div
                 css={css`
                   position: relative;
@@ -1566,23 +1351,29 @@ function Editor({ post, onBeforeDelete }) {
                   css={css`
                     display: block;
                     width: 100%;
-                    padding: 0.75em 1em;
-                    padding-right: ${slugValidating ? '5.5rem' : '1em'};
-                    background: none;
-                    border: 1px solid ${slugErr ? '#e55050' : 'var(--grey-2)'};
+                    padding: 0.55rem 0.75rem;
+                    padding-right: ${slugValidating ? '5.5rem' : '0.75rem'};
+                    background: var(--grey-1);
+                    border: 1px solid ${slugErr ? '#e55050' : 'var(--border)'};
                     outline: none;
-                    border-radius: 0.5rem;
+                    border-radius: 6px;
                     color: var(--grey-4);
-                    font-size: inherit;
-                    font-family: inherit;
-                    transition: border-color 0.2s ease;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 0.875rem;
+                    line-height: 1.4;
+                    transition: border-color 150ms ease, box-shadow 150ms ease;
 
                     &::placeholder {
                       color: var(--grey-3);
                     }
 
-                    &:focus {
+                    &:hover:not(:focus) {
                       border-color: ${slugErr ? '#e55050' : 'var(--grey-3)'};
+                    }
+
+                    &:focus {
+                      border-color: ${slugErr ? '#e55050' : 'var(--accent-border)'};
+                      box-shadow: 0 0 0 3px ${slugErr ? 'rgba(229,80,80,0.15)' : 'var(--accent-soft)'};
                     }
                   `}
                 />
@@ -1638,21 +1429,10 @@ function Editor({ post, onBeforeDelete }) {
               >
                 Only lowercase letters, numbers, and hyphens allowed.
               </p>
-            </div>
+            </DsField>
 
-            <div
-              css={css`
-                margin: 1.5rem 0;
-              `}
-            >
-              <label
-                css={css`
-                  display: block;
-                  margin-bottom: 0.5rem;
-                `}
-              >
-                Profile Dot Color
-              </label>
+            <DsField css={css`margin: 0;`}>
+              <DsLabel>Profile Dot Color</DsLabel>
               <p
                 css={css`
                   font-size: 0.8rem;
@@ -1685,33 +1465,25 @@ function Editor({ post, onBeforeDelete }) {
                       height: 28px;
                       border-radius: 50%;
                       background-color: ${color};
-                      border: 2px solid ${post.dotColor === color ? 'var(--grey-4)' : 'transparent'};
+                      border: 2px solid ${post.dotColor === color ? 'var(--accent)' : 'transparent'};
+                      outline: 2px solid ${post.dotColor === color ? 'transparent' : 'transparent'};
+                      outline-offset: 1px;
                       cursor: pointer;
-                      transition: all 0.2s ease;
+                      transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+                      box-shadow: ${post.dotColor === color ? '0 0 0 3px var(--accent-soft)' : 'none'};
 
                       &:hover {
-                        transform: scale(1.1);
+                        transform: scale(1.08);
                       }
                     `}
                   />
                 ))}
               </div>
-            </div>
+            </DsField>
 
             {/* Text Direction */}
-            <div
-              css={css`
-                margin: 1.5rem 0;
-              `}
-            >
-              <label
-                css={css`
-                  display: block;
-                  margin-bottom: 0.5rem;
-                `}
-              >
-                Text Direction
-              </label>
+            <DsField css={css`margin: 0;`}>
+              <DsLabel>Text Direction</DsLabel>
               <p
                 css={css`
                   font-size: 0.8rem;
@@ -1724,71 +1496,65 @@ function Editor({ post, onBeforeDelete }) {
               <div
                 css={css`
                   display: flex;
-                  gap: 0.5rem;
+                  gap: 0.4rem;
                 `}
               >
                 {[
                   { value: 'auto', label: 'Auto' },
                   { value: 'ltr', label: 'LTR' },
                   { value: 'rtl', label: 'RTL' },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={async () => {
-                      await firestore
-                        .collection('posts')
-                        .doc(post.id)
-                        .update({ textDirection: value })
-                    }}
-                    css={css`
-                      padding: 0.5rem 1rem;
-                      border-radius: 0.375rem;
-                      font-size: 0.85rem;
-                      cursor: pointer;
-                      transition: all 0.2s ease;
-                      background: ${(post.textDirection || 'auto') === value ? 'var(--grey-4)' : 'transparent'};
-                      color: ${(post.textDirection || 'auto') === value ? 'var(--grey-1)' : 'var(--grey-4)'};
-                      border: 1px solid ${(post.textDirection || 'auto') === value ? 'var(--grey-4)' : 'var(--grey-2)'};
-
-                      &:hover {
-                        border-color: var(--grey-3);
-                      }
-                    `}
-                  >
-                    {label}
-                  </button>
-                ))}
+                ].map(({ value, label }) => {
+                  const isActive = (post.textDirection || 'auto') === value
+                  return (
+                    <DsButton
+                      key={value}
+                      size="sm"
+                      variant={isActive ? 'default' : 'outline'}
+                      onClick={async () => {
+                        await firestore
+                          .collection('posts')
+                          .doc(post.id)
+                          .update({ textDirection: value })
+                      }}
+                      css={css`flex: 1;`}
+                    >
+                      {label}
+                    </DsButton>
+                  )
+                })}
               </div>
-            </div>
+            </DsField>
+            </section>
 
-            {/* Typography Override */}
-            <div
-              css={css`
-                margin: 1.5rem 0;
-              `}
-            >
-              <label
-                css={css`
-                  display: block;
-                  margin-bottom: 0.5rem;
-                `}
-              >
+            {/* Typography — chord-style section with mono uppercase header */}
+            <section css={css`display: flex; flex-direction: column; gap: 0.5rem;`}>
+              <h4 css={css`
+                font-family: 'Inter', sans-serif;
+                font-size: 0.625rem;
+                font-weight: 500;
+                color: var(--grey-3);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin: 0;
+                padding: 0 0.25rem;
+              `}>
                 Typography
-              </label>
+              </h4>
               <p
                 css={css`
-                  font-size: 0.8rem;
+                  font-size: 0.72rem;
                   color: var(--grey-3);
-                  margin-bottom: 0.75rem;
+                  margin: 0 0 0.25rem 0;
+                  padding: 0 0.25rem;
+                  line-height: 1.4;
                 `}
               >
-                Override your blog's default fonts for this post only.
+                Override your blog&apos;s default fonts for this post only.
               </p>
 
               <div css={css`display: grid; gap: 0.75rem;`}>
                 <div>
-                  <label css={css`font-size: 0.75rem; color: var(--grey-3); display: block; margin-bottom: 0.25rem;`}>
+                  <label css={css`font-size: 0.72rem; font-weight: 500; color: var(--grey-3); text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.3rem;`}>
                     Heading Font
                   </label>
                   <FontPicker
@@ -1808,7 +1574,7 @@ function Editor({ post, onBeforeDelete }) {
                 </div>
 
                 <div>
-                  <label css={css`font-size: 0.75rem; color: var(--grey-3); display: block; margin-bottom: 0.25rem;`}>
+                  <label css={css`font-size: 0.72rem; font-weight: 500; color: var(--grey-3); text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.3rem;`}>
                     Body Font
                   </label>
                   <FontPicker
@@ -1828,7 +1594,7 @@ function Editor({ post, onBeforeDelete }) {
                 </div>
 
                 <div>
-                  <label css={css`font-size: 0.75rem; color: var(--grey-3); display: block; margin-bottom: 0.25rem;`}>
+                  <label css={css`font-size: 0.72rem; font-weight: 500; color: var(--grey-3); text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.3rem;`}>
                     Code Font
                   </label>
                   <FontPicker
@@ -1847,129 +1613,75 @@ function Editor({ post, onBeforeDelete }) {
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Import Article Button */}
-            <Button
-              outline
-              onClick={() => {
-                setSettingsView('import')
-                setImportUsername('')
-                setImportArticles([])
-                setImportError('')
-                setSelectedArticle(null)
-              }}
-              css={css`
-                width: 100%;
-                margin-bottom: 1rem;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
-
-                svg {
-                  width: 15px;
-                  height: 15px;
-                }
-              `}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              Import Article
-            </Button>
-
-            <div
-              css={css`
-                display: flex;
-                gap: 1rem;
-                width: 100%;
-
-                button {
-                  font-size: 0.9rem;
-                }
-              `}
-            >
-              <Button
-                onClick={async () => {
-                  const willPublish = !post.published
-
-                  try {
-                    const response = await fetch('/api/posts/publish', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        postId: post.id,
-                        publish: willPublish,
-                      }),
-                    })
-
-                    const result = await response.json()
-
-                    if (result.moderated && !result.published) {
-                      // Content was flagged by moderation - show custom popup
-                      setSpamPopup({
-                        isOpen: true,
-                        reason: result.reason,
-                        category: result.category,
-                      })
-                    }
-                  } catch (error) {
-                    console.error('Publish error:', error)
-                    // Fallback to direct update if API fails
-                    await firestore
-                      .collection('posts')
-                      .doc(post.id)
-                      .update({ published: willPublish })
-                  }
+            {/* Tools — Import Article action */}
+            <section css={css`display: flex; flex-direction: column; gap: 0.5rem;`}>
+              <h4 css={css`
+                font-family: 'Inter', sans-serif;
+                font-size: 0.625rem;
+                font-weight: 500;
+                color: var(--grey-3);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin: 0;
+                padding: 0 0.25rem;
+              `}>
+                Tools
+              </h4>
+              <DsButton
+                variant="outline"
+                onClick={() => {
+                  setSettingsView('import')
+                  setImportUsername('')
+                  setImportArticles([])
+                  setImportError('')
+                  setSelectedArticle(null)
                 }}
-                css={css`flex: 1;`}
+                css={css`
+                  width: 100%;
+
+                  svg {
+                    width: 14px;
+                    height: 14px;
+                  }
+                `}
               >
-                {post.published ? 'Make Draft' : 'Publish'}
-              </Button>
-              <Button
-                outline
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Import Article
+              </DsButton>
+            </section>
+
+            {/* Danger Zone — destructive actions live alone at the bottom */}
+            <section css={css`display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;`}>
+              <h4 css={css`
+                font-family: 'Inter', sans-serif;
+                font-size: 0.625rem;
+                font-weight: 500;
+                color: #e5484d;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin: 0;
+                padding: 0 0.25rem;
+              `}>
+                Danger Zone
+              </h4>
+              <DsButton
+                variant="destructive"
                 onClick={async () => {
                   onBeforeDelete?.()
                   await removePostForUser(post.author, post.id)
                   router.push('/dashboard')
                 }}
-                css={css`flex: 1;`}
+                css={css`width: 100%;`}
               >
-                Delete
-              </Button>
-            </div>
-
-            {post.published && userdata ? (
-              <p
-                css={css`
-                  margin: 1.5rem 0 0 0;
-                  font-size: 0.9rem;
-                  max-width: 15rem;
-                  word-wrap: break-word;
-
-                  a {
-                    text-decoration: none;
-                    color: inherit;
-                    font-style: italic;
-                    border-bottom: 1px dotted var(--grey-3);
-                  }
-                `}
-              >
-                See your post live at:{' '}
-                <a
-                  target="_blank"
-                  rel="noreferrer"
-                  href={`/${userdata.name}/${post.slug}`}
-                >
-                  bublr.life/{userdata.name}/{post.slug}
-                </a>
-              </p>
-            ) : (
-              ''
-            )}
+                Delete Post
+              </DsButton>
+            </section>
             </div>
             )}
 
@@ -1993,12 +1705,24 @@ function Editor({ post, onBeforeDelete }) {
                 >
                   <ArrowLeftIcon />
                 </IconButton>
-                <Dialog.Title css={css`margin: 0;`}>Import Article</Dialog.Title>
+                <h3
+                  css={css`
+                    margin: 0;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 0.72rem;
+                    font-weight: 500;
+                    color: var(--grey-3);
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                  `}
+                >
+                  Import Article
+                </h3>
               </div>
 
               <p
                 css={css`
-                  color: var(--grey-3);
+                  color: var(--grey-4);
                   font-size: 0.85rem;
                   margin-bottom: 1.25rem;
                   line-height: 1.5;
@@ -2007,35 +1731,27 @@ function Editor({ post, onBeforeDelete }) {
                 Choose a platform to import your content from. We&apos;ll fetch your public posts.
               </p>
 
-              {/* Platform grid */}
-              <div
+              {/* Platform grid — chord-style tray of selectable tiles */}
+              <DsTray
                 css={css`
                   display: grid;
                   grid-template-columns: repeat(2, 1fr);
-                  gap: 0.5rem;
                   margin-bottom: 1rem;
                 `}
               >
                 {IMPORT_PLATFORMS.map((platform) => (
-                  <button
+                  <DsTile
                     key={platform.id}
+                    as="button"
+                    hoverable
                     onClick={() => handleSelectPlatform(platform)}
                     css={css`
                       display: flex;
                       align-items: center;
                       gap: 0.6rem;
-                      padding: 0.75rem 1rem;
-                      border: 1px solid var(--grey-2);
-                      border-radius: 0.33em;
-                      background: transparent;
-                      cursor: pointer;
-                      transition: all 0.2s ease;
+                      padding: 0.55rem 0.7rem;
                       text-align: left;
-
-                      &:hover {
-                        border-color: var(--grey-3);
-                        background: var(--grey-2);
-                      }
+                      font-family: 'Inter', sans-serif;
                     `}
                   >
                     <span
@@ -2060,9 +1776,9 @@ function Editor({ post, onBeforeDelete }) {
                     >
                       {platform.name}
                     </span>
-                  </button>
+                  </DsTile>
                 ))}
-              </div>
+              </DsTray>
 
               <p
                 css={css`
@@ -2115,15 +1831,25 @@ function Editor({ post, onBeforeDelete }) {
                       {PlatformIcons[selectedPlatform.id]}
                     </span>
                   )}
-                  <Dialog.Title css={css`margin: 0;`}>
+                  <h3
+                    css={css`
+                      margin: 0;
+                      font-family: 'Inter', sans-serif;
+                      font-size: 0.72rem;
+                      font-weight: 500;
+                      color: var(--grey-3);
+                      text-transform: uppercase;
+                      letter-spacing: 0.08em;
+                    `}
+                  >
                     Import from {selectedPlatform?.name || 'Platform'}
-                  </Dialog.Title>
+                  </h3>
                 </div>
               </div>
 
               <p
                 css={css`
-                  color: var(--grey-3);
+                  color: var(--grey-4);
                   font-size: 0.85rem;
                   margin-bottom: 1.25rem;
                   line-height: 1.5;
@@ -2136,11 +1862,11 @@ function Editor({ post, onBeforeDelete }) {
               <div
                 css={css`
                   display: flex;
-                  gap: 8px;
+                  gap: 0.5rem;
                   margin-bottom: 1rem;
                 `}
               >
-                <input
+                <DsInput
                   type="text"
                   value={importUsername}
                   onChange={(e) => setImportUsername(e.target.value)}
@@ -2151,33 +1877,15 @@ function Editor({ post, onBeforeDelete }) {
                     }
                   }}
                   placeholder={selectedPlatform?.placeholder || 'username'}
-                  css={css`
-                    flex: 1;
-                    padding: 0.6rem 1rem;
-                    border: 1px solid var(--grey-2);
-                    border-radius: 0.33em;
-                    background: none;
-                    color: var(--grey-4);
-                    font-size: 0.9rem;
-                    outline: none;
-                    transition: border-color 0.2s ease;
-
-                    &:focus {
-                      border-color: var(--grey-3);
-                    }
-
-                    &::placeholder {
-                      color: var(--grey-3);
-                    }
-                  `}
+                  css={css`flex: 1;`}
                 />
-                <Button
+                <DsButton
+                  variant="default"
                   onClick={handleFetchArticles}
                   disabled={importLoading}
-                  css={css`font-size: 0.85rem;`}
                 >
                   {importLoading ? 'Loading...' : 'Fetch'}
-                </Button>
+                </DsButton>
               </div>
 
               {/* Error message */}
@@ -2214,127 +1922,140 @@ function Editor({ post, onBeforeDelete }) {
                   >
                     Select an article to import:
                   </p>
-                  <div
+                  <DsTray
                     css={css`
-                      display: flex;
-                      flex-direction: column;
-                      gap: 0.5rem;
-                      max-height: 180px;
+                      max-height: 220px;
                       overflow-y: auto;
-
-                      &::-webkit-scrollbar {
-                        width: 4px;
-                      }
-                      &::-webkit-scrollbar-thumb {
-                        background: var(--grey-2);
-                        border-radius: 2px;
-                      }
                     `}
                   >
-                    {importArticles.map((article, index) => (
-                      <button
-                        key={article.guid || index}
-                        onClick={() => setSelectedArticle(article)}
-                        css={css`
-                          text-align: left;
-                          padding: 0.6rem 1rem;
-                          border: 1px solid ${selectedArticle === article ? 'var(--grey-4)' : 'var(--grey-2)'};
-                          border-radius: 0.33em;
-                          background: ${selectedArticle === article ? 'var(--grey-2)' : 'transparent'};
-                          cursor: pointer;
-                          transition: all 0.2s ease;
-
-                          &:hover {
-                            border-color: var(--grey-3);
-                          }
-                        `}
-                      >
-                        <p
+                    {importArticles.map((article, index) => {
+                      const isSelected = selectedArticle === article
+                      return (
+                        <DsTile
+                          key={article.guid || index}
+                          as="button"
+                          hoverable
+                          onClick={() => setSelectedArticle(article)}
                           css={css`
-                            font-size: 0.85rem;
-                            color: var(--grey-5);
-                            margin: 0 0 4px 0;
-                            font-weight: 500;
+                            text-align: left;
+                            padding: 0.55rem 0.7rem;
+                            ${isSelected && `
+                              border-color: var(--accent-border);
+                              background: var(--accent-soft);
+                              box-shadow: 0 0 0 3px var(--accent-soft);
+                            `}
                           `}
                         >
-                          {article.title}
-                        </p>
-                        <p
-                          css={css`
-                            font-size: 0.75rem;
-                            color: var(--grey-3);
-                            margin: 0;
-                          `}
-                        >
-                          {new Date(article.pubDate).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
+                          <p
+                            css={css`
+                              font-size: 0.85rem;
+                              color: var(--grey-5);
+                              margin: 0 0 0.2rem 0;
+                              font-weight: 500;
+                            `}
+                          >
+                            {article.title}
+                          </p>
+                          <p
+                            css={css`
+                              font-size: 0.72rem;
+                              color: var(--grey-3);
+                              margin: 0;
+                              text-transform: uppercase;
+                              letter-spacing: 0.04em;
+                            `}
+                          >
+                            {new Date(article.pubDate).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </p>
+                        </DsTile>
+                      )
+                    })}
+                  </DsTray>
                 </div>
               )}
 
               {/* Import button */}
               {selectedArticle && (
-                <Button
+                <DsButton
+                  variant="default"
                   onClick={handleImportArticle}
                   disabled={importing}
-                  css={css`width: 100%; font-size: 0.9rem;`}
+                  css={css`width: 100%;`}
                 >
                   {importing ? 'Importing...' : 'Import Selected Article'}
-                </Button>
+                </DsButton>
               )}
             </div>
             )}
-            </div>
-            {/* End scrollable content wrapper */}
+        </div>
+      </aside>
 
-            <Dialog.Close
-              as={IconButton}
-              onClick={() => {
-                setSettingsView('settings')
-                setSelectedPlatform(null)
-                setImportUsername('')
-                setImportArticles([])
-                setImportError('')
-                setSelectedArticle(null)
-              }}
-              css={css`
-                position: absolute;
-                top: 1rem;
-                right: 1rem;
-              `}
-            >
-              <Cross2Icon />
-            </Dialog.Close>
-          </Dialog.Content>
-        </Dialog.Root>
-      </header>
+      {/* Tap-to-close backdrop, only when sidebar is open */}
+      {settingsOpen && (
+        <div
+          onClick={closeSettings}
+          aria-hidden="true"
+          css={css`
+            position: fixed;
+            inset: 0;
+            background: transparent;
+            z-index: 35;
 
+            @media (max-width: 720px) {
+              background: rgba(0, 0, 0, 0.32);
+            }
+          `}
+        />
+      )}
+
+      <div
+        data-settings-open={settingsOpen ? 'true' : 'false'}
+        css={css`
+          max-width: 720px;
+          margin: 0 auto;
+          padding: 2rem 1.5rem 5rem 1.5rem;
+          transition: margin 240ms cubic-bezier(0.32, 0.72, 0, 1);
+
+          @media (max-width: 720px) {
+            padding: 1.25rem 1rem 3rem 1rem;
+          }
+
+          /* When sidebar opens on wide enough screens, slide writing column
+             left so the sidebar doesn't crop it. Below ~1024px the sidebar
+             overlays instead (handled by its own fixed position). */
+          @media (min-width: 1080px) {
+            &[data-settings-open='true'] {
+              margin-right: 22rem;
+            }
+          }
+        `}
+      >
       <div
         css={css`
           display: flex;
           align-items: center;
-          gap: 1rem;
-          margin-top: 5rem;
-          margin-bottom: 2.5rem;
+          gap: 0.5rem;
+          margin-top: 0.5rem;
+          margin-bottom: 2.25rem;
         `}
       >
-        <Button
-          outline
-          css={css`
-            font-size: 0.9rem;
-          `}
+        <DsButton
+          variant="outline"
           onClick={() => {
             addImage()
           }}
         >
-          + Image
-        </Button>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          Image
+        </DsButton>
 
         <VoiceInput
           onTranscript={(text) => {
@@ -2350,8 +2071,21 @@ function Editor({ post, onBeforeDelete }) {
 
       <div
         css={css`
-          font-size: 1.5rem;
+          font-family: 'Inter', sans-serif;
+          font-size: 1.85rem;
           font-weight: 500;
+          line-height: 1.2;
+          color: var(--grey-5);
+          letter-spacing: -0.015em;
+
+          .ProseMirror {
+            outline: none;
+          }
+
+          .ProseMirror p.is-editor-empty:first-of-type::before {
+            color: var(--grey-3);
+            opacity: 0.8;
+          }
         `}
       >
         <EditorContent editor={titleEditor} />
@@ -2359,10 +2093,23 @@ function Editor({ post, onBeforeDelete }) {
 
       <div
         css={css`
-          margin: 1.5rem 0;
-          font-size: 1.15rem;
-          font-weight: 500;
-          color: var(--grey-4);
+          margin: 1rem 0 1.5rem 0;
+          padding-bottom: 1.25rem;
+          border-bottom: 1px dashed var(--border-dashed);
+          font-family: 'Inter', sans-serif;
+          font-size: 1rem;
+          font-weight: 400;
+          line-height: 1.5;
+          color: var(--grey-3);
+
+          .ProseMirror {
+            outline: none;
+          }
+
+          .ProseMirror p.is-editor-empty:first-of-type::before {
+            color: var(--grey-3);
+            opacity: 0.7;
+          }
         `}
       >
         <EditorContent editor={excerptEditor} />
@@ -2391,44 +2138,45 @@ function Editor({ post, onBeforeDelete }) {
           }
           
           .tiptap-link {
-            color: #3182ce;
+            color: var(--accent-foreground);
             text-decoration: none;
-            border-bottom: 1px solid rgba(49, 130, 206, 0.3);
-            transition: border-bottom 0.2s ease;
+            border-bottom: 1px solid var(--accent-border);
+            transition: border-color 150ms ease, background 150ms ease;
+            padding-bottom: 0.05em;
           }
-          
+
           .tiptap-link:hover {
-            border-bottom: 1px solid rgba(49, 130, 206, 0.8);
+            border-bottom-color: var(--accent-foreground);
+            background: var(--accent-soft);
           }
-          
+
           pre {
-            background-color: #2d2d2d;
-            border-radius: 0.5rem;
-            color: #fff;
+            background: var(--muted);
+            border: 1px dashed var(--border-dashed);
+            border-radius: 6px;
+            color: var(--grey-4);
             font-family: 'JetBrains Mono', monospace;
-            padding: 0.75rem 1rem;
+            padding: 0.85rem 1rem;
             overflow-x: auto;
+            margin: 1.25rem 0;
           }
-          
+
           pre code {
             color: inherit;
             padding: 0;
             background: none;
-            font-size: 0.9em;
-          }
-          
-          code {
-            background-color: rgba(0, 0, 0, 0.05);
-            border-radius: 0.25rem;
-            color: #24292e;
-            font-family: 'JetBrains Mono', monospace;
+            border: none;
             font-size: 0.85em;
-            padding: 0.2em 0.4em;
           }
 
-          html[data-theme='dark'] code {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #e1e1e1;
+          code {
+            background: var(--accent-soft);
+            border: 1px solid var(--accent-border);
+            border-radius: 4px;
+            color: var(--accent-foreground);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            padding: 0.1em 0.35em;
           }
 
           /* Task List Styles */
@@ -2471,15 +2219,15 @@ function Editor({ post, onBeforeDelete }) {
           }
 
           ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
-            background: var(--grey-5);
-            border-color: var(--grey-5);
+            background: var(--green);
+            border-color: var(--green);
           }
 
           ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
             content: '';
             width: 5px;
             height: 9px;
-            border: 2px solid var(--grey-1);
+            border: 2px solid #ffffff;
             border-top: none;
             border-left: none;
             transform: rotate(45deg);
@@ -2505,30 +2253,31 @@ function Editor({ post, onBeforeDelete }) {
           /* Highlight Styles */
           mark,
           .tiptap-highlight {
-            background-color: #fef08a;
-            border-radius: 2px;
-            padding: 0.1em 0.2em;
+            background: rgba(245, 158, 11, 0.2);
+            border-radius: 3px;
+            padding: 0.05em 0.25em;
+            color: inherit;
           }
 
-          html[data-theme='dark'] mark,
-          html[data-theme='dark'] .tiptap-highlight {
-            background-color: #854d0e;
-            color: #fef9c3;
+          [data-theme='dark'] mark,
+          [data-theme='dark'] .tiptap-highlight {
+            background: rgba(251, 191, 36, 0.22);
+            color: inherit;
           }
 
           /* Horizontal Rule Styles */
           hr,
           .tiptap-hr {
             border: none;
-            border-top: 2px solid var(--grey-2);
-            margin: 2rem 0;
+            border-top: 1px dashed var(--border-dashed);
+            margin: 2.25rem 0;
             cursor: pointer;
             transition: border-color 0.2s ease;
           }
 
           hr.ProseMirror-selectednode,
           .tiptap-hr.ProseMirror-selectednode {
-            border-top-color: var(--grey-4);
+            border-top-color: var(--accent-border);
           }
 
           /* Callout/Pop-up Styles */
@@ -2541,6 +2290,7 @@ function Editor({ post, onBeforeDelete }) {
         {contentEditor && <EditorFloatingMenu editor={contentEditor} />}
         <EditorContent editor={contentEditor} />
       </PostContainer>
+      </div>{/* end editor body column */}
 
       {/* Spam detection popup */}
       <SpamPopup
@@ -2548,23 +2298,6 @@ function Editor({ post, onBeforeDelete }) {
         onClose={() => setSpamPopup({ isOpen: false, reason: '', category: '' })}
         reason={spamPopup.reason}
         category={spamPopup.category}
-      />
-
-      {/* Medium import popup */}
-      <MediumImportPopup
-        isOpen={mediumImportOpen}
-        onClose={() => setMediumImportOpen(false)}
-        onImport={({ title, content }) => {
-          // Update the editors with imported content
-          if (titleEditor && title) {
-            titleEditor.commands.setContent(title)
-            setClientPost(prev => ({ ...prev, title }))
-          }
-          if (contentEditor && content) {
-            contentEditor.commands.setContent(content)
-            setClientPost(prev => ({ ...prev, content }))
-          }
-        }}
       />
     </>
   )
@@ -2620,14 +2353,7 @@ export default function PostEditor() {
 }
 
 PostEditor.getLayout = function PostEditorLayout(page) {
-  return (
-    <Container
-      maxWidth="640px"
-      css={css`
-        margin-top: 5rem;
-      `}
-    >
-      {page}
-    </Container>
-  )
+  // Editor owns its own layout — focused writing chrome (top bar + writing
+  // column + right settings sidebar toggled by ⌘B), no left dashboard sidebar.
+  return page
 }

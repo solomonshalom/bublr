@@ -15,11 +15,13 @@ const fadeIn = keyframes`
 const ModalOverlay = props => (
   <Overlay
     css={css`
-      background: rgba(0, 0, 0, 0.2);
-      backdrop-filter: blur(0.5rem);
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
       position: fixed;
       inset: 0;
-      animation: ${fadeIn} 100ms ease-out;
+      animation: ${fadeIn} 160ms cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 99;
     `}
     {...props}
   />

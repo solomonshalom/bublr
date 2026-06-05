@@ -3,16 +3,34 @@ import { css } from '@emotion/react'
 
 const inputStyles = css`
   display: block;
-  width: 17em;
-  padding: 0.75em 1.5em;
-  background: none;
-  border: 1px solid var(--grey-2);
-  outline: none;
-  border-radius: 0.5rem;
-
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.4;
   color: var(--grey-4);
+  background: var(--grey-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.55rem 0.75rem;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+
   &::placeholder {
     color: var(--grey-3);
+  }
+
+  &:hover:not(:focus):not(:disabled) {
+    border-color: var(--grey-3);
+  }
+
+  &:focus {
+    border-color: var(--accent-border);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 `
 
@@ -30,9 +48,10 @@ export const Textarea = props => (
     {...props}
     css={css`
       ${inputStyles}
-      min-height: 15em;
+      min-height: 8rem;
       resize: vertical;
-      padding-top: 1em;
+      padding-top: 0.65rem;
+      line-height: 1.55;
     `}
   />
 )

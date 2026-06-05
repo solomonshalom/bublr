@@ -46,6 +46,32 @@ export default async function handler(req, res) {
       socialLinks: userData.socialLinks || {},
       skills: userData.skills || [],
       skillsSectionTitle: userData.skillsSectionTitle || '',
+      workSectionTitle: userData.workSectionTitle || '',
+      educationSectionTitle: userData.educationSectionTitle || '',
+      workStyle: userData.workStyle || 'timeline',
+      educationStyle: userData.educationStyle || 'timeline',
+      workExperience: (userData.workExperience || []).map(e => ({
+        title: e.title || '',
+        organization: e.organization || '',
+        url: e.url || '',
+        avatarSource: e.avatarSource || 'glass',
+        startDate: e.startDate || '',
+        endDate: e.endDate || '',
+        current: e.current || false,
+        location: e.location || '',
+        description: e.description || '',
+      })),
+      education: (userData.education || []).map(e => ({
+        title: e.title || '',
+        organization: e.organization || '',
+        url: e.url || '',
+        avatarSource: e.avatarSource || 'glass',
+        startDate: e.startDate || '',
+        endDate: e.endDate || '',
+        current: e.current || false,
+        location: e.location || '',
+        description: e.description || '',
+      })),
       customSections: (userData.customSections || []).map(s => {
         if (s.type === 'blank') {
           return {

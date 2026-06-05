@@ -1,0 +1,1841 @@
+
+> bublr@0.1.0 dev
+> NODE_OPTIONS='--openssl-legacy-provider' next dev
+
+ready - started server on 0.0.0.0:3001, url: http://localhost:3001
+info  - Loaded env from /Users/solomonlijo/Desktop/bublr/.env.local
+info  - Using webpack 5. Reason: Enabled by default https://nextjs.org/docs/messages/webpack5
+warn  - You have enabled experimental feature(s).
+warn  - Experimental features are not covered by semver, and may cause unexpected or broken application behavior. Use them at your own risk.
+
+event - compiled successfully
+event - build page: /dashboard
+wait  - compiling...
+Browserslist: caniuse-lite is outdated. Please run:
+npx browserslist@latest --update-db
+
+Why you should do it regularly:
+https://github.com/browserslist/browserslist#browsers-data-updating
+event - compiled successfully
+(node:80133) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+event - build page: /explore
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/[pid]
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /404
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/[pid]
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /
+wait  - compiling...
+event - compiled successfully
+event - build page: /signup
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /404
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/[pid]
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /[username]
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /api/cloudinary-sign
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /404
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /explore
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+event - build page: /[username]
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+event - build page: /explore
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/keys/list
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/developer
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/[pid]
+wait  - compiling...
+event - compiled successfully
+event - build page: /
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/developer
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/keys/list
+wait  - compiling...
+event - compiled successfully
+event - build page: /docs
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+error - ./src/components/profile-settings-modal.js:4838:4
+Syntax error: Expected corresponding JSX closing tag for <div>
+
+  4836 |         )}
+  4837 |       </div>
+> 4838 |     </>
+       |     ^
+  4839 |   )
+  4840 | }
+  4841 |
+wait  - compiling...
+error - ./src/components/profile-settings-modal.js:4840:4
+Syntax error: Expected corresponding JSX closing tag for <div>
+
+  4838 |         )}
+  4839 |       </div>
+> 4840 |     </>
+       |     ^
+  4841 |   )
+  4842 | }
+  4843 |
+wait  - compiling...
+error - ./src/components/profile-settings-modal.js:4842:4
+Syntax error: Expected corresponding JSX closing tag for <div>
+
+  4840 |         )}
+  4841 |       </div>
+> 4842 |     </>
+       |     ^
+  4843 |   )
+  4844 | }
+  4845 |
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings/personal
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings/customization
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings/advanced
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings/developer
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/settings/customization
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/settings/personal
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/settings/developer
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/keys/list
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /api/keys/list
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings/personal
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings/customization
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings/personal
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/settings/customization
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard/settings/advanced
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /api/keys/list
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/list
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/[pid]
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /explore
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings/personal
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/[pid]
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /[username]/[slug]
+wait  - compiling...
+event - compiled successfully
+(node:80138) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+The pseudo class ":first-child" is potentially unsafe when doing server-side rendering. Try changing it to ":first-of-type".
+event - build page: /api/views/[postId]
+wait  - compiling...
+event - build page: /api/likes/[postId]
+event - compiled successfully
+event - build page: /[username]
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/solomonlijo/Desktop/bublr/.next/cache/webpack/client-development/23.pack_' -> '/Users/solomonlijo/Desktop/bublr/.next/cache/webpack/client-development/23.pack'
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:2432:8
+Syntax error: Expected corresponding JSX closing tag for <>
+
+  2430 |           </Dialog.Content>
+  2431 |         </Dialog.Root>
+> 2432 |         </div>{/* end right-side header actions */}
+       |         ^
+  2433 |       </header>
+  2434 | 
+  2435 |       <div
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1710:12
+Syntax error: Expected corresponding JSX closing tag for <DsField>
+
+  1708 |                 Only lowercase letters, numbers, and hyphens allowed.
+  1709 |               </p>
+> 1710 |             </div>
+       |             ^
+  1711 | 
+  1712 |             <div
+  1713 |               css={css`
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1760:12
+Syntax error: Expected corresponding JSX closing tag for <DsField>
+
+  1758 |                 ))}
+  1759 |               </div>
+> 1760 |             </div>
+       |             ^
+  1761 | 
+  1762 |             {/* Text Direction */}
+  1763 |             <div
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1821:12
+Syntax error: Expected corresponding JSX closing tag for <DsField>
+
+  1819 |                 ))}
+  1820 |               </div>
+> 1821 |             </div>
+       |             ^
+  1822 | 
+  1823 |             {/* Typography Override */}
+  1824 |             <div
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1880:12
+Syntax error: Expected corresponding JSX closing tag for <DsField>
+
+  1878 |                 </div>
+  1879 |               </div>
+> 1880 |             </div>
+       |             ^
+  1881 | 
+  1882 |             {/* Import Article Button */}
+  1883 |             <Button
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1908:12
+Syntax error: Expected corresponding JSX closing tag for <DsButton>
+
+  1906 |               </svg>
+  1907 |               Import Article
+> 1908 |             </Button>
+       |             ^
+  1909 | 
+  1910 |             <div
+  1911 |               css={css`
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:2090:18
+Syntax error: Expected corresponding JSX closing tag for <DsTile>
+
+  2088 |                       {platform.name}
+  2089 |                     </span>
+> 2090 |                   </button>
+       |                   ^
+  2091 |                 ))}
+  2092 |               </div>
+  2093 |
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1987:10
+Syntax error: Expected corresponding JSX closing tag for <aside>
+
+  1985 |               <Cross2Icon />
+  1986 |             </Dialog.Close>
+> 1987 |           </Dialog.Content>
+       |           ^
+  1988 |         </Dialog.Root>
+  1989 |           </>
+  1990 |         }
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1646:12
+Syntax error: Expected corresponding JSX closing tag for <section>
+
+  1644 |                 </div>
+  1645 |               </div>
+> 1646 |             </DsField>
+       |             ^
+  1647 | 
+  1648 |             {/* Import Article Button */}
+  1649 |             <DsButton
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1716:12
+Syntax error: Expected corresponding JSX closing tag for <section>
+
+  1714 |               </DsButton>
+  1715 |             </section>
+> 1716 |             </div>
+       |             ^
+  1717 |             )}
+  1718 | 
+  1719 |             {/* Platform Selection View */}
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1716:12
+Syntax error: Expected corresponding JSX closing tag for <section>
+
+  1714 |               </DsButton>
+  1715 |             </section>
+> 1716 |             </div>
+       |             ^
+  1717 |             )}
+  1718 | 
+  1719 |             {/* Platform Selection View */}
+wait  - compiling...
+error - ./src/pages/dashboard/[pid].js:1716:12
+Syntax error: Expected corresponding JSX closing tag for <section>
+
+  1714 |               </DsButton>
+  1715 |             </section>
+> 1716 |             </div>
+       |             ^
+  1717 |             )}
+  1718 | 
+  1719 |             {/* Platform Selection View */}
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/posts/publish
+wait  - compiling...
+event - compiled successfully
+GroqError: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at new Groq (/Users/solomonlijo/Desktop/bublr/node_modules/groq-sdk/index.js:59:19)
+    at eval (webpack-internal:///./src/pages/api/posts/publish.js:19:14)
+    at ./src/pages/api/posts/publish.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/posts/publish.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/posts/publish.js:109:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/posts/publish.js:110:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/posts/publish.js:113:3)
+    at Module._compile (node:internal/modules/cjs/loader:1803:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1934:10)
+    at Module.load (node:internal/modules/cjs/loader:1524:32)
+(node:80133) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+GroqError: The GROQ_API_KEY environment variable is missing or empty; either provide it, or instantiate the Groq client with an apiKey option, like new Groq({ apiKey: 'My API Key' }).
+    at new Groq (/Users/solomonlijo/Desktop/bublr/node_modules/groq-sdk/index.js:59:19)
+    at eval (webpack-internal:///./src/pages/api/posts/publish.js:19:14)
+    at ./src/pages/api/posts/publish.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/posts/publish.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/posts/publish.js:109:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/posts/publish.js:110:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/posts/publish.js:113:3)
+    at Module._compile (node:internal/modules/cjs/loader:1803:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1934:10)
+    at Module.load (node:internal/modules/cjs/loader:1524:32)
+event - build page: /dashboard
+wait  - compiling...
+event - build page: /dashboard/list
+event - compiled successfully
+event - build page: /dashboard/subscribers
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/settings/personal
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/subscription/status
+wait  - compiling...
+event - compiled successfully
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new Resend (/Users/solomonlijo/Desktop/bublr/node_modules/resend/dist/index.cjs:783:25)
+    at eval (webpack-internal:///./src/lib/resend.js:11:16)
+    at ./src/lib/resend.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:44:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at eval (webpack-internal:///./src/pages/api/subscription/status.js:7:69)
+    at ./src/pages/api/subscription/status.js (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:66:1)
+    at __webpack_require__ (/Users/solomonlijo/Desktop/bublr/.next/server/webpack-runtime.js:33:42)
+    at __webpack_exec__ (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:120:52)
+    at /Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:121:28
+    at Object.<anonymous> (/Users/solomonlijo/Desktop/bublr/.next/server/pages/api/subscription/status.js:124:3)
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/[pid]/preview
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/[pid]/preview
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/[pid]
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/[pid]
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard/[pid]/preview
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /api/cloudinary-sign
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+event - build page: /dashboard
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully
+wait  - compiling...
+event - compiled successfully

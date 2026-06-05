@@ -3,9 +3,9 @@ import Head from 'next/head'
 import { css } from '@emotion/react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
-import { useState, useEffect } from 'react'
-import firebase, { auth, firestore } from '../lib/firebase'
-import { setUser, userWithIDExists, getUserByName } from '../lib/db'
+import { useRouter } from 'next/router'
+import { auth } from '../lib/firebase'
+import { getUserByName } from '../lib/db'
 import { generateProfilePageSchema, generateOrganizationSchema } from '../lib/seo-utils'
 
 import meta from '../components/meta'
@@ -84,104 +84,9 @@ import CTAButton from '../components/cta-button'
 import CTAButtonDashboard from '../components/cta-button-dashboard'
 import CTAButtonSignOut from '../components/cta-button-signout'
 
-const dicebearStyles = [
-  'notionists-neutral',
-  'notionists',
-  'lorelei-neutral',
-  'lorelei',
-  'dylan',
-]
-
-function generateDiceBearAvatar(uid) {
-  const hash = uid.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  const style = dicebearStyles[hash % dicebearStyles.length]
-  return `https://api.dicebear.com/9.x/${style}/svg?seed=${uid}`
-}
-
 export default function Home({ customDomainUser, organizationSchema: orgSchema, profilePageSchema }) {
   const [user, loading, error] = useAuthState(auth)
-  const [isSigningIn, setIsSigningIn] = useState(false)
-  const [signInError, setSignInError] = useState(null)
-
-  const handleSignIn = async () => {
-    // Prevent double-clicks
-    if (isSigningIn) return
-
-    setIsSigningIn(true)
-    setSignInError(null)
-
-    const googleAuthProvider = new firebase.auth.GoogleAuthProvider()
-    googleAuthProvider.addScope('email')
-    googleAuthProvider.addScope('profile')
-
-    try {
-      // Try popup first
-      const cred = await auth.signInWithPopup(googleAuthProvider)
-      await handleAuthSuccess(cred)
-    } catch (err) {
-      console.error('Sign-in popup error:', err)
-
-      // For network errors or popup blocked, try redirect as fallback
-      if (err.code === 'auth/network-request-failed' ||
-          err.code === 'auth/popup-blocked' ||
-          err.code === 'auth/operation-not-supported-in-this-environment') {
-        try {
-          // Fallback to redirect-based auth (works better on mobile/Safari)
-          await auth.signInWithRedirect(googleAuthProvider)
-          return // Page will redirect, no need to reset state
-        } catch (redirectErr) {
-          console.error('Sign-in redirect error:', redirectErr)
-          setSignInError('Unable to sign in. Please check your internet connection and try again.')
-        }
-      } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        setSignInError(err.message || 'Failed to sign in. Please try again.')
-      }
-      setIsSigningIn(false)
-    }
-  }
-
-  const handleAuthSuccess = async (cred) => {
-    try {
-      let userExists = await userWithIDExists(cred.user.uid)
-      if (!userExists) {
-        await setUser(cred.user.uid, {
-          name: cred.user.uid,
-          displayName: cred.user.displayName || 'Anonymous',
-          email: cred.user.email || null,
-          about: 'Nothing to say about you.',
-          posts: [],
-          photo: generateDiceBearAvatar(cred.user.uid),
-          readingList: [],
-        })
-      } else if (cred.user.email) {
-        const userDoc = await firestore.collection('users').doc(cred.user.uid).get()
-        const userData = userDoc.data()
-        if (!userData?.email) {
-          await firestore.collection('users').doc(cred.user.uid).update({
-            email: cred.user.email
-          })
-        }
-      }
-    } catch (dbErr) {
-      console.error('Database error after auth:', dbErr)
-    } finally {
-      setIsSigningIn(false)
-    }
-  }
-
-  // Handle redirect result on page load (for signInWithRedirect fallback)
-  useEffect(() => {
-    auth.getRedirectResult().then((result) => {
-      if (result?.user) {
-        handleAuthSuccess(result)
-      }
-    }).catch((err) => {
-      if (err.code && err.code !== 'auth/popup-closed-by-user') {
-        console.error('Redirect result error:', err)
-        setSignInError('Sign-in was interrupted. Please try again.')
-      }
-    })
-  }, [])
+  const router = useRouter()
 
   // If this is a custom domain request, render the Profile component directly
   if (customDomainUser) {
@@ -281,23 +186,9 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
             gap: 0.2rem;
           `}
         >
-          <CTAButton
-            disabled={isSigningIn}
-            onClick={handleSignIn}
-          >
-            {isSigningIn ? 'Signing in...' : 'Sign Up'}
+          <CTAButton onClick={() => router.push('/signup')}>
+            Get Started
           </CTAButton>
-          {signInError && (
-            <p
-              css={css`
-                color: #e53e3e;
-                font-size: 0.875rem;
-                margin-top: 0.5rem;
-              `}
-            >
-              {signInError}
-            </p>
-          )}
         </div>
       )}
         </FadeInItem>
@@ -424,6 +315,24 @@ export async function getServerSideProps({ req }) {
       if (!user.skills) user.skills = []
       if (!user.customSections) user.customSections = []
       if (!user.skillsSectionTitle) user.skillsSectionTitle = ''
+      const normalizeExperienceList = (list) =>
+        (Array.isArray(list) ? list : []).map(e => ({
+          title: e?.title || '',
+          organization: e?.organization || '',
+          url: e?.url || '',
+          avatarSource: e?.avatarSource || 'glass',
+          startDate: e?.startDate || '',
+          endDate: e?.endDate || '',
+          current: e?.current || false,
+          location: e?.location || '',
+          description: e?.description || '',
+        }))
+      user.workExperience = normalizeExperienceList(user.workExperience)
+      user.education = normalizeExperienceList(user.education)
+      if (!user.workSectionTitle) user.workSectionTitle = ''
+      if (!user.educationSectionTitle) user.educationSectionTitle = ''
+      if (!user.workStyle) user.workStyle = 'timeline'
+      if (!user.educationStyle) user.educationStyle = 'timeline'
       if (!user.sectionOrder) user.sectionOrder = ['skills', 'writing', 'custom']
       if (!user.customBranding) user.customBranding = data.customBranding || null
       if (!user.followers) user.followers = []
@@ -435,7 +344,7 @@ export async function getServerSideProps({ req }) {
       if (!user.statsAlignment) user.statsAlignment = 'center'
       if (!user.buttonsVisibility) user.buttonsVisibility = { follow: false, newsletter: true }
       if (!user.buttonsOrder) user.buttonsOrder = ['follow', 'newsletter']
-      if (!user.dividersVisibility) user.dividersVisibility = { skills: true, writing: true, custom: true }
+      if (!user.dividersVisibility) user.dividersVisibility = { skills: true, work: true, education: true, writing: true, custom: true }
       if (!user.banner) user.banner = null
       if (!user.bannerPosition) user.bannerPosition = 'center'
       if (!user.avatarFrame) user.avatarFrame = { type: 'none', color: null, gradientColors: null, customUrl: null, size: 'medium' }

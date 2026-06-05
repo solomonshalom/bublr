@@ -294,9 +294,60 @@ const ctaButtonStyles = css`
   }
 `
 
-export default function CTAButton({ children = 'Sign Up', ...props }) {
+// Full-width variant: matches the footprint of a standard block button (used
+// on the signup form) while keeping the animated arrow. At rest the arrow is a
+// square tab on the left; on hover it sweeps the entire width.
+const blockStyles = css`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.95rem;
+  box-sizing: border-box;
+  border-radius: 0.5rem;
+
+  .arrow {
+    height: calc(100% - 4px);
+    border-radius: 6px;
+  }
+
+  .label {
+    flex: 1;
+    width: auto;
+    padding: 0;
+    text-align: center;
+  }
+
+  &:focus-visible,
+  &:hover {
+    .arrow {
+      width: calc(100% - 4px);
+    }
+  }
+`
+
+// Swaps the lime arrow tab for a white one (keeps the soft top highlight).
+const whiteArrowStyles = css`
+  .arrow {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.32) 0%,
+        rgba(255, 255, 255, 0) 77.51%
+      ),
+      #ffffff;
+  }
+`
+
+export default function CTAButton({
+  children = 'Sign Up',
+  block = false,
+  whiteArrow = false,
+  ...props
+}) {
   return (
-    <button css={ctaButtonStyles} {...props}>
+    <button
+      css={[ctaButtonStyles, block && blockStyles, whiteArrow && whiteArrowStyles]}
+      {...props}
+    >
       <div className="arrow">
         <div></div>
       </div>

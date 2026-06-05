@@ -3,51 +3,61 @@ import Link from 'next/link'
 import { css } from '@emotion/react'
 
 const buttonStyles = css`
-  display: block;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1;
+  border: 1px solid var(--grey-5);
   outline: none;
   cursor: pointer;
-
-  padding: 0.75em 1.5em;
+  padding: 0.55rem 0.95rem;
   background: var(--grey-5);
   color: var(--grey-1);
-  border-radius: 0.33em;
+  border-radius: 6px;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 80ms ease;
+  user-select: none;
 
-  border: none;
-
-  transition: all 200ms ease;
-
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--grey-4);
+    border-color: var(--grey-4);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    border-color: var(--accent-border);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
   }
 
   &:disabled {
     cursor: not-allowed;
-    background: var(--grey-4);
-    color: var(--grey-2);
+    opacity: 0.55;
   }
 `
 
 const outlineButtonStyles = css`
-  ${buttonStyles}
+  ${buttonStyles};
 
   background: var(--grey-1);
   color: var(--grey-4);
-  border: 1px solid var(--grey-2);
+  border: 1px solid var(--border);
 
-  &:hover {
-    background: var(--grey-1);
-    border: 1px solid var(--grey-3);
+  &:hover:not(:disabled) {
+    background: var(--accent-soft);
+    color: var(--accent-foreground);
+    border-color: var(--accent-border);
   }
 
   &:disabled {
     background: var(--grey-1);
-    color: var(--grey-2);
-
-    &:hover {
-      background: var(--grey-1);
-      border: 1px solid var(--grey-2);
-    }
+    color: var(--grey-3);
+    border-color: var(--border);
   }
 `
 
@@ -76,8 +86,8 @@ export function LinkButton(props) {
       <Link {...rest}>
         <a
           css={css`
-            ${outlineButtonStyles}
-            display: inline-block;
+            ${outlineButtonStyles};
+            text-decoration: none;
           `}
         >
           {props.children}
@@ -89,8 +99,8 @@ export function LinkButton(props) {
     <Link {...props}>
       <a
         css={css`
-          ${buttonStyles}
-          display: inline-block;
+          ${buttonStyles};
+          text-decoration: none;
         `}
       >
         {props.children}
@@ -100,31 +110,30 @@ export function LinkButton(props) {
 }
 
 const iconButtonStyles = css`
-  background: none;
-  border: none;
-  border-radius: 1rem;
-
-  width: 2rem;
-  height: 2rem;
-  display: flex;
+  display: inline-flex;
   justify-content: center;
   align-items: center;
-
+  width: 2.1rem;
+  height: 2.1rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--grey-3);
   font-family: 'Inter', sans-serif;
-  font-size: 1.25rem;
-
+  font-size: 1.05rem;
   cursor: pointer;
-  transition: all 200ms ease;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
 
-  &:hover {
-    background: var(--grey-2);
-    opacity: 0.4;
+  &:hover:not(:disabled) {
+    background: var(--accent-soft);
+    color: var(--accent-foreground);
+    border-color: var(--accent-border);
   }
 
   &:disabled {
-    background: none;
+    background: transparent;
     cursor: not-allowed;
-    opacity: 0.4;
+    opacity: 0.45;
   }
 `
 
@@ -146,8 +155,9 @@ export function LinkIconButton(props) {
     <Link {...props}>
       <a
         css={css`
-          ${iconButtonStyles}
+          ${iconButtonStyles};
           color: inherit;
+          text-decoration: none;
         `}
         {...props}
       >

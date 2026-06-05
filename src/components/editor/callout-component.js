@@ -328,30 +328,30 @@ function CalloutComponent({ node, updateAttributes, editor: parentEditor, getPos
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          padding: 0.375rem 0.75rem;
+          padding: 0.4rem 0.85rem;
           margin: 0 0.25rem;
-          background: var(--grey-1);
-          border: 1px solid var(--grey-2);
-          border-radius: 2rem;
+          background: var(--accent-bg);
+          border: 1px dashed var(--border-dashed);
+          border-radius: 6px;
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+          font-family: 'Inter', sans-serif;
           font-size: 0.85rem;
           color: var(--grey-4);
-          font-family: inherit;
           vertical-align: middle;
 
           &:hover {
-            border-color: var(--grey-3);
-            background: var(--grey-2);
+            background: var(--accent-soft);
+            color: var(--accent-foreground);
+            border-color: var(--accent-border);
+            border-style: solid;
           }
 
-          html[data-theme='dark'] & {
-            background: var(--grey-2);
-            border-color: var(--grey-3);
-          }
-
-          html[data-theme='dark'] &:hover {
-            background: var(--grey-3);
+          &:focus-visible {
+            outline: none;
+            border-color: var(--accent-border);
+            border-style: solid;
+            box-shadow: 0 0 0 3px var(--accent-soft);
           }
         `}
       >
@@ -413,16 +413,18 @@ function CalloutComponent({ node, updateAttributes, editor: parentEditor, getPos
               left: 50%;
               transform: translate(-50%, -50%);
               background: var(--grey-1);
-              border-radius: 0.5rem;
+              border-radius: 8px;
               width: 90%;
               max-width: 560px;
               max-height: 80vh;
               display: flex;
               flex-direction: column;
               animation: ${popupFadeIn} 0.2s ease-out;
-              border: 1px solid var(--grey-2);
+              border: 1px solid var(--border);
+              box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
               overflow: hidden;
               z-index: 99999;
+              font-family: 'Inter', sans-serif;
             `}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}

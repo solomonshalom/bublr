@@ -281,19 +281,26 @@ function EditorFloatingMenu({ editor }) {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 24px;
-            height: 24px;
-            border-radius: 4px;
-            border: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            border: 1px solid transparent;
             background: transparent;
             color: var(--grey-3);
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: background 150ms ease, color 150ms ease, border-color 150ms ease, transform 150ms ease;
             transform: ${isExpanded ? 'rotate(45deg)' : 'rotate(0deg)'};
 
             &:hover {
-              background: var(--grey-2);
-              color: var(--grey-4);
+              background: var(--accent-soft);
+              color: var(--accent-foreground);
+              border-color: var(--accent-border);
+            }
+
+            &:focus-visible {
+              outline: none;
+              border-color: var(--accent-border);
+              box-shadow: 0 0 0 3px var(--accent-soft);
             }
           `}
           title="Add block"
@@ -310,30 +317,30 @@ function EditorFloatingMenu({ editor }) {
               top: -8px;
               margin-left: 8px;
               background: var(--grey-1);
-              border: 1px solid var(--grey-2);
-              border-radius: 0.5rem;
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-              min-width: 240px;
-              max-height: 250px;
+              border: 1px solid var(--border);
+              border-radius: 8px;
+              box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+              min-width: 260px;
+              max-height: 260px;
               overflow-y: scroll;
               overflow-x: hidden;
               padding: 0.375rem;
               z-index: 100;
-              animation: fadeIn 0.15s ease;
+              animation: floatingFadeIn 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 
-              @keyframes fadeIn {
+              @keyframes floatingFadeIn {
                 from {
                   opacity: 0;
-                  transform: translateX(-4px);
+                  transform: translateX(-4px) scale(0.98);
                 }
                 to {
                   opacity: 1;
-                  transform: translateX(0);
+                  transform: translateX(0) scale(1);
                 }
               }
 
-              html[data-theme='dark'] & {
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+              [data-theme='dark'] & {
+                box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
               }
 
               /* Hide scrollbar but keep scroll functionality */
@@ -377,21 +384,38 @@ function EditorFloatingMenu({ editor }) {
                       align-items: center;
                       gap: 0.625rem;
                       width: 100%;
-                      padding: 0.375rem 0.5rem;
-                      border: none;
-                      border-radius: 0.25rem;
+                      padding: 0.45rem 0.55rem;
+                      border: 1px solid transparent;
+                      border-radius: 4px;
                       background: transparent;
                       cursor: pointer;
                       text-align: left;
-                      transition: background 0.1s ease;
+                      font-family: 'Inter', sans-serif;
+                      transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 
                       &:hover {
-                        background: var(--grey-2);
+                        background: var(--accent-soft);
+                        border-color: var(--accent-border);
+                      }
+
+                      &:hover .floating-item-title {
+                        color: var(--accent-foreground);
+                      }
+
+                      &:hover .floating-item-icon {
+                        color: var(--accent-foreground);
+                      }
+
+                      &:focus-visible {
+                        outline: none;
+                        background: var(--accent-soft);
+                        border-color: var(--accent-border);
                       }
                     `}
                   >
                     {/* Icon - minimal, no container */}
                     <span
+                      className="floating-item-icon"
                       css={css`
                         display: flex;
                         align-items: center;
@@ -400,6 +424,7 @@ function EditorFloatingMenu({ editor }) {
                         height: 18px;
                         color: var(--grey-3);
                         flex-shrink: 0;
+                        transition: color 120ms ease;
                       `}
                     >
                       {item.icon}
@@ -408,10 +433,12 @@ function EditorFloatingMenu({ editor }) {
                     {/* Text Content */}
                     <div css={css`min-width: 0; flex: 1;`}>
                       <div
+                        className="floating-item-title"
                         css={css`
-                          font-size: 0.8125rem;
+                          font-size: 0.825rem;
                           font-weight: 500;
-                          color: var(--grey-5);
+                          color: var(--grey-4);
+                          transition: color 120ms ease;
                         `}
                       >
                         {item.title}

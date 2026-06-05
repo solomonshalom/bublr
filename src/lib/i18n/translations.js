@@ -129,6 +129,8 @@ const translations = {
       socialLinks: 'Social Links',
       skillsTags: 'Skills & Tags',
       addSkill: 'Add skill or tag',
+      work: 'Work',
+      education: 'Education',
       customSections: 'Custom Sections',
       addSection: 'Add section',
       profileStats: 'Profile Stats',

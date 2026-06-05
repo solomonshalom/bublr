@@ -2,9 +2,9 @@
 import { css } from '@emotion/react'
 import { useState, useRef, useEffect } from 'react'
 
-// Microphone icon - sized to match text at 0.9rem (roughly 14px)
+// Sized to sit centered in DsButton default (height 2.1rem)
 const MicIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
     <line x1="12" y1="19" x2="12" y2="23" />
@@ -12,9 +12,8 @@ const MicIcon = () => (
   </svg>
 )
 
-// Stop icon - sized to match text at 0.9rem (roughly 14px)
 const StopIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
     <rect x="6" y="6" width="12" height="12" rx="2" />
   </svg>
 )
@@ -173,25 +172,38 @@ export default function VoiceInput({ onTranscript, disabled }) {
         disabled={disabled || isProcessing}
         title={isRecording ? 'Stop recording' : 'Start voice input'}
         css={css`
-          display: block;
-          border: none;
-          outline: none;
-          cursor: pointer;
-          padding: 0.75em 1.5em;
+          /* Match DsButton default size so it lines up with the +Image toolbar button */
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          font-family: 'Inter', sans-serif;
+          font-weight: 500;
+          font-size: 0.825rem;
+          line-height: 1;
+          height: 2.1rem;
+          padding: 0 0.85rem;
+          border-radius: 6px;
+          border: 1px solid ${isRecording ? '#ef4444' : 'var(--border)'};
+          border-bottom-width: 2px;
           background: ${isRecording ? '#ef4444' : 'var(--grey-1)'};
           color: ${isRecording ? 'white' : 'var(--grey-4)'};
-          border-radius: 0.33em;
-          border: 1px solid ${isRecording ? '#ef4444' : 'var(--grey-2)'};
-          transition: all 200ms ease;
-          font-size: 0.9rem;
+          cursor: pointer;
+          user-select: none;
+          transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
 
           &:hover:not(:disabled) {
-            background: ${isRecording ? '#dc2626' : 'var(--grey-1)'};
-            border: 1px solid ${isRecording ? '#dc2626' : 'var(--grey-3)'};
+            background: ${isRecording ? '#dc2626' : 'var(--accent-bg-strong)'};
+            border-color: ${isRecording ? '#dc2626' : 'var(--grey-3)'};
+          }
+
+          &:active:not(:disabled) {
+            border-bottom-width: 1px;
+            padding-top: 1px;
           }
 
           &:disabled {
-            opacity: 0.5;
+            opacity: 0.55;
             cursor: not-allowed;
           }
         `}

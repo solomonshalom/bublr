@@ -52,33 +52,47 @@ export function truncate(str, length) {
 }
 
 /**
- * Uploads an image to ImgBB service
- * @param {File} file The image file to upload
- * @param {string} apiKey Your ImgBB API key
- * @returns {Promise<string>} A promise that resolves to the image URL
+ * Uploads an image or video to Cloudinary using a server-generated signature.
+ * The API secret never reaches the browser — /api/cloudinary-sign signs the
+ * request server-side and returns only a short-lived signature.
+ * @param {File} file The image/video file to upload
+ * @returns {Promise<string|null>} The secure HTTPS URL, or null on failure
  */
-export async function uploadToImgBB(file, apiKey) {
+export async function uploadToCloudinary(file) {
   if (!file) return null;
-  
-  const formData = new FormData();
-  formData.append('image', file);
-  
+
   try {
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-      method: 'POST',
-      body: formData
-    });
-    
+    const signRes = await fetch('/api/cloudinary-sign', { method: 'POST' });
+    if (!signRes.ok) {
+      console.error('Failed to obtain Cloudinary signature');
+      return null;
+    }
+
+    const { signature, timestamp, apiKey, cloudName, folder } = await signRes.json();
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('api_key', apiKey);
+    formData.append('timestamp', timestamp);
+    formData.append('signature', signature);
+    if (folder) formData.append('folder', folder);
+
+    // 'auto' lets Cloudinary detect image vs video from the file itself.
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+      { method: 'POST', body: formData }
+    );
+
     const data = await response.json();
-    
-    if (data.success) {
-      return data.data.url;
+
+    if (data.secure_url) {
+      return data.secure_url;
     } else {
-      console.error('Error uploading image:', data.error);
+      console.error('Error uploading to Cloudinary:', data.error || data);
       return null;
     }
   } catch (error) {
-    console.error('Error uploading to ImgBB:', error);
+    console.error('Error uploading to Cloudinary:', error);
     return null;
   }
 }
