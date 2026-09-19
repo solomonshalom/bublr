@@ -44,6 +44,42 @@ const linkStyle = css`
   }
 `
 
+// Hand-drawn green underline for the headline. A single Q sets the first
+// half-wave and each following T reflects it, so the crests alternate on
+// their own.
+function Squiggle() {
+  return (
+    <svg
+      viewBox="0 0 200 12"
+      width="200"
+      height="12"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+      css={css`
+        display: block;
+        max-width: 100%;
+        margin-top: 6px;
+        margin-bottom: 10px;
+        overflow: visible;
+        /* The banner green reads too dim against the dark page background */
+        color: #15803d;
+
+        [data-theme='dark'] & {
+          color: #22c55e;
+        }
+      `}
+    >
+      <path
+        d="M3 8 Q12.5 1.5 22 8 T41 8 T60 8 T79 8 T98 8 T117 8 T136 8 T155 8 T174 8 T193 8"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 export default function ForSale() {
   const currentYear = new Date().getFullYear()
 
@@ -127,33 +163,19 @@ export default function ForSale() {
                 </a>
               </Link>
 
-              <div css={css`margin-top: 32px;`}>
-                <span
-                  css={css`
-                    display: inline-block;
-                    padding: 4px 10px;
-                    border-radius: 999px;
-                    background: #15803d;
-                    color: #ffffff;
-                    font-size: 12px;
-                    font-weight: 500;
-                  `}
-                >
-                  Open to offers
-                </span>
-              </div>
-
               <h1
                 css={css`
                   font-size: 1.25rem;
                   font-weight: 500;
-                  margin-top: 16px;
+                  margin-top: 32px;
                   margin-bottom: 8px;
                   line-height: 1.2;
                 `}
               >
                 We&apos;re up for sale 👀
               </h1>
+
+              <Squiggle />
 
               <p css={css`color: var(--grey-3); margin-bottom: 32px;`}>
                 For the right person, at the right price
@@ -233,25 +255,11 @@ export default function ForSale() {
                 you have in mind. Serious enquiries get a real reply.
               </p>
               <p css={bodyStyle}>
-                Reach out via{' '}
-                <a
-                  href="https://github.com/solomonshalom"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  css={linkStyle}
-                >
-                  GitHub
+                Email{' '}
+                <a href="mailto:solomon@bublr.life" css={linkStyle}>
+                  solomon@bublr.life
                 </a>
-                , or open an issue on{' '}
-                <a
-                  href="https://github.com/solomonshalom/bublr"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  css={linkStyle}
-                >
-                  the repository
-                </a>{' '}
-                if you&apos;d like to kick the tyres in public first.
+                .
               </p>
 
               {/* Footer */}
