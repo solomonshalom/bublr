@@ -40,6 +40,13 @@ function generateSiteMap(users, postsWithContent) {
     <priority>0.9</priority>
   </url>
 
+  <!-- Company sale announcement -->
+  <url>
+    <loc>${SITE_URL}/for-sale</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
   <!-- RSS/Atom/JSON Feeds -->
   <url>
     <loc>${SITE_URL}/feed.xml</loc>
