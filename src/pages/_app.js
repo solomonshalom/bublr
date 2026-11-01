@@ -7,21 +7,21 @@ import { useRouter } from 'next/router'
 import { I18nProvider } from '../lib/i18n'
 import { SmoothScrollProvider } from '../components/smooth-scroll'
 import { PageTransition } from '../components/page-transition'
-import SaleBanner from '../components/sale-banner'
+import ComebackBanner from '../components/comeback-banner'
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || ((page) => page)
   const router = useRouter()
 
-  // The "we're up for sale" banner rides on top of the public site only: the
-  // dashboard has its own fixed chrome, /for-sale is where the banner points,
+  // The "we're making a comeback" banner rides on top of the public site only:
+  // the dashboard has its own fixed chrome, /comeback is where the banner points,
   // and writer-owned custom domains aren't ours to announce on.
   const onCustomDomain = Boolean(
     pageProps?.customDomainUser || pageProps?.user?.isCustomDomain
   )
-  const showSaleBanner =
+  const showComebackBanner =
     !router.pathname.startsWith('/dashboard') &&
-    router.pathname !== '/for-sale' &&
+    router.pathname !== '/comeback' &&
     !onCustomDomain
 
   return (
@@ -343,7 +343,7 @@ const App = ({ Component, pageProps }) => {
           <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme" disableTransitionOnChange>
             <SmoothScrollProvider>
               {/* Sits outside PageTransition so it doesn't fade on every navigation */}
-              {showSaleBanner && <SaleBanner />}
+              {showComebackBanner && <ComebackBanner />}
               {/* Dashboard owns its own scoped fade (only animates main area, not sidebar) */}
               {router.pathname.startsWith('/dashboard') ? (
                 getLayout(<Component {...pageProps} />, pageProps)

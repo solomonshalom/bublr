@@ -6,6 +6,12 @@ module.exports = {
         destination: '/:username',
         permanent: true,
       },
+      // Old links land on the relaunch announcement
+      {
+        source: '/for-sale',
+        destination: '/comeback',
+        permanent: false,
+      },
     ]
   },
   reactStrictMode: true,

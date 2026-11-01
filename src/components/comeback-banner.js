@@ -4,7 +4,7 @@ import { css } from '@emotion/react'
 import { useEffect, useState } from 'react'
 
 // Hosts that belong to us. Writer-owned custom domains never show the banner —
-// the sale is Bublr's news, not theirs. Pages rendered with getServerSideProps
+// the comeback is Bublr's news, not theirs. Pages rendered with getServerSideProps
 // are filtered in _app.js; statically generated post pages can't know the host
 // at build time, so they fall back to this check after hydration.
 const MAIN_HOSTS = ['bublr.life', 'www.bublr.life', 'localhost']
@@ -51,7 +51,7 @@ const detailStyle = css`
   white-space: nowrap;
 `
 
-export default function SaleBanner() {
+export default function ComebackBanner() {
   const [onCustomDomain, setOnCustomDomain] = useState(false)
 
   useEffect(() => {
@@ -64,10 +64,10 @@ export default function SaleBanner() {
 
   return (
     <div css={bannerStyle}>
-      <Link href="/for-sale">
-        <a aria-label="We're up for sale — read the details">
-          <span>We&apos;re up for sale 👀</span>
-          <span css={detailStyle}>Read the details</span>
+      <Link href="/comeback">
+        <a aria-label="We're making a comeback, relaunching by December 10th — read more">
+          <span>We&apos;re making a comeback ✨</span>
+          <span css={detailStyle}>Back by Dec 10th</span>
         </a>
       </Link>
     </div>

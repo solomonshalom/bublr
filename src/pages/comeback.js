@@ -80,7 +80,7 @@ function Squiggle() {
   )
 }
 
-export default function ForSale() {
+export default function Comeback() {
   const currentYear = new Date().getFullYear()
 
   return (
@@ -88,12 +88,12 @@ export default function ForSale() {
       <Global styles={globalStyles} />
       <Head>
         {meta({
-          title: "We're up for sale | Bublr",
+          title: "We're making a comeback | Bublr",
           description:
-            "Bublr is for sale. For the right person and the right price, we'd hand over the company — keeping only a small minority stake.",
-          url: '/for-sale',
+            "Bublr isn't going anywhere. We're making a lot of changes and relaunching by December 10th.",
+          url: '/comeback',
         })}
-        <link rel="canonical" href="https://bublr.life/for-sale" />
+        <link rel="canonical" href="https://bublr.life/comeback" />
       </Head>
 
       <div
@@ -172,90 +172,75 @@ export default function ForSale() {
                   line-height: 1.2;
                 `}
               >
-                We&apos;re up for sale 👀
+                We&apos;re making a comeback ✨
               </h1>
 
               <Squiggle />
 
               <p css={css`color: var(--grey-3); margin-bottom: 32px;`}>
-                For the right person, at the right price
+                Relaunching by December 10th
               </p>
 
               <hr css={ruleStyle} />
 
               <p css={headingStyle}>
-                Yes, really
+                Bublr isn&apos;t going anywhere
               </p>
               <p css={bodyStyle}>
-                This isn&apos;t a stunt or a hiring funnel. Bublr — the product, the
-                brand, the domain, the codebase and the community that writes on
-                it — is genuinely for sale.
+                Things have been quiet around here. That&apos;s because we&apos;ve
+                been busy.
               </p>
               <p css={bodyStyle}>
-                We&apos;re not in a rush and we&apos;re not desperate. Bublr is
-                running, it&apos;s loved by the people who use it, and it will keep
-                running whether or not it changes hands. But if the right person
-                turns up with the right number, we&apos;d hand over the keys.
+                Bublr is staying. Your posts, your profile and your page are right
+                where you left them. Keep writing.
               </p>
 
               <hr css={ruleStyle} />
 
               <p css={headingStyle}>
-                The shape of the deal
+                What&apos;s happening
               </p>
               <p css={bodyStyle}>
-                We&apos;d sell the company outright, keeping only a small minority
-                stake — enough to stay along for the ride and help where we can,
-                small enough that you&apos;re unambiguously the one steering.
+                We&apos;re making changes. A lot of them. New things, better
+                things, things we&apos;ve wanted to build for a long time. Some
+                you&apos;ll notice straight away, some you&apos;ll just feel.
+              </p>
+              <p css={bodyStyle}>
+                It&apos;s still Bublr. Same quiet place to write. Just better.
+              </p>
+
+              <hr css={ruleStyle} />
+
+              <p css={headingStyle}>
+                What stays the same
               </p>
               <ul css={listStyle}>
-                <li><strong>You get control</strong> — the majority of the company, and the final say on where it goes</li>
-                <li><strong>We keep a sliver</strong> — a small minority stake, because we still believe in the thing we built</li>
-                <li><strong>Handover included</strong> — we&apos;ll walk you through the codebase, the infrastructure and the community</li>
-                <li><strong>Everything transfers</strong> — domain, brand, Firebase project, subscriptions and all the moving parts</li>
+                <li><strong>Your words</strong> — every post you&apos;ve written comes with you</li>
+                <li><strong>No ads</strong> — not now, not ever</li>
+                <li><strong>No paywalls</strong> — writing and reading stay free</li>
+                <li><strong>No clutter</strong> — just you and your words</li>
               </ul>
 
               <hr css={ruleStyle} />
 
               <p css={headingStyle}>
-                What you&apos;d be buying
-              </p>
-              <ul css={listStyle}>
-                <li><strong>A live product</strong> — writers publishing on it today, not a side project in a drawer</li>
-                <li><strong>An open-source codebase</strong> — Next.js and Firebase, readable before you ever talk to us</li>
-                <li><strong>bublr.life</strong> — the domain and the brand that goes with it</li>
-                <li><strong>Revenue in place</strong> — paid custom domains, with plenty of room to build on</li>
-                <li><strong>A clear point of view</strong> — no ads, no paywalls, no clutter. Please keep it that way</li>
-              </ul>
-
-              <hr css={ruleStyle} />
-
-              <p css={headingStyle}>
-                The right person
+                December 10th
               </p>
               <p css={bodyStyle}>
-                Price matters, but it isn&apos;t the only thing. Bublr was built on
-                the idea that writing online should be quiet and uncomplicated, and
-                a few thousand people took us up on that. We&apos;d rather sell to
-                someone who wants to grow that than to someone who wants to stuff
-                it full of ads.
+                Mark the date. That&apos;s when it all goes live.
               </p>
               <p css={bodyStyle}>
-                If that sounds like you, the number is negotiable. If it
-                doesn&apos;t, it probably isn&apos;t.
+                Until then, Bublr works just like it always has. Write, publish,
+                share. That&apos;s it.
               </p>
 
               <hr css={ruleStyle} />
 
               <p css={headingStyle}>
-                Get in touch
+                Say hi
               </p>
               <p css={bodyStyle}>
-                Tell us who you are, what you&apos;d do with Bublr, and roughly what
-                you have in mind. Serious enquiries get a real reply.
-              </p>
-              <p css={bodyStyle}>
-                Email{' '}
+                Got an idea, a request, or just want to say hello? Email{' '}
                 <a href="mailto:solomon@bublr.life" css={linkStyle}>
                   solomon@bublr.life
                 </a>

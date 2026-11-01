@@ -40,9 +40,9 @@ function generateSiteMap(users, postsWithContent) {
     <priority>0.9</priority>
   </url>
 
-  <!-- Company sale announcement -->
+  <!-- Comeback / relaunch announcement -->
   <url>
-    <loc>${SITE_URL}/for-sale</loc>
+    <loc>${SITE_URL}/comeback</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
