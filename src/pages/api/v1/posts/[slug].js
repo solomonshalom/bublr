@@ -1,5 +1,7 @@
 import { authenticateApiKey, API_ERROR_CODES } from '../../../../lib/api-auth'
-import { firestore } from '../../../../lib/firebase'
+import firebase, { firestore } from '../../../../lib/firebase'
+import { setPostPublished } from '../../../../lib/publishing'
+import { toMillis } from '../../../../lib/timestamps'
 
 // Content size limits (in characters)
 const LIMITS = {
@@ -85,9 +87,7 @@ async function handleGetPost(req, res, auth, slug) {
       excerpt: post.excerpt || '',
       content: post.content || '',
       published: post.published || false,
-      lastEdited: post.lastEdited?._seconds
-        ? new Date(post.lastEdited._seconds * 1000).toISOString()
-        : post.lastEdited || null,
+      lastEdited: toMillis(post.lastEdited) != null ? new Date(toMillis(post.lastEdited)).toISOString() : null,
       createdAt: post.createdAt || null,
       dotColor: post.dotColor || null
     }
@@ -157,45 +157,33 @@ async function handleUpdatePost(req, res, auth, slug) {
       updateData.slug = newSlug
     }
 
-    // Handle publish state
-    if (published !== undefined) {
-      if (published && !post.published) {
-        // Publishing for the first time - run moderation
-        try {
-          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
-          const moderationRes = await fetch(`${baseUrl}/api/posts/publish`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ postId: post.id, publish: true })
-          })
-          const moderationResult = await moderationRes.json()
-
-          if (moderationResult.moderated) {
-            return res.status(200).json({
-              success: true,
-              post: { id: post.id, slug: updateData.slug || slug, published: false },
-              moderated: true,
-              moderationReason: moderationResult.reason,
-              message: 'Post update saved but not published due to content moderation'
-            })
-          }
-        } catch (moderationError) {
-          console.error('Moderation error:', moderationError)
-        }
-      } else {
-        updateData.published = Boolean(published)
-      }
+    // Handle publish state. Publishing runs moderation on the content as it
+    // is after this update (it used to check the old content, over HTTP).
+    const wantsFirstPublish = published !== undefined && Boolean(published) && !post.published
+    if (published !== undefined && !published) {
+      updateData.published = false
     }
 
-    // Update lastEdited timestamp
-    updateData.lastEdited = {
-      _seconds: Math.floor(Date.now() / 1000),
-      _nanoseconds: 0
-    }
+    // Update lastEdited timestamp (a real Firestore Timestamp, not a map)
+    updateData.lastEdited = firebase.firestore.Timestamp.now()
 
     // Apply updates
     if (Object.keys(updateData).length > 0) {
       await firestore.collection('posts').doc(post.id).update(updateData)
+    }
+
+    if (wantsFirstPublish) {
+      const result = await setPostPublished({ postId: post.id, publish: true })
+      if (result.moderated) {
+        return res.status(200).json({
+          success: true,
+          post: { id: post.id, slug: updateData.slug || slug, published: false },
+          moderated: true,
+          moderationReason: result.reason,
+          message: 'Post update saved but not published due to content moderation'
+        })
+      }
+      updateData.published = Boolean(result.published)
     }
 
     return res.status(200).json({
@@ -223,9 +211,6 @@ async function handleDeletePost(req, res, auth, slug) {
     if (!post) {
       return res.status(404).json({ error: 'Post not found' })
     }
-
-    // Import firebase for FieldValue
-    const firebase = (await import('../../../../lib/firebase')).default
 
     // Remove post from posts collection
     await firestore.collection('posts').doc(post.id).delete()

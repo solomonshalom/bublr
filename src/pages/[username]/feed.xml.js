@@ -1,6 +1,7 @@
 import { getUserByName } from '../../lib/db'
 import { extractFirstImage, generateMetaDescription, calculateReadingTime, cleanTitle } from '../../lib/seo-utils'
 import { firestore } from '../../lib/firebase'
+import { toMillis } from '../../lib/timestamps'
 
 const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
 
@@ -129,9 +130,7 @@ export async function getServerSideProps({ params, res }) {
               title: postData.title,
               content: postData.content,
               excerpt: postData.excerpt,
-              lastEdited: postData.lastEdited?.toDate?.()
-                ? postData.lastEdited.toDate().getTime()
-                : Date.now()
+              lastEdited: toMillis(postData.lastEdited) || Date.now()
             })
           }
         } catch (err) {

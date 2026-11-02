@@ -1,10 +1,16 @@
 // Unified API endpoint to convert article content from multiple platforms to TipTap format
 // Each platform has specific cleaning requirements
 
+import { requireAuth } from '../../../lib/server-auth'
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  // Importing is part of the editor, so it needs a signed-in writer
+  const uid = await requireAuth(req, res)
+  if (!uid) return
 
   const { content, title, platform = 'medium' } = req.body
 

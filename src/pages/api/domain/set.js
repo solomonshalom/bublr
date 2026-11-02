@@ -1,4 +1,5 @@
 import { firestore } from '../../../lib/firebase'
+import { requireSelf } from '../../../lib/server-auth'
 
 // Vercel API configuration
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN
@@ -29,11 +30,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  try {
-    const { userId, domain } = req.body
+  const userId = await requireSelf(req, res, req.body?.userId)
+  if (!userId) return
 
-    if (!userId || !domain) {
-      return res.status(400).json({ error: 'Missing userId or domain' })
+  try {
+    const { domain } = req.body
+
+    if (!domain) {
+      return res.status(400).json({ error: 'Missing domain' })
     }
 
     // Validate domain format

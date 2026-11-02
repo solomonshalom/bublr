@@ -10,7 +10,10 @@ npm run dev              # Start development server
 npm run build            # Production build
 npm run start            # Start production server
 npm run lint             # Run ESLint
+npm test                 # Unit + API route tests (Node's built-in runner, no extra deps)
 ```
+
+Tests live in `test/unit/`. A loader hook (`test/unit/loader.mjs`) resolves extensionless imports and swaps `src/lib/firebase.js`, `src/lib/resend.js` and `groq-sdk` for in-memory mocks, so real API handlers run offline. `test/unit/helpers.mjs` signs test Firebase ID tokens.
 
 Note: All npm scripts include `NODE_OPTIONS='--openssl-legacy-provider'` due to the older Next.js version (11.0.1).
 
@@ -56,7 +59,8 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `/dashboard` - User's post management (create, edit, list)
 - `/dashboard/[pid]` - Post editor with TipTap
 - `/dashboard/list` - Reading list
-- `/explore` - Global post discovery with search
+- `/dashboard/settings/advanced` - Theme, export (Markdown + JSON .zip), language, custom domain
+- `/explore` - Global post discovery with search (public; no account needed)
 - `/[username]` - User profile page
 - `/[username]/[slug]` - Published post view (SSG with ISR)
 
@@ -73,7 +77,19 @@ PageComponent.getLayout = function PageLayout(page) {
 - `useAuthState(auth)` for authentication state
 - `useDocumentData`, `useCollectionData` for Firestore queries
 
-**Search**: Client-side fuzzy search with Levenshtein distance in `src/lib/db.js`. Posts are indexed with `searchQueries` array for partial matching.
+**Search**: Client-side fuzzy search with Levenshtein distance in `src/lib/db.js`, scored over the 100 most recently edited published posts.
+
+**API route auth**: API routes run the Firebase *client* SDK (no admin credentials), so they must verify who is calling. The browser sends the Firebase ID token with `authedFetch` (`src/lib/authed-fetch.js`), and routes check it with `requireAuth(req, res)` / `requireSelf(req, res, claimedUserId)` from `src/lib/server-auth.js`. Never trust a `userId` from the request body. Shared-secret routes use `hasSharedSecret`. The public developer API (`/api/v1/*`) authenticates with `bublr_sk_` API keys instead (`src/lib/api-auth.js`).
+
+**Public page props**: Everything in `getServerSideProps`/`getStaticProps` props is public. Pass users through `toPublicUser` / `toPostAuthor` and posts through `toPublicPost` (`src/lib/public-user.js`); never pass a raw user document.
+
+**Rendering post HTML**: Always use `sanitizePostHtml` (`src/lib/sanitize-post.js`). It keeps what the editor produces (callouts, task lists, highlights) and marks links `nofollow ugc`. Inline JSON-LD goes through `safeJsonLd` (`src/lib/escape.js`).
+
+**Publishing**: `setPostPublished` in `src/lib/publishing.js` runs moderation and, on the first successful publish only, notifies followers and emails subscribers. Both `/api/posts/publish` (dashboard) and `/api/v1/posts` (API) call it directly.
+
+**Timestamps**: Read `lastEdited` with `toMillis` (`src/lib/timestamps.js`). Older API-created posts stored `{ _seconds }` maps; write `firebase.firestore.Timestamp` values.
+
+**Reserved usernames**: Any new top-level page must be added to `src/lib/reserved-usernames.js` (a test enforces this).
 
 ### Environment Variables
 

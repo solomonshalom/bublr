@@ -23,8 +23,16 @@ npm run build
 ## Developing
 
 ```bash
-npm run start
+npm run dev
 ```
+
+## Testing
+
+```bash
+npm test
+```
+
+See [changelog.md](changelog.md) for what changed in each release.
 
 ### Pre-Reqs
 You will need a firebase project w/ firestore and authentication enabled! 

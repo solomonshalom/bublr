@@ -19,8 +19,8 @@ class MyDocument extends Document {
           {/* Character encoding - must be first */}
           <meta charSet="utf-8" />
 
-          {/* Security: Prevent clickjacking */}
-          <meta httpEquiv="X-Frame-Options" content="SAMEORIGIN" />
+          {/* Clickjacking protection is the X-Frame-Options / frame-ancestors
+              header in next.config.js; browsers ignore it as a <meta> tag. */}
 
           {/* Security: XSS Protection */}
           <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />

@@ -1,7 +1,8 @@
 /** @jsxImportSource @emotion/react */
-import { css } from '@emotion/react'
-import React, { useEffect } from 'react'
+import { css, Global } from '@emotion/react'
+import React, { useEffect, useRef } from 'react'
 import { getFontCategory, getFontFallback, sanitizeFontFamily } from '../lib/fonts'
+import { escapeHtml } from '../lib/escape'
 
 // RTL language detection - checks if text contains primarily RTL characters
 const detectRTL = (text) => {
@@ -19,7 +20,115 @@ const detectRTL = (text) => {
   return meaningfulChars > 0 && (rtlChars / meaningfulChars) > 0.3
 }
 
+// Styles for the callout pop-up. It's appended to <body>, outside the
+// container's scoped class, so these have to be global.
+const calloutPopupStyles = css`
+  /* Callout popup overlay — mounted on <body>, so these styles are global */
+  .callout-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    backdrop-filter: blur(2px);
+    animation: calloutOverlayFadeIn 0.15s ease-out;
+  }
+
+  @keyframes calloutOverlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .callout-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--grey-1);
+    border-radius: 0.5rem;
+    width: 90%;
+    max-width: 560px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    animation: calloutPopupFadeIn 0.2s ease-out;
+    border: 1px solid var(--grey-2);
+    overflow: hidden;
+  }
+
+  @keyframes calloutPopupFadeIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  .callout-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--grey-2);
+    flex-shrink: 0;
+  }
+
+  .callout-popup-header .callout-dot {
+    width: 14px;
+    height: 14px;
+  }
+
+  .callout-popup-header .callout-title {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--grey-5);
+  }
+
+  .callout-popup-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.375rem;
+    border-radius: 0.25rem;
+    color: var(--grey-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .callout-popup-close:hover {
+    background: var(--grey-2);
+    color: var(--grey-4);
+  }
+
+  .callout-popup-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    min-height: 100px;
+    line-height: 1.6;
+  }
+
+  .callout-popup-body > *:first-child {
+    margin-top: 0;
+  }
+
+  .callout-popup-body > *:last-child {
+    margin-bottom: 0;
+  }
+
+
+  .callout-popup-header .callout-dot {
+    display: inline-block;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+`
+
 const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
+  const containerRef = useRef(null)
   // Extract and sanitize fonts from settings (prevents CSS injection)
   const headingFont = sanitizeFontFamily(fontSettings?.headingFont, 'Inter')
   const bodyFont = sanitizeFontFamily(fontSettings?.bodyFont, 'Inter')
@@ -61,12 +170,20 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
       }
     });
 
-    // Handle callout popup triggers
-    const calloutTriggers = document.querySelectorAll('.post-container .callout-trigger');
+    // Handle callout popup triggers. Look inside this container itself: the
+    // "post-container" class gets replaced when a page passes its own css, so
+    // a class-based lookup found nothing and callouts never opened.
+    const calloutTriggers = containerRef.current
+      ? containerRef.current.querySelectorAll('.callout-trigger')
+      : [];
 
     const openCalloutPopup = (callout) => {
-      const dotColor = callout.getAttribute('data-dot-color') || '#cf52f2';
-      const title = callout.getAttribute('data-title') || 'Pop-up';
+      // The colour and title are plain text; only allow a hex colour and
+      // escape the title before it goes into markup. The body was sanitized
+      // server-side with the rest of the post (lib/sanitize-post.js).
+      const rawColor = callout.getAttribute('data-dot-color') || '';
+      const dotColor = /^#[0-9a-f]{3,8}$/i.test(rawColor) ? rawColor : '#cf52f2';
+      const title = escapeHtml(callout.getAttribute('data-title') || 'Pop-up');
       // Content is stored in data-content attribute (HTML encoded)
       const content = callout.getAttribute('data-content') || '<p></p>';
 
@@ -122,7 +239,10 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
   }, []);
 
   return (
+  <>
+  <Global styles={calloutPopupStyles} />
   <div
+    ref={containerRef}
     className="post-container"
     dir={direction}
     css={css`
@@ -302,6 +422,10 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
         flex: 1;
       }
 
+      ul[data-type="taskList"] li > div > p {
+        margin: 0;
+      }
+
       ul[data-type="taskList"] ul[data-type="taskList"] {
         margin-left: 1.5rem;
         margin-top: 0.25rem;
@@ -370,101 +494,6 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
         display: none;
       }
 
-      /* Callout popup overlay */
-      .callout-popup-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 99999;
-        backdrop-filter: blur(2px);
-        animation: calloutOverlayFadeIn 0.15s ease-out;
-      }
-
-      @keyframes calloutOverlayFadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-
-      .callout-popup {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: var(--grey-1);
-        border-radius: 0.5rem;
-        width: 90%;
-        max-width: 560px;
-        max-height: 80vh;
-        display: flex;
-        flex-direction: column;
-        animation: calloutPopupFadeIn 0.2s ease-out;
-        border: 1px solid var(--grey-2);
-        overflow: hidden;
-      }
-
-      @keyframes calloutPopupFadeIn {
-        from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
-        to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      }
-
-      .callout-popup-header {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid var(--grey-2);
-        flex-shrink: 0;
-      }
-
-      .callout-popup-header .callout-dot {
-        width: 14px;
-        height: 14px;
-      }
-
-      .callout-popup-header .callout-title {
-        flex: 1;
-        font-size: 1rem;
-        font-weight: 500;
-        color: var(--grey-5);
-      }
-
-      .callout-popup-close {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0.375rem;
-        border-radius: 0.25rem;
-        color: var(--grey-3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.15s ease;
-      }
-
-      .callout-popup-close:hover {
-        background: var(--grey-2);
-        color: var(--grey-4);
-      }
-
-      .callout-popup-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 1rem 1.25rem;
-        min-height: 100px;
-        line-height: 1.6;
-      }
-
-      .callout-popup-body > *:first-child {
-        margin-top: 0;
-      }
-
-      .callout-popup-body > *:last-child {
-        margin-bottom: 0;
-      }
-
       [data-theme='dark'] & {
         pre {
           background: var(--grey-2);
@@ -493,6 +522,7 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
   >
     {props.children}
   </div>
+  </>
 )
 }
 export default PostContainer;

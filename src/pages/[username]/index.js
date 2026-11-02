@@ -2,6 +2,9 @@
 import Link from 'next/link'
 import Head from 'next/head'
 import { css, Global, keyframes } from '@emotion/react'
+import { safeJsonLd } from '../../lib/escape'
+import { toPublicUser } from '../../lib/public-user'
+import { toMillis } from '../../lib/timestamps'
 import { htmlToText } from 'html-to-text'
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
@@ -13,7 +16,6 @@ import { hasActiveAccess } from '../../lib/subscription'
 
 import meta from '../../components/meta'
 import { generateProfilePageSchema, generateOrganizationSchema, generateBreadcrumbSchema, generateNewsletterSchema } from '../../lib/seo-utils'
-import SubscribeNewsletter from '../../components/subscribe-newsletter'
 import { SubscribeOrSign, GuestBookEntries } from '../../components/guestbook'
 import FollowButton from '../../components/follow-button'
 import { ProfileCanvas } from '../../components/profile-canvas'
@@ -967,7 +969,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                         </a>
                       )}
                       {user.link && (
-                        <a href={user.link.startsWith('http') ? user.link : `https://${user.link}`} target="_blank" rel="noreferrer" aria-label="Website" css={css`svg { margin-bottom: -2px; }`}>
+                        <a href={user.link.startsWith('http') ? user.link : `https://${user.link}`} target="_blank" rel="noreferrer nofollow ugc" aria-label="Website" css={css`svg { margin-bottom: -2px; }`}>
                           <WebsiteIcon />
                         </a>
                       )}
@@ -988,9 +990,9 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
 
                 const getStatValue = (stat) => {
                   switch (stat) {
-                    case 'followers': return user.followers?.length || 0
-                    case 'following': return user.following?.length || 0
-                    case 'subscribers': return user.subscribers?.length || 0
+                    case 'followers': return user.followerCount || 0
+                    case 'following': return user.followingCount || 0
+                    case 'subscribers': return user.subscriberCount || 0
                     default: return 0
                   }
                 }
@@ -1457,7 +1459,8 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
               {/* Footer - exactly like berrysauce */}
               <div css={css`font-size: 12px; margin-top: 64px;`}>
                 <p css={css`color: ${colors.muted}; a { color: inherit; }`}>
-                  Copyright &copy; {currentYear} Bublr<br />
+                  {/* The words on this page are the writer's, not Bublr's */}
+                  Copyright &copy; {currentYear} {user.displayName || user.name}<br />
                   {/* Show custom footer text, "Made with Bublr" default, or nothing if empty string */}
                   {user.customBranding?.footerText ? (
                     <>
@@ -1513,23 +1516,23 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
 
       {/* Organization schema - critical for E-E-A-T */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{
-        __html: JSON.stringify(organizationSchema)
+        __html: safeJsonLd(organizationSchema)
       }} />
 
       {/* ProfilePage structured data with E-E-A-T signals */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{
-        __html: JSON.stringify(profilePageSchema)
+        __html: safeJsonLd(profilePageSchema)
       }} />
 
       {/* Breadcrumb schema for navigation SEO */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{
-        __html: JSON.stringify(breadcrumbSchema)
+        __html: safeJsonLd(breadcrumbSchema)
       }} />
 
       {/* Newsletter subscription schema for AI discoverability */}
       {newsletterSchema && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{
-          __html: JSON.stringify(newsletterSchema)
+          __html: safeJsonLd(newsletterSchema)
         }} />
       )}
     </>
@@ -1610,7 +1613,7 @@ export async function getServerSideProps({ params, req }) {
       .filter(p => p.published)
       .map(p => ({
         ...p,
-        lastEdited: p.lastEdited?.toDate?.() ? p.lastEdited.toDate().getTime() : p.lastEdited?.toMillis?.() || Date.now(),
+        lastEdited: toMillis(p.lastEdited) || Date.now(),
       }))
       .sort((a, b) => b.lastEdited - a.lastEdited)
       .slice(0, 20)
@@ -1712,7 +1715,7 @@ export async function getServerSideProps({ params, req }) {
       user.following = []
     }
 
-    // Ensure subscribers exists (only pass count, not actual emails for privacy)
+    // Ensure subscribers exists (only the count reaches the page, see toPublicUser)
     if (!user.subscribers) {
       user.subscribers = []
     }
@@ -1888,7 +1891,9 @@ export async function getServerSideProps({ params, req }) {
     }
 
     return {
-      props: { user, organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts, guestbookEntries },
+      // Strip private fields (subscriber emails, API keys, billing) last, after
+      // the schemas above have used the follower/subscriber counts
+      props: { user: toPublicUser(user), organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts, guestbookEntries },
     }
   } catch (err) {
     console.log(err)

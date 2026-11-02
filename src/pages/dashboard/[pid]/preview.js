@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { css } from '@emotion/react'
-import sanitize from 'sanitize-html'
+import { sanitizePostHtml } from '../../../lib/sanitize-post'
+import { toMillis } from '../../../lib/timestamps'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { useDocumentData } from 'react-firebase-hooks/firestore'
 import { ArrowLeftIcon, EyeOpenIcon } from '@radix-ui/react-icons'
@@ -67,9 +68,7 @@ export default function PostPreview() {
 
   const cleanedTitle = cleanTitle(post.title) || 'Untitled'
   const readingTime = calculateReadingTime(post.content)
-  const editedDate = post.lastEdited?.toDate
-    ? post.lastEdited.toDate()
-    : (post.lastEdited ? new Date(post.lastEdited) : new Date())
+  const editedDate = new Date(toMillis(post.lastEdited) || Date.now())
   const formattedDate = editedDate.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -219,9 +218,7 @@ export default function PostPreview() {
             textDirection={post.textDirection || 'auto'}
             fontSettings={fontSettings}
             dangerouslySetInnerHTML={{
-              __html: sanitize(post.content || '', {
-                allowedTags: sanitize.defaults.allowedTags.concat(['img']),
-              }),
+              __html: sanitizePostHtml(post.content || ''),
             }}
             css={css`
               margin-bottom: 2rem;

@@ -1,3 +1,5 @@
+import { authedFetch } from './authed-fetch'
+
 // Add this to your lib/utils.js or create a new file
 export const generateSearchQueries = (post) => {
   const queries = [];
@@ -62,7 +64,7 @@ export async function uploadToCloudinary(file) {
   if (!file) return null;
 
   try {
-    const signRes = await fetch('/api/cloudinary-sign', { method: 'POST' });
+    const signRes = await authedFetch('/api/cloudinary-sign', { method: 'POST' });
     if (!signRes.ok) {
       console.error('Failed to obtain Cloudinary signature');
       return null;

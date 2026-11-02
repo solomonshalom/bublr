@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Head from 'next/head'
 import { css, Global } from '@emotion/react'
 
+import SiteFooter from '../../components/site-footer'
 import meta from '../../components/meta'
 
 // Global styles - only applies Inter font import
@@ -64,7 +65,6 @@ const Tag = ({ children }) => (
 )
 
 export default function NewsletterDocs() {
-  const currentYear = new Date().getFullYear()
 
   return (
     <>
@@ -314,20 +314,7 @@ export default function NewsletterDocs() {
               </p>
 
               {/* Footer */}
-              <div css={css`font-size: 12px; margin-top: 64px;`}>
-                <p css={css`color: var(--grey-3); a { color: inherit; }`}>
-                  Copyright &copy; {currentYear} Bublr<br />
-                  <Link href="/"><a>Home</a></Link>
-                  &nbsp;&middot;&nbsp;
-                  <Link href="/docs"><a>API Docs</a></Link>
-                  &nbsp;&middot;&nbsp;
-                  <Link href="/about"><a>About</a></Link>
-                  &nbsp;&middot;&nbsp;
-                  <Link href="/terms"><a>Terms</a></Link>
-                  &nbsp;&middot;&nbsp;
-                  <Link href="/privacy"><a>Privacy</a></Link>
-                </p>
-              </div>
+              <SiteFooter current="/docs/newsletter" />
             </div>
           </div>
         </section>

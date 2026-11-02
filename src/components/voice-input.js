@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
 import { useState, useRef, useEffect } from 'react'
+import { authedFetch } from '../lib/authed-fetch'
 
 // Sized to sit centered in DsButton default (height 2.1rem)
 const MicIcon = () => (
@@ -117,7 +118,7 @@ export default function VoiceInput({ onTranscript, disabled }) {
       const formData = new FormData()
       formData.append('audio', blob, `recording.${mimeType.split('/')[1]}`)
 
-      const response = await fetch('/api/transcribe', {
+      const response = await authedFetch('/api/transcribe', {
         method: 'POST',
         body: formData,
       })

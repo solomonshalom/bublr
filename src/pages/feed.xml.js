@@ -1,6 +1,7 @@
 import { getAllUsersWithPublishedPosts } from '../lib/db'
 import { extractFirstImage, generateMetaDescription, calculateReadingTime, getWordCount, cleanTitle } from '../lib/seo-utils'
 import { firestore } from '../lib/firebase'
+import { toMillis } from '../lib/timestamps'
 
 const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
 
@@ -107,7 +108,7 @@ export async function getServerSideProps({ res }) {
               title: postData.title,
               content: postData.content,
               excerpt: postData.excerpt,
-              lastEdited: post.lastEdited?.toDate?.() ? post.lastEdited.toDate().getTime() : Date.now(),
+              lastEdited: toMillis(post.lastEdited) || Date.now(),
               authorUsername: user.name,
               authorDisplayName: user.displayName,
               authorPhoto: user.photo

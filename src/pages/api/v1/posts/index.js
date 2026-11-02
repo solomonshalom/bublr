@@ -1,5 +1,7 @@
 import { authenticateApiKey, API_ERROR_CODES } from '../../../../lib/api-auth'
 import firebase, { firestore } from '../../../../lib/firebase'
+import { setPostPublished } from '../../../../lib/publishing'
+import { toMillis } from '../../../../lib/timestamps'
 
 // Content size limits (in characters)
 const LIMITS = {
@@ -76,9 +78,7 @@ async function handleGetPosts(req, res, auth) {
           title: data.title || '',
           excerpt: data.excerpt || '',
           published: data.published || false,
-          lastEdited: data.lastEdited?._seconds
-            ? new Date(data.lastEdited._seconds * 1000).toISOString()
-            : data.lastEdited || null,
+          lastEdited: toMillis(data.lastEdited) != null ? new Date(toMillis(data.lastEdited)).toISOString() : null,
           createdAt: data.createdAt || null,
           dotColor: data.dotColor || null
         }
@@ -191,11 +191,11 @@ async function handleCreatePost(req, res, auth) {
       excerpt: excerpt?.trim() || '',
       content: content || '',
       author: auth.userId,
-      published: Boolean(published),
-      lastEdited: {
-        _seconds: Math.floor(now.getTime() / 1000),
-        _nanoseconds: 0
-      },
+      // Always created as a draft; publishing below goes through moderation
+      published: false,
+      // A real Firestore Timestamp. This used to be a plain { _seconds } map,
+      // which the post page couldn't read, so API-created posts 404'd.
+      lastEdited: firebase.firestore.Timestamp.fromDate(now),
       createdAt: now.getTime()
     }
 
@@ -216,18 +216,12 @@ async function handleCreatePost(req, res, auth) {
       posts: firebase.firestore.FieldValue.arrayUnion(postId)
     })
 
-    // If publishing, run moderation (similar to dashboard publish flow)
+    // If publishing, run moderation (same path as the dashboard)
     if (published) {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
-        const moderationRes = await fetch(`${baseUrl}/api/posts/publish`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ postId, publish: true })
-        })
-        const moderationResult = await moderationRes.json()
+        const result = await setPostPublished({ postId, publish: true })
 
-        if (moderationResult.moderated) {
+        if (result.moderated) {
           return res.status(200).json({
             success: true,
             post: {
@@ -235,14 +229,19 @@ async function handleCreatePost(req, res, auth) {
               slug: postSlug,
               published: false,
               moderated: true,
-              moderationReason: moderationResult.reason
+              moderationReason: result.reason
             },
             message: 'Post created but not published due to content moderation'
           })
         }
-      } catch (moderationError) {
-        console.error('Moderation error:', moderationError)
-        // Continue without moderation if it fails
+        postData.published = Boolean(result.published)
+      } catch (publishError) {
+        console.error('API v1 publish error:', publishError)
+        return res.status(201).json({
+          success: true,
+          post: { id: postId, slug: postSlug, title: postData.title, excerpt: postData.excerpt, published: false, createdAt: postData.createdAt },
+          message: 'Post created as a draft; publishing failed, please try again'
+        })
       }
     }
 
@@ -256,7 +255,7 @@ async function handleCreatePost(req, res, auth) {
         published: postData.published,
         createdAt: postData.createdAt
       },
-      message: published ? 'Post created and published' : 'Post created as draft'
+      message: postData.published ? 'Post created and published' : 'Post created as draft'
     })
   } catch (error) {
     console.error('API v1 create post error:', error)

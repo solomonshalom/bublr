@@ -1,5 +1,5 @@
-import firebase from '../../../lib/firebase'
 import { firestore } from '../../../lib/firebase'
+import { requireSelf } from '../../../lib/server-auth'
 
 /**
  * Notification types and their importance colors:
@@ -25,22 +25,26 @@ export const NOTIFICATION_COLORS = {
 export default async function handler(req, res) {
   const { method } = req
 
+  if (!['GET', 'PATCH', 'DELETE'].includes(method)) {
+    return res.status(405).json({ error: { message: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' } })
+  }
+
+  // Everything here acts on the signed-in user's own notifications
+  const claimedUserId = method === 'GET' ? req.query?.userId : req.body?.userId
+  const userId = await requireSelf(req, res, claimedUserId)
+  if (!userId) return
+
   // GET - Fetch notifications for a user
   if (method === 'GET') {
-    const { userId, unreadOnly, limit = 50 } = req.query
-
-    if (!userId) {
-      return res.status(400).json({
-        error: { message: 'Missing userId parameter', code: 'MISSING_USER_ID' },
-      })
-    }
+    const { unreadOnly, limit = 50 } = req.query
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100)
 
     try {
       let query = firestore
         .collection('notifications')
         .where('recipientId', '==', userId)
         .orderBy('createdAt', 'desc')
-        .limit(parseInt(limit))
+        .limit(safeLimit)
 
       const snapshot = await query.get()
       const notifications = []
@@ -74,76 +78,12 @@ export default async function handler(req, res) {
     }
   }
 
-  // POST - Create a new notification
-  if (method === 'POST') {
-    const {
-      recipientId,
-      type,
-      actorId,
-      actorName,
-      actorUsername,
-      actorPhoto,
-      postId,
-      postTitle,
-      postSlug,
-      postAuthorName,
-      message,
-      metadata,
-    } = req.body
-
-    if (!recipientId || !type) {
-      return res.status(400).json({
-        error: { message: 'Missing required fields', code: 'MISSING_FIELDS' },
-      })
-    }
-
-    // Don't notify yourself
-    if (recipientId === actorId) {
-      return res.status(200).json({ success: true, skipped: true, reason: 'self-action' })
-    }
-
-    try {
-      const notificationData = {
-        recipientId,
-        type,
-        actorId: actorId || null,
-        actorName: actorName || 'Someone',
-        actorUsername: actorUsername || null,
-        actorPhoto: actorPhoto || '',
-        postId: postId || null,
-        postTitle: postTitle || null,
-        postSlug: postSlug || null,
-        postAuthorName: postAuthorName || null,
-        message: message || null,
-        metadata: metadata || {},
-        read: false,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      }
-
-      const docRef = await firestore.collection('notifications').add(notificationData)
-
-      return res.status(201).json({
-        id: docRef.id,
-        ...notificationData,
-        createdAt: Date.now(),
-      })
-    } catch (error) {
-      console.error('Create notification error:', error.message, error.code)
-      return res.status(500).json({
-        error: { message: 'Failed to create notification', code: 'INTERNAL_ERROR', details: error.message },
-      })
-    }
-  }
+  // Notifications are created server-side only (follow, like, subscribe and
+  // new-post routes), so there is no public POST: it let anyone forge them.
 
   // PATCH - Mark notification(s) as read
   if (method === 'PATCH') {
-    const { notificationId, userId, markAllRead } = req.body
-
-    if (!userId) {
-      return res.status(400).json({
-        error: { message: 'Missing userId', code: 'MISSING_USER_ID' },
-      })
-    }
+    const { notificationId, markAllRead } = req.body || {}
 
     try {
       if (markAllRead) {
@@ -196,13 +136,7 @@ export default async function handler(req, res) {
 
   // DELETE - Delete old notifications (cleanup)
   if (method === 'DELETE') {
-    const { userId, olderThanDays = 30 } = req.body
-
-    if (!userId) {
-      return res.status(400).json({
-        error: { message: 'Missing userId', code: 'MISSING_USER_ID' },
-      })
-    }
+    const { olderThanDays = 30 } = req.body || {}
 
     try {
       const cutoffDate = new Date()

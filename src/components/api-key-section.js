@@ -3,6 +3,7 @@ import { css } from '@emotion/react'
 import { useState, useEffect } from 'react'
 import { ChevronDownIcon, ChevronUpIcon, PlusIcon, TrashIcon, CopyIcon, CheckIcon, EyeOpenIcon, EyeClosedIcon } from '@radix-ui/react-icons'
 import Link from 'next/link'
+import { authedFetch } from '../lib/authed-fetch'
 
 import Spinner from './spinner'
 
@@ -34,7 +35,7 @@ export function ApiKeyManager({ userId }) {
   useEffect(() => {
     async function fetchKeys() {
       try {
-        const res = await fetch(`/api/keys/list?userId=${userId}`)
+        const res = await authedFetch(`/api/keys/list?userId=${userId}`)
         const data = await res.json()
         if (data.keys) {
           setKeys(data.keys)
@@ -62,7 +63,7 @@ export function ApiKeyManager({ userId }) {
     setError(null)
 
     try {
-      const res = await fetch('/api/keys/create', {
+      const res = await authedFetch('/api/keys/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, name: newKeyName.trim() })
@@ -95,7 +96,7 @@ export function ApiKeyManager({ userId }) {
     setError(null)
 
     try {
-      const res = await fetch('/api/keys/revoke', {
+      const res = await authedFetch('/api/keys/revoke', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, keyId })

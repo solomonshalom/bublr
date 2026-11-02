@@ -12,6 +12,7 @@ import { firestore, auth } from '../../lib/firebase'
 
 import Search from '../../components/search'
 import { formatDate } from '../../lib/utils'
+import { toMillis } from '../../lib/timestamps'
 import { LoadingContainer } from '../../components/loading-container'
 import { AnimatedList, AnimatedListItem } from '../../components/animated-list'
 
@@ -21,6 +22,7 @@ import DashboardLayout, {
 } from '../../components/dashboard/dashboard-layout'
 import PageHeader from '../../components/dashboard/page-header'
 import ShortcutButton from '../../components/dashboard/shortcut-button'
+import DsButton from '../../components/dashboard/ds-button'
 
 const searchWrapStyle = css`
   display: flex;
@@ -185,6 +187,13 @@ function PostsContent() {
                 <p>
                   Press <b>C</b> or click <b>Create Post</b> to start writing.
                 </p>
+                {/* A tap target for phones, where there's no "C" key */}
+                <DsButton
+                  onClick={handleCreatePost}
+                  css={css`margin-top: 1.25rem;`}
+                >
+                  Write your first post
+                </DsButton>
               </div>
             ) : filteredPosts?.length === 0 && searchInput.length > 0 ? (
               <div css={emptyStateStyle}>
@@ -195,13 +204,12 @@ function PostsContent() {
                 {[...(filteredPosts || [])]
                   .sort(
                     (a, b) =>
-                      b.lastEdited.toDate().getTime() -
-                      a.lastEdited.toDate().getTime(),
+                      (toMillis(b.lastEdited) || 0) - (toMillis(a.lastEdited) || 0),
                   )
                   .map(post => (
                     <AnimatedListItem key={post.id} css={itemStyle}>
                       <time css={dateStyle}>
-                        {formatDate(post.lastEdited.toDate())}
+                        {formatDate(toMillis(post.lastEdited) || Date.now())}
                       </time>
                       <Link href={`/dashboard/${post.id}`}>
                         <a css={linkStyle}>

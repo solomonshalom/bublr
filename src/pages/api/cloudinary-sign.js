@@ -1,15 +1,20 @@
 import crypto from 'crypto'
+import { requireAuth } from '../../lib/server-auth'
 
 /**
  * Generates a short-lived signature for direct (client-side) uploads to
  * Cloudinary. The API secret stays server-side and is never sent to the
  * browser; the client uses { signature, timestamp, apiKey, cloudName, folder }
- * to perform the actual upload against Cloudinary's API.
+ * to perform the actual upload against Cloudinary's API. Only signed-in
+ * writers get a signature, so strangers can't use Bublr's storage.
  */
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: { message: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' } })
   }
+
+  const uid = await requireAuth(req, res)
+  if (!uid) return
 
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME
   const apiKey = process.env.CLOUDINARY_API_KEY

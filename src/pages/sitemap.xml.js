@@ -1,6 +1,7 @@
 import { getAllUsersWithPublishedPosts } from '../lib/db'
 import { extractFirstImage } from '../lib/seo-utils'
 import { firestore } from '../lib/firebase'
+import { toMillis } from '../lib/timestamps'
 
 const SITE_URL = 'https://bublr.life'
 
@@ -68,7 +69,7 @@ function generateSiteMap(users, postsWithContent) {
   ${users
     .map(user => {
       const lastModified = user.posts && user.posts.length > 0
-        ? new Date(Math.max(...user.posts.map(p => p.lastEdited.toDate()))).toISOString()
+        ? new Date(Math.max(...user.posts.map(p => toMillis(p.lastEdited) || 0))).toISOString()
         : new Date().toISOString()
 
       return `
@@ -94,7 +95,7 @@ function generateSiteMap(users, postsWithContent) {
         .map(post => {
           const postContent = postsWithContent[post.id] || {}
           const firstImage = extractFirstImage(postContent.content)
-          const lastModified = new Date(post.lastEdited.toDate()).toISOString()
+          const lastModified = new Date(toMillis(post.lastEdited) || Date.now()).toISOString()
           const postTitle = escapeXml(post.title || 'Untitled')
 
           return `

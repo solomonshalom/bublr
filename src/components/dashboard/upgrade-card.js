@@ -87,9 +87,9 @@ export default function UpgradeCard({ uid }) {
       <ul css={featureListStyle}>
         <li><CheckIcon /> Custom Domain</li>
         <li><CheckIcon /> Personalized Footer</li>
-        <li><CheckIcon /> Priority Support</li>
       </ul>
-      <Link href="/dashboard/settings#custom-domain">
+      {/* The domain settings live on the Advanced settings page */}
+      <Link href="/dashboard/settings/advanced">
         <a css={buttonStyle}>Upgrade — $2/mo</a>
       </Link>
     </div>

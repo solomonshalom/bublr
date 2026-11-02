@@ -136,7 +136,8 @@ function TranslatedContent({ title, content, targetLanguage, onClose }) {
       )}
 
       <div css={css`
-        font-family: 'Newsreader', serif;
+        /* Same default body font as posts (Inter), not the old Newsreader */
+        font-family: 'Inter', sans-serif;
         font-size: 1.1rem;
         line-height: 1.7;
         color: var(--grey-4);
@@ -154,7 +155,7 @@ function TranslatedContent({ title, content, targetLanguage, onClose }) {
   )
 }
 
-export default function TranslateModal({ title, content }) {
+export default function TranslateModal({ postId }) {
   const [open, setOpen] = useState(false)
   const [selectedLang, setSelectedLang] = useState(null)
   const [translating, setTranslating] = useState(false)
@@ -172,8 +173,7 @@ export default function TranslateModal({ title, content }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title,
-          content,
+          postId,
           targetLang: langCode,
         }),
       })

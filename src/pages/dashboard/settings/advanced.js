@@ -12,6 +12,7 @@ import DashboardLayout, {
 } from '../../../components/dashboard/dashboard-layout'
 import PageHeader from '../../../components/dashboard/page-header'
 import { DsCard, DsSection } from '../../../components/dashboard/ds-section'
+import ExportWritingButton from '../../../components/dashboard/export-writing'
 
 const appearanceRowStyle = css`
   display: flex;
@@ -57,6 +58,23 @@ function AdvancedContent() {
                 </span>
               </div>
               <ThemeToggle />
+            </div>
+          </DsCard>
+        </DsSection>
+
+        <DsSection
+          title="Your writing"
+          description="Your words are yours. Take them anywhere."
+        >
+          <DsCard dashed>
+            <div css={appearanceRowStyle}>
+              <div>
+                <div css={appearanceLabelStyle}>Export all posts</div>
+                <span css={appearanceHintStyle}>
+                  Every post and draft as Markdown, plus a JSON copy with the original HTML, in one .zip.
+                </span>
+              </div>
+              <ExportWritingButton uid={user?.uid} />
             </div>
           </DsCard>
         </DsSection>

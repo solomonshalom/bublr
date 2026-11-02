@@ -1,18 +1,17 @@
 import { firestore } from '../../../lib/firebase'
 import { checkSubscriptionAccess } from '../../../lib/subscription'
 import { sendSubscriptionEmail } from '../../../lib/resend'
+import { requireSelf } from '../../../lib/server-auth'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  try {
-    const { userId } = req.query
+  const userId = await requireSelf(req, res, req.query?.userId)
+  if (!userId) return
 
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' })
-    }
+  try {
 
     const userDoc = await firestore.collection('users').doc(userId).get()
 

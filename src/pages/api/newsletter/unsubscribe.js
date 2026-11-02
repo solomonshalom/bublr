@@ -1,4 +1,5 @@
 import { firestore } from '../../../lib/firebase'
+import { escapeHtml } from '../../../lib/escape'
 
 export default async function handler(req, res) {
   // Support both GET (from email link) and POST
@@ -109,6 +110,8 @@ export default async function handler(req, res) {
 
     // For GET requests (email links), show a nice confirmation page
     if (req.method === 'GET') {
+      const authorLabel = escapeHtml(authorData.displayName || author)
+      const authorPath = encodeURIComponent(author)
       res.setHeader('Content-Type', 'text/html')
       return res.status(200).send(`
         <!DOCTYPE html>
@@ -134,8 +137,8 @@ export default async function handler(req, res) {
               </svg>
             </div>
             <h1>Successfully Unsubscribed</h1>
-            <p>You've been unsubscribed from ${authorData.displayName || author}'s newsletter. You won't receive any more email notifications about their new posts.</p>
-            <p style="margin-top: 24px;"><a href="https://bublr.life/${author}">Visit ${authorData.displayName || author}'s profile</a></p>
+            <p>You've been unsubscribed from ${authorLabel}'s newsletter. You won't receive any more email notifications about their new posts.</p>
+            <p style="margin-top: 24px;"><a href="https://bublr.life/${authorPath}">Visit ${authorLabel}'s profile</a></p>
           </div>
         </body>
         </html>

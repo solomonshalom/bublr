@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Head from 'next/head'
 import { css, Global } from '@emotion/react'
 
+import SiteFooter from '../components/site-footer'
 import meta from '../components/meta'
 
 // Global styles - only applies Inter font import
@@ -11,7 +12,6 @@ const globalStyles = css`
 `
 
 export default function About() {
-  const currentYear = new Date().getFullYear()
 
   return (
     <>
@@ -141,10 +141,10 @@ export default function About() {
                 Getting started is simple:
               </p>
               <ul css={css`color: var(--grey-3); margin-top: 12px; margin-left: 1.25rem; line-height: 1.7;`}>
-                <li><strong>Sign in</strong> — Use your Google account to get started instantly</li>
-                <li><strong>Create a post</strong> — Click the + button in your dashboard</li>
-                <li><strong>Write</strong> — Use our clean editor. Format with the toolbar or keyboard shortcuts</li>
-                <li><strong>Publish</strong> — Click the settings icon, then Publish when you&apos;re ready</li>
+                <li><strong>Sign up</strong> — Use your Google account or an email and password</li>
+                <li><strong>Create a post</strong> — Click Create Post in your dashboard (or press C)</li>
+                <li><strong>Write</strong> — Use our clean editor. Press / for blocks, or format with keyboard shortcuts</li>
+                <li><strong>Publish</strong> — Open post settings with the ⋮ button at the top, then switch on Published when you&apos;re ready</li>
                 <li><strong>Share</strong> — Your post is live at bublr.life/yourname/post-slug</li>
               </ul>
 
@@ -156,10 +156,13 @@ export default function About() {
               <ul css={css`color: var(--grey-3); margin-top: 12px; margin-left: 1.25rem; line-height: 1.7;`}>
                 <li><strong>Clean Editor</strong> — Distraction-free writing with rich text support</li>
                 <li><strong>Your Profile</strong> — Customize your page with bio, social links, and custom sections</li>
+                <li><strong>Explore</strong> — Discover writing from everyone on Bublr, no account needed</li>
                 <li><strong>Reading List</strong> — Save posts from other writers to read later</li>
-                <li><strong>Import Articles</strong> — Bring your Medium posts to Bublr</li>
+                <li><strong>Newsletters &amp; RSS</strong> — Readers can subscribe by email or follow your feed at bublr.life/yourname/feed.xml</li>
+                <li><strong>Import Articles</strong> — Bring your posts from Medium, Substack, WordPress, Ghost and more</li>
+                <li><strong>Export</strong> — Download everything you&apos;ve written as Markdown, any time</li>
                 <li><strong>Dark Mode</strong> — Easy on the eyes, day or night</li>
-                <li><strong>Custom Domains</strong> — Use your own domain for your Bublr page</li>
+                <li><strong>Custom Domains</strong> — Use your own domain for your Bublr page ($2/month, optional)</li>
               </ul>
 
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
@@ -202,18 +205,7 @@ export default function About() {
               </p>
 
               {/* Footer */}
-              <div css={css`font-size: 12px; margin-top: 64px;`}>
-                <p css={css`color: var(--grey-3); a { color: inherit; }`}>
-                  Copyright &copy; {currentYear} Bublr<br />
-                  <Link href="/"><a>Home</a></Link>
-                  &nbsp;&middot;&nbsp;
-                  <Link href="/terms"><a>Terms</a></Link>
-                  &nbsp;&middot;&nbsp;
-                  <Link href="/privacy"><a>Privacy</a></Link>
-                  &nbsp;&middot;&nbsp;
-                  <Link href="/explore"><a>Explore</a></Link>
-                </p>
-              </div>
+              <SiteFooter current="/about" />
             </div>
           </div>
         </section>

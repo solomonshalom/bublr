@@ -50,6 +50,7 @@ import EditorFloatingMenu from '../../components/editor/editor-floating-menu'
 import Callout from '../../components/editor/callout-extension'
 
 import firebase, { auth, firestore } from '../../lib/firebase'
+import { authedFetch } from '../../lib/authed-fetch'
 import { postWithUserIDAndSlugExists, removePostForUser } from '../../lib/db'
 
 // Color palette for post dots (same as berrysauce)
@@ -534,6 +535,12 @@ function SaveStatusPill({ status, hasChanges }) {
   )
 }
 
+// Fields the writer edits in this screen. While an edit to one of them hasn't
+// reached Firestore yet, a fresh server snapshot must not overwrite it.
+const LOCALLY_EDITED_FIELDS = ['title', 'content', 'excerpt', 'slug']
+// Fields autosave writes (the slug has its own validated save path).
+const AUTOSAVE_FIELDS = ['title', 'content', 'excerpt']
+
 function Editor({ post, onBeforeDelete }) {
   // Right-side post settings sidebar — chord-style focused writing chrome.
   // Closed by default so the writing column is uninterrupted; user toggles
@@ -580,9 +587,24 @@ function Editor({ post, onBeforeDelete }) {
   const saveTimeoutRef = useRef(null)
   const slugSaveTimeoutRef = useRef(null)
   const isInitialMount = useRef(true)
+  // The server copy clientPost was last reconciled with (for a 3-way merge)
+  const syncedPostRef = useRef(null)
 
   useEffect(() => {
-    setClientPost(post)
+    const base = syncedPostRef.current
+    syncedPostRef.current = post
+    setClientPost(prev => {
+      // First load (or a different post): take the server copy as-is
+      if (!base || base.id !== post.id) return post
+      // Otherwise take the server copy, but keep local edits that haven't been
+      // saved yet. Without this, the echo of one autosave wiped out whatever
+      // was typed while it was in flight and cancelled the next save.
+      const merged = { ...post }
+      for (const field of LOCALLY_EDITED_FIELDS) {
+        if (prev[field] !== base[field]) merged[field] = prev[field]
+      }
+      return merged
+    })
   }, [post])
 
   // Check if there are unsaved changes
@@ -601,20 +623,29 @@ function Editor({ post, onBeforeDelete }) {
   const saveChanges = useCallback(async () => {
     if (!hasChanges()) return
 
+    // Only write the fields that changed. Writing the whole document used to
+    // clobber anything updated meanwhile (views, likes, publish state) and
+    // could save a slug that hadn't passed validation.
+    const changed = {}
+    for (const field of AUTOSAVE_FIELDS) {
+      if (clientPost[field] !== undefined && clientPost[field] !== post[field]) {
+        changed[field] = clientPost[field]
+      }
+    }
+    if (Object.keys(changed).length === 0) return
+
     setSaveStatus('saving')
     try {
-      let toSave = {
-        ...clientPost,
+      await firestore.collection('posts').doc(post.id).update({
+        ...changed,
         lastEdited: firebase.firestore.Timestamp.now(),
-      }
-      delete toSave.id // since we get the id from the document not the data
-      await firestore.collection('posts').doc(post.id).set(toSave)
+      })
       setSaveStatus('saved')
     } catch (err) {
       console.error('Save error:', err)
       setSaveStatus('unsaved')
     }
-  }, [clientPost, post.id, hasChanges])
+  }, [clientPost, post, hasChanges])
 
   // Validate and save slug with debouncing
   const validateAndSaveSlug = useCallback(async (newSlug) => {
@@ -727,6 +758,10 @@ function Editor({ post, onBeforeDelete }) {
         saveChanges()
       },
       '$mod+KeyB': e => {
+        // While writing, ⌘B is Bold. It used to also slide the settings
+        // panel open every time you bolded a word.
+        const target = e.target
+        if (target && (target.isContentEditable || target.closest?.('[contenteditable="true"]'))) return
         e.preventDefault()
         toggleSettings()
       },
@@ -757,7 +792,7 @@ function Editor({ post, onBeforeDelete }) {
     setImportArticles([])
 
     try {
-      const response = await fetch('/api/import/fetch', {
+      const response = await authedFetch('/api/import/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -793,7 +828,7 @@ function Editor({ post, onBeforeDelete }) {
 
     setImporting(true)
     try {
-      const response = await fetch('/api/import/convert', {
+      const response = await authedFetch('/api/import/convert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -964,52 +999,60 @@ function Editor({ post, onBeforeDelete }) {
     },
   })
 
+  async function uploadAndInsertImage(file) {
+    if (!file || !contentEditor) return
+
+    // Show loading indicator
+    const loadingEl = document.createElement('div')
+    loadingEl.textContent = 'Uploading image...'
+    loadingEl.style.padding = '1rem'
+    loadingEl.style.background = 'var(--grey-5)'
+    loadingEl.style.color = 'var(--grey-1)'
+    loadingEl.style.fontFamily = "'Inter', sans-serif"
+    loadingEl.style.fontSize = '0.85rem'
+    loadingEl.style.borderRadius = '0.5rem'
+    loadingEl.style.position = 'fixed'
+    loadingEl.style.zIndex = '9999'
+    loadingEl.style.top = '1rem'
+    loadingEl.style.right = '1rem'
+    document.body.appendChild(loadingEl)
+
+    try {
+      // Import the function to avoid module issues
+      const { uploadToCloudinary } = await import('../../lib/utils')
+
+      // Upload image (signature generated server-side via /api/cloudinary-sign)
+      const imageUrl = await uploadToCloudinary(file)
+
+      if (imageUrl) {
+        // Insert the image into the editor
+        contentEditor.chain().focus().setImage({ src: imageUrl }).run()
+      } else {
+        alert('Failed to upload image. Please try again.')
+      }
+    } catch (error) {
+      console.error('Image upload error:', error)
+      alert('Error uploading image. Please try again.')
+    } finally {
+      // Remove loading indicator
+      loadingEl.remove()
+    }
+  }
+
+  // The slash menu and the floating "+" menu ask for an image upload with this
+  // event; nothing used to listen, so picking a file there did nothing.
+  useEffect(() => {
+    const onImageUpload = event => uploadAndInsertImage(event.detail?.file)
+    window.addEventListener('tiptap-image-upload', onImageUpload)
+    return () => window.removeEventListener('tiptap-image-upload', onImageUpload)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentEditor])
+
   function addImage() {
-    // Create a file input element
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    
-    // Listen for file selection
-    input.onchange = async (event) => {
-      const file = event.target.files[0]
-      if (!file) return
-      
-      // Show loading indicator
-      const loadingEl = document.createElement('div')
-      loadingEl.textContent = 'Uploading image...'
-      loadingEl.style.padding = '1rem'
-      loadingEl.style.background = 'var(--grey-5)'
-      loadingEl.style.borderRadius = '0.5rem'
-      loadingEl.style.position = 'fixed'
-      loadingEl.style.zIndex = '9999'
-      loadingEl.style.top = '1rem'
-      loadingEl.style.right = '1rem'
-      document.body.appendChild(loadingEl)
-      
-      try {
-        // Import the function to avoid module issues
-        const { uploadToCloudinary } = await import('../../lib/utils')
-
-        // Upload image (signature generated server-side via /api/cloudinary-sign)
-        const imageUrl = await uploadToCloudinary(file)
-        
-        if (imageUrl) {
-          // Insert the image into the editor
-          contentEditor.chain().focus().setImage({ src: imageUrl }).run()
-        } else {
-          alert('Failed to upload image. Please try again.')
-        }
-      } catch (error) {
-        console.error('Image upload error:', error)
-        alert('Error uploading image. Please try again.')
-      } finally {
-        // Remove loading indicator
-        document.body.removeChild(loadingEl)
-      }
-    }
-    
-    // Trigger file selection dialog
+    input.onchange = event => uploadAndInsertImage(event.target.files[0])
     input.click()
   }
 
@@ -1195,7 +1238,7 @@ function Editor({ post, onBeforeDelete }) {
                     onChange={async () => {
                       const willPublish = !post.published
                       try {
-                        const response = await fetch('/api/posts/publish', {
+                        const response = await authedFetch('/api/posts/publish', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ postId: post.id, publish: willPublish }),
@@ -1207,10 +1250,14 @@ function Editor({ post, onBeforeDelete }) {
                             reason: result.reason,
                             category: result.category,
                           })
+                        } else if (!response.ok) {
+                          throw new Error(result.error?.message || result.error || 'Publish failed')
                         }
                       } catch (error) {
+                        // Don't flip `published` directly here: that skipped
+                        // moderation. Leave the post as it was and say so.
                         console.error('Publish error:', error)
-                        await firestore.collection('posts').doc(post.id).update({ published: willPublish })
+                        alert(`Couldn't ${willPublish ? 'publish' : 'unpublish'} right now. Please try again.`)
                       }
                     }}
                   />

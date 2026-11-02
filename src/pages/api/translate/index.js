@@ -1,9 +1,13 @@
 import Groq from 'groq-sdk'
 import { htmlToText } from 'html-to-text'
+import { firestore } from '../../../lib/firebase'
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-})
+// Created on first use, so a missing key answers 503 instead of crashing
+let groqClient = null
+const groq = () => {
+  if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  return groqClient
+}
 
 // Supported languages with their native names
 const SUPPORTED_LANGUAGES = {
@@ -68,7 +72,7 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
 }`
 
   try {
-    const chatCompletion = await groq.chat.completions.create({
+    const chatCompletion = await groq().chat.completions.create({
       messages: [
         {
           role: 'system',
@@ -118,11 +122,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: { message: 'Method not allowed' } })
   }
 
-  const { title, content, targetLang } = req.body
+  // Readers translate a published post by its id. The text comes from our
+  // database, not the request, so this can't be used as a general-purpose
+  // translation proxy on Bublr's Groq key.
+  const { postId, targetLang } = req.body || {}
 
-  // Validate inputs
-  if (!content) {
-    return res.status(400).json({ error: { message: 'Missing content' } })
+  if (!postId || typeof postId !== 'string') {
+    return res.status(400).json({ error: { message: 'Missing post' } })
   }
 
   if (!targetLang) {
@@ -136,8 +142,18 @@ export default async function handler(req, res) {
     })
   }
 
+  if (!process.env.GROQ_API_KEY) {
+    return res.status(503).json({ error: { message: 'Translation is not available right now' } })
+  }
+
   try {
-    const result = await translateContent(title, content, targetLang)
+    const postDoc = await firestore.collection('posts').doc(postId).get()
+    const post = postDoc.exists ? postDoc.data() : null
+    if (!post || !post.published) {
+      return res.status(404).json({ error: { message: 'Post not found' } })
+    }
+
+    const result = await translateContent(post.title || '', post.content || '', targetLang)
 
     if (result.success) {
       return res.status(200).json({

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Head from 'next/head'
 import { css, Global } from '@emotion/react'
 
+import SiteFooter from '../components/site-footer'
 import meta from '../components/meta'
 
 // Global styles - only applies Inter font import
@@ -11,7 +12,6 @@ const globalStyles = css`
 `
 
 export default function Privacy() {
-  const currentYear = new Date().getFullYear()
 
   return (
     <>
@@ -207,16 +207,7 @@ export default function Privacy() {
               </p>
 
               {/* Footer */}
-              <div css={css`font-size: 12px; margin-top: 64px;`}>
-                <p css={css`color: var(--grey-3); a { color: inherit; }`}>
-                  Copyright &copy; {currentYear} Bublr<br />
-                  <Link href="/"><a>Home</a></Link>
-                  &nbsp;&middot;&nbsp;
-                  <Link href="/terms"><a>Terms</a></Link>
-                  &nbsp;&middot;&nbsp;
-                  <Link href="/explore"><a>Explore</a></Link>
-                </p>
-              </div>
+              <SiteFooter current="/privacy" />
             </div>
           </div>
         </section>

@@ -1,6 +1,9 @@
 /** @jsxImportSource @emotion/react */
 import Head from 'next/head'
 import { css } from '@emotion/react'
+import { safeJsonLd } from '../lib/escape'
+import { toPublicUser } from '../lib/public-user'
+import { toMillis } from '../lib/timestamps'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
 import { useRouter } from 'next/router'
@@ -229,17 +232,17 @@ Home.getLayout = function HomeLayout(page, pageProps) {
 
         {/* Organization schema - critical for E-E-A-T and AI citation */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{
-          __html: JSON.stringify(organizationSchema)
+          __html: safeJsonLd(organizationSchema)
         }} />
 
         {/* WebSite schema with SearchAction for sitelinks */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{
-          __html: JSON.stringify(webSiteSchema)
+          __html: safeJsonLd(webSiteSchema)
         }} />
 
         {/* SiteNavigationElement for site structure */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{
-          __html: JSON.stringify(siteNavigationSchema)
+          __html: safeJsonLd(siteNavigationSchema)
         }} />
       </Head>
       {page}
@@ -303,7 +306,7 @@ export async function getServerSideProps({ req }) {
         .filter(p => p.published)
         .map(p => ({
           ...p,
-          lastEdited: p.lastEdited?.toDate?.() ? p.lastEdited.toDate().getTime() : p.lastEdited?.toMillis?.() || Date.now(),
+          lastEdited: toMillis(p.lastEdited) || Date.now(),
         }))
         .sort((a, b) => b.lastEdited - a.lastEdited)
         .slice(0, 20)
@@ -365,7 +368,7 @@ export async function getServerSideProps({ req }) {
 
       return {
         props: {
-          customDomainUser: user,
+          customDomainUser: toPublicUser(user),
           organizationSchema,
           profilePageSchema,
         },

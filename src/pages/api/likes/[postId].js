@@ -1,4 +1,37 @@
 import firebase, { firestore } from '../../../lib/firebase'
+import { requireSelf } from '../../../lib/server-auth'
+
+// Tell the author someone liked their post. Actor details come from the
+// liker's own profile, not from the request, so they can't be spoofed.
+async function notifyAuthorOfLike({ postId, postData, actorId }) {
+  if (!postData.author || postData.author === actorId) return
+  try {
+    const [actorDoc, authorDoc] = await Promise.all([
+      firestore.collection('users').doc(actorId).get(),
+      firestore.collection('users').doc(postData.author).get(),
+    ])
+    const actor = actorDoc.exists ? actorDoc.data() : {}
+    const author = authorDoc.exists ? authorDoc.data() : {}
+    await firestore.collection('notifications').add({
+      recipientId: postData.author,
+      type: 'like',
+      actorId,
+      actorName: actor.displayName || actor.name || 'Someone',
+      actorUsername: actor.name || null,
+      actorPhoto: actor.photo || '',
+      postId,
+      postTitle: postData.title || null,
+      postSlug: postData.slug || null,
+      postAuthorName: author.name || null,
+      message: null,
+      metadata: {},
+      read: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    })
+  } catch (error) {
+    console.error('Failed to create like notification:', error)
+  }
+}
 
 export default async function handler(req, res) {
   const { postId } = req.query
@@ -18,12 +51,9 @@ export default async function handler(req, res) {
     const postData = postDoc.data()
 
     if (req.method === 'POST') {
-      // Toggle like - requires userId
-      const { userId } = req.body
-
-      if (!userId) {
-        return res.status(400).json({ error: 'Missing userId' })
-      }
+      // Toggle like - the liker is whoever is signed in
+      const userId = await requireSelf(req, res, req.body?.userId)
+      if (!userId) return
 
       const likedBy = postData.likedBy || []
       const hasLiked = likedBy.includes(userId)
@@ -52,7 +82,8 @@ export default async function handler(req, res) {
         const updatedDoc = await postRef.get()
         const updatedData = updatedDoc.data()
 
-        // Create notification for post author (handled by client to include actor info)
+        await notifyAuthorOfLike({ postId, postData, actorId: userId })
+
         return res.status(200).json({
           likes: updatedData.likes || 0,
           liked: true,

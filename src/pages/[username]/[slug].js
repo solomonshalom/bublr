@@ -2,7 +2,10 @@
 import Link from 'next/link'
 import Head from 'next/head'
 import { css } from '@emotion/react'
-import sanitize from 'sanitize-html'
+import { safeJsonLd } from '../../lib/escape'
+import { toPostAuthor, toPublicPost } from '../../lib/public-user'
+import { toMillis } from '../../lib/timestamps'
+import { sanitizePostHtml } from '../../lib/sanitize-post'
 import { htmlToText } from 'html-to-text'
 import { useState, useEffect, useRef } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
@@ -50,6 +53,7 @@ import meta from '../../components/meta'
 import Container from '../../components/container'
 import { IconButton } from '../../components/button'
 import PostContainer from '../../components/post-container'
+import { authedFetch } from '../../lib/authed-fetch'
 import ThemeToggle from '../../components/theme-toggle'
 import TranslateModal from '../../components/translate-modal'
 
@@ -130,7 +134,7 @@ function LikeButton({ postId, postTitle, postSlug, authorId, authorUsername, use
     setLikes(prev => liked ? prev - 1 : prev + 1)
 
     try {
-      const response = await fetch(`/api/likes/${postId}`, {
+      const response = await authedFetch(`/api/likes/${postId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
@@ -145,28 +149,9 @@ function LikeButton({ postId, postTitle, postSlug, authorId, authorUsername, use
         throw new Error(data.error || 'Failed to update like')
       }
 
+      // The server notifies the author when a post is liked
       setLikes(data.likes)
       setLiked(data.liked)
-
-      // Send notification if user just liked (not unliked) and it's not their own post
-      if (data.liked && authorId && authorId !== userId && userInfo) {
-        fetch('/api/notifications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipientId: authorId,
-            type: 'like',
-            actorId: userId,
-            actorName: userInfo.displayName || 'Someone',
-            actorUsername: userInfo.name,
-            actorPhoto: userInfo.photo || '',
-            postId: postId,
-            postTitle: postTitle,
-            postSlug: postSlug,
-            postAuthorName: authorUsername,
-          }),
-        }).catch(console.error)
-      }
     } catch (err) {
       console.error('Like error:', err)
     } finally {
@@ -352,6 +337,8 @@ export default function Post({ post, seo, fontSettings, customFonts }) {
 
         {/* Canonical URL */}
         <link rel="canonical" href={seo.canonicalUrl} />
+        {/* Let feed readers find the writer's RSS from any of their posts */}
+        <link rel="alternate" type="application/rss+xml" title={`${post.author.displayName}'s RSS Feed`} href={`${SITE_URL}/${post.author.name}/feed.xml`} />
 
         {/* Preload fonts for better LCP */}
         <link
@@ -371,26 +358,26 @@ export default function Post({ post, seo, fontSettings, customFonts }) {
         {/* Organization schema - critical for E-E-A-T */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationSchema) }}
         />
 
         {/* BlogPosting structured data with Speakable for voice search and AI */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(seo.blogPostingSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(seo.blogPostingSchema) }}
         />
 
         {/* Breadcrumb structured data for navigation */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(seo.breadcrumbSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(seo.breadcrumbSchema) }}
         />
 
         {/* FAQ schema if content contains Q&A patterns */}
         {seo.faqSchema && (
           <script
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(seo.faqSchema) }}
+            dangerouslySetInnerHTML={{ __html: safeJsonLd(seo.faqSchema) }}
           />
         )}
 
@@ -474,9 +461,7 @@ export default function Post({ post, seo, fontSettings, customFonts }) {
           textDirection={post.textDirection || 'auto'}
           fontSettings={fontSettings}
           dangerouslySetInnerHTML={{
-            __html: sanitize(post.content, {
-              allowedTags: sanitize.defaults.allowedTags.concat(['img']),
-            }),
+            __html: sanitizePostHtml(post.content),
           }}
           css={css`
             margin-bottom: 2rem;
@@ -511,7 +496,7 @@ export default function Post({ post, seo, fontSettings, customFonts }) {
         </div>
         <div css={css`display: flex; align-items: center; gap: 0.75rem;`}>
           <ThemeToggle />
-          <TranslateModal title={post.title} content={post.content} />
+          <TranslateModal postId={post.id} />
           {user && <AddToReadingListButton uid={user.uid} pid={post.id} />}
         </div>
       </footer>
@@ -538,27 +523,14 @@ export async function getStaticProps({ params }) {
     const authorId = post.author
     const userDoc = await firestore.collection('users').doc(authorId).get()
     const userData = userDoc.data()
-    post.author = userData
+    // Only the byline goes to the page. The full user record (subscriber
+    // emails, API key hashes, billing details) used to be baked into this
+    // statically generated page's public JSON.
+    post.author = toPostAuthor(userData)
     post.authorId = authorId
 
-    // Serialize author's subscription Firestore Timestamps to avoid JSON serialization errors
-    if (post.author.subscription) {
-      post.author.subscription = {
-        ...post.author.subscription,
-        currentPeriodStart: post.author.subscription.currentPeriodStart?.toDate?.()
-          ? post.author.subscription.currentPeriodStart.toDate().getTime()
-          : post.author.subscription.currentPeriodStart?.toMillis?.()
-            ? post.author.subscription.currentPeriodStart.toMillis()
-            : post.author.subscription.currentPeriodStart || null,
-        currentPeriodEnd: post.author.subscription.currentPeriodEnd?.toDate?.()
-          ? post.author.subscription.currentPeriodEnd.toDate().getTime()
-          : post.author.subscription.currentPeriodEnd?.toMillis?.()
-            ? post.author.subscription.currentPeriodEnd.toMillis()
-            : post.author.subscription.currentPeriodEnd || null,
-      }
-    }
-
-    const lastEditedTime = post.lastEdited.toDate().getTime()
+    // toMillis also reads the { _seconds } maps the public API used to write
+    const lastEditedTime = toMillis(post.lastEdited) || Date.now()
     post.lastEdited = lastEditedTime
 
     // Merge user font settings with post overrides (with sanitization for security)
@@ -636,7 +608,7 @@ export async function getStaticProps({ params }) {
     }
 
     return {
-      props: { post, seo, fontSettings, customFonts },
+      props: { post: toPublicPost(post), seo, fontSettings, customFonts },
       revalidate: 60, // Revalidate at most once per minute
     }
   } catch (err) {

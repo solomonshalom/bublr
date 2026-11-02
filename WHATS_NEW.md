@@ -28,8 +28,14 @@ Add your skills, social links, bio, and custom sections. Choose what to show and
 ### Color your posts
 Pick a dot color for each post—make your profile page uniquely yours.
 
-### Import from Medium
-Leaving Medium? Bring your articles with you in one click.
+### Import from anywhere
+Leaving Medium, Substack, WordPress, Ghost, Blogger, Hashnode or DEV? Bring your articles with you in one click.
+
+### Take your words anywhere
+Export every post and draft as Markdown (plus a JSON copy with the original HTML) in one .zip. Your words are yours.
+
+### Explore without an account
+Readers can discover writing on Bublr without signing up.
 
 ### Save for later
 Bookmark posts to your reading list and come back when you're ready.
@@ -63,5 +69,6 @@ AI moderation keeps spam and harmful content out automatically.
 | Reading list | No | Yes |
 | Post colors | No | Yes |
 | View counts | No | Yes |
-| Medium import | No | Yes |
+| Import (7 platforms) | No | Yes |
+| Export to Markdown | No | Yes |
 | AI moderation | No | Yes |

@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
 import { useState, useEffect } from 'react'
+import { authedFetch } from '../lib/authed-fetch'
 
 // Follow icon (user plus)
 const FollowIcon = () => (
@@ -101,7 +102,7 @@ export default function FollowButton({
     setStatus('loading')
 
     try {
-      const response = await fetch('/api/follow', {
+      const response = await authedFetch('/api/follow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

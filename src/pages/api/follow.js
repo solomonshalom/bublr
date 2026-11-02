@@ -1,5 +1,6 @@
 import firebase from '../../lib/firebase'
 import { firestore } from '../../lib/firebase'
+import { requireSelf } from '../../lib/server-auth'
 
 // Helper to create notification
 async function createNotification(data) {
@@ -19,9 +20,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { targetUserId, action, currentUserId } = req.body
+  const { targetUserId, action } = req.body || {}
 
-  if (!targetUserId || !currentUserId) {
+  // The follower is whoever is signed in, never a userId from the request
+  const currentUserId = await requireSelf(req, res, req.body?.currentUserId)
+  if (!currentUserId) return
+
+  if (!targetUserId) {
     return res.status(400).json({ error: 'Missing required fields' })
   }
 

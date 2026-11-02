@@ -1,7 +1,15 @@
 import { Resend } from 'resend'
 
 // Initialize Resend with API key
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Created on first use. Building it at import threw "Missing API key" and
+// took down every route that imports this file (publishing included) on any
+// deployment without RESEND_API_KEY. The send functions below already skip
+// sending when the key is missing.
+let client = null
+function resend() {
+  if (!client) client = new Resend(process.env.RESEND_API_KEY)
+  return client
+}
 
 // From email address (must be verified in Resend)
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Bublr <notifications@stuff.bublr.life>'
@@ -296,7 +304,7 @@ export async function sendNewPostNotification({
   const cleanTitle = postTitle ? postTitle.replace(/<[^>]*>/g, '') : 'New Post'
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await resend().emails.send({
       from: FROM_EMAIL,
       to: subscriberEmail,
       subject: `New post from ${authorName}: ${cleanTitle}`,
@@ -395,7 +403,7 @@ export async function sendBatchNotifications({
         : generateNewPostEmailText(templateData)
 
       try {
-        const { error } = await resend.emails.send({
+        const { error } = await resend().emails.send({
           from: FROM_EMAIL,
           to: email,
           subject: `New post from ${authorName}: ${cleanTitle}`,
@@ -499,7 +507,7 @@ export async function sendSubscriptionEmail({ userEmail, userName, type, periodE
   })
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await resend().emails.send({
       from: FROM_EMAIL,
       to: userEmail,
       subject,
@@ -609,4 +617,8 @@ https://bublr.life
 `
 }
 
-export default resend
+export default {
+  get emails() {
+    return resend().emails
+  },
+}

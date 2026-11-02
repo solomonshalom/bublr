@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { auth, firestore } from '../lib/firebase'
+import { authedFetch } from '../lib/authed-fetch'
 import { getPostByID, getUserByID } from '../lib/db'
 import { htmlToText } from 'html-to-text'
 import { panelVariants, backdropVariants } from '../lib/animation-config'
@@ -484,7 +485,7 @@ export default function NotificationsPanel({ isOpen, onClose }) {
     if (!user) return
 
     try {
-      const response = await fetch(`/api/notifications?userId=${user.uid}`)
+      const response = await authedFetch(`/api/notifications?userId=${user.uid}`)
       const data = await response.json()
 
       if (response.ok) {
@@ -603,7 +604,7 @@ export default function NotificationsPanel({ isOpen, onClose }) {
     if (!user) return
 
     try {
-      await fetch('/api/notifications', {
+      await authedFetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notificationId, userId: user.uid }),
@@ -623,7 +624,7 @@ export default function NotificationsPanel({ isOpen, onClose }) {
     if (!user) return
 
     try {
-      await fetch('/api/notifications', {
+      await authedFetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.uid, markAllRead: true }),

@@ -6,6 +6,39 @@ import { Cross2Icon, PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon, DragHa
 import { useDocumentData } from 'react-firebase-hooks/firestore'
 
 import { firestore, auth } from '../lib/firebase'
+import { authedFetch } from '../lib/authed-fetch'
+import { isReservedUsername } from '../lib/reserved-usernames'
+
+// Fields other parts of Bublr own (subscribe/follow/billing/API-key routes,
+// the reading-list button, the sticker canvas). The profile editor never
+// writes them, so saving settings can't overwrite a subscriber, follower or
+// billing change that landed while the settings page was open. It used to
+// .set() the whole user document.
+const SERVER_MANAGED_USER_FIELDS = [
+  'email',
+  'posts',
+  'readingList',
+  'subscribers',
+  'followers',
+  'following',
+  'apiKeys',
+  'subscription',
+  'hasCustomDomainAccess',
+  'customDomain',
+  'customBranding',
+  'newsletterTemplate',
+  'profileDecorations',
+]
+
+function profileFieldsToSave(clientUser) {
+  const toSave = { ...clientUser }
+  delete toSave.id
+  for (const field of SERVER_MANAGED_USER_FIELDS) delete toSave[field]
+  for (const key of Object.keys(toSave)) {
+    if (toSave[key] === undefined) delete toSave[key]
+  }
+  return toSave
+}
 import { userWithNameExists } from '../lib/db'
 import { uploadToCloudinary } from '../lib/utils'
 
@@ -1128,7 +1161,7 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
     onSuccess(null)
 
     try {
-      const res = await fetch('/api/newsletter/template', {
+      const res = await authedFetch('/api/newsletter/template', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, htmlTemplate: template }),
@@ -1155,7 +1188,7 @@ function NewsletterTemplateSection({ userId, hasAccess, currentTemplate, onError
     onSuccess(null)
 
     try {
-      const res = await fetch('/api/newsletter/template', {
+      const res = await authedFetch('/api/newsletter/template', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, htmlTemplate: null }),
@@ -1420,7 +1453,7 @@ function CustomDomainSection({ userId, userName }) {
   useEffect(() => {
     async function fetchStatus() {
       try {
-        const res = await fetch(`/api/subscription/status?userId=${userId}`)
+        const res = await authedFetch(`/api/subscription/status?userId=${userId}`)
         const data = await res.json()
         setSubscriptionStatus(data)
         if (data.customDomain?.domain) {
@@ -1454,7 +1487,7 @@ function CustomDomainSection({ userId, userName }) {
     setActionLoading(true)
     setDomainError(null)
     try {
-      const res = await fetch('/api/subscription/create-checkout', {
+      const res = await authedFetch('/api/subscription/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, userEmail, userName }),
@@ -1478,7 +1511,7 @@ function CustomDomainSection({ userId, userName }) {
     setActionLoading(true)
 
     try {
-      const res = await fetch('/api/domain/set', {
+      const res = await authedFetch('/api/domain/set', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, domain: domain.toLowerCase().trim() }),
@@ -1488,7 +1521,7 @@ function CustomDomainSection({ userId, userName }) {
       if (res.ok) {
         setDomainSuccess(data.message)
         // Refresh status
-        const statusRes = await fetch(`/api/subscription/status?userId=${userId}`)
+        const statusRes = await authedFetch(`/api/subscription/status?userId=${userId}`)
         const statusData = await statusRes.json()
         setSubscriptionStatus(statusData)
       } else {
@@ -1507,7 +1540,7 @@ function CustomDomainSection({ userId, userName }) {
     setDomainSuccess(null)
 
     try {
-      const res = await fetch('/api/domain/verify', {
+      const res = await authedFetch('/api/domain/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
@@ -1517,14 +1550,14 @@ function CustomDomainSection({ userId, userName }) {
       if (data.verified) {
         setDomainSuccess('Domain verified successfully!')
         // Refresh status
-        const statusRes = await fetch(`/api/subscription/status?userId=${userId}`)
+        const statusRes = await authedFetch(`/api/subscription/status?userId=${userId}`)
         const statusData = await statusRes.json()
         setSubscriptionStatus(statusData)
       } else {
         // Use the detailed message from the API
         setDomainError(data.message || 'Domain not yet verified. Please check your DNS settings.')
         // Refresh status to get updated verification requirements
-        const statusRes = await fetch(`/api/subscription/status?userId=${userId}`)
+        const statusRes = await authedFetch(`/api/subscription/status?userId=${userId}`)
         const statusData = await statusRes.json()
         setSubscriptionStatus(statusData)
       }
@@ -1542,7 +1575,7 @@ function CustomDomainSection({ userId, userName }) {
     setDomainError(null)
 
     try {
-      const res = await fetch('/api/domain/remove', {
+      const res = await authedFetch('/api/domain/remove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
@@ -1553,7 +1586,7 @@ function CustomDomainSection({ userId, userName }) {
         setDomain('')
         setDomainSuccess('Domain removed successfully')
         // Refresh status
-        const statusRes = await fetch(`/api/subscription/status?userId=${userId}`)
+        const statusRes = await authedFetch(`/api/subscription/status?userId=${userId}`)
         const statusData = await statusRes.json()
         setSubscriptionStatus(statusData)
       } else {
@@ -1572,7 +1605,7 @@ function CustomDomainSection({ userId, userName }) {
     setActionLoading(true)
 
     try {
-      const res = await fetch('/api/domain/branding', {
+      const res = await authedFetch('/api/domain/branding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, footerText }),
@@ -2027,7 +2060,7 @@ function CustomDomainSection({ userId, userName }) {
                 setActionLoading(true)
                 setDomainError(null)
                 try {
-                  const res = await fetch('/api/subscription/portal', {
+                  const res = await authedFetch('/api/subscription/portal', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId }),
@@ -2715,9 +2748,7 @@ function Editor({ user, section }) {
 
     setSaveStatus('saving')
     try {
-      let toSave = { ...clientUser }
-      delete toSave.id
-      await firestore.collection('users').doc(user.id).set(toSave)
+      await firestore.collection('users').doc(user.id).update(profileFieldsToSave(clientUser))
       setSaveStatus('saved')
     } catch (err) {
       console.error('Auto-save error:', err)
@@ -4777,15 +4808,13 @@ function Editor({ user, section }) {
                   'Username can only consist of letters (a-z,A-Z), numbers (0-9) and dashes (-).',
                 )
                 return
-              } else if (clientUser.name === 'dashboard') {
+              } else if (isReservedUsername(clientUser.name)) {
                 setUsernameErr('That username is reserved.')
                 return
               }
 
               setSaveStatus('saving')
-              let toSave = { ...clientUser }
-              delete toSave.id
-              await firestore.collection('users').doc(user.id).set(toSave)
+              await firestore.collection('users').doc(user.id).update(profileFieldsToSave(clientUser))
               setUsernameErr(null)
               setSaveStatus('saved')
             }}

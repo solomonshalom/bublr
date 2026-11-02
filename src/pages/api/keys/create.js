@@ -1,15 +1,16 @@
 import { createApiKeyForUser } from '../../../lib/api-auth'
+import { requireSelf } from '../../../lib/server-auth'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { userId, name } = req.body
+  const { name } = req.body || {}
 
-  if (!userId) {
-    return res.status(400).json({ error: 'Missing userId' })
-  }
+  // Only the signed-in user can create keys for their own account
+  const userId = await requireSelf(req, res, req.body?.userId)
+  if (!userId) return
 
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
     return res.status(400).json({ error: 'API key name is required' })

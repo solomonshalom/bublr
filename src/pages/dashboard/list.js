@@ -204,16 +204,24 @@ function List({ uid }) {
           setList([])
           return
         }
+        // One saved post being deleted or unpublished used to make the whole
+        // list fail (and show as empty). Skip those and show the rest.
         const postPromises = user.readingList.map(async pid => {
-          const post = await getPostByID(pid)
-          const author = await firestore
-            .collection('users')
-            .doc(post.author)
-            .get()
-          post.author = author.data()
-          return post
+          try {
+            const post = await getPostByID(pid)
+            if (!post.published) return null
+            const author = await firestore
+              .collection('users')
+              .doc(post.author)
+              .get()
+            if (!author.exists) return null
+            post.author = author.data()
+            return post
+          } catch (_) {
+            return null
+          }
         })
-        const posts = await Promise.all(postPromises)
+        const posts = (await Promise.all(postPromises)).filter(Boolean)
         setList(posts)
       } catch (err) {
         console.error('Error loading reading list:', err)

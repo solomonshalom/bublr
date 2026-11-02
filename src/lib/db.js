@@ -121,17 +121,25 @@ export const generateSearchQueries = (postData) => {
   return [...new Set(fuzzyTerms)].slice(0, 30); // Firebase limit is 30 values in array-contains-any
 };
 
+// Most recently edited published posts. New posts never get a `createdAt`,
+// so ordering on it (as search used to) silently left them out.
+const SEARCH_SCOPE = 100
+async function recentPublishedPosts(limit) {
+  const published = firestore.collection('posts').where('published', '==', true)
+  try {
+    const snapshot = await published.orderBy('lastEdited', 'desc').limit(limit).get()
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+  } catch (_) {
+    // Without the composite index, fall back to an unordered read
+    const snapshot = await published.limit(limit).get()
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+  }
+}
+
 export const searchPosts = async (searchInput, limit = 20) => {
   if (!searchInput || searchInput.trim() === '') {
     // Return recent published posts if no search term
-    const snapshot = await firestore
-      .collection('posts')
-      .where('published', '==', true)
-      .orderBy('createdAt', 'desc')
-      .limit(limit)
-      .get();
-    
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return recentPublishedPosts(limit);
   }
   
   const originalInput = searchInput.trim();
@@ -146,25 +154,13 @@ export const searchPosts = async (searchInput, limit = 20) => {
   
   if (searchTerms.length === 0) {
     // If no valid search terms after processing, return recent posts
-    const snapshot = await firestore
-      .collection('posts')
-      .where('published', '==', true)
-      .orderBy('createdAt', 'desc')
-      .limit(limit)
-      .get();
-    
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return recentPublishedPosts(limit);
   }
   
   try {
-    // Collect all posts to apply client-side fuzzy search
-    const allPublishedSnapshot = await firestore
-      .collection('posts')
-      .where('published', '==', true)
-      .limit(limit * 2) // Get more posts to ensure we have enough after filtering
-      .get();
-    
-    let allPosts = allPublishedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Score the most recent posts client-side (it used to be an arbitrary
+    // 40, so most of the archive was never searched)
+    let allPosts = await recentPublishedPosts(Math.max(limit * 2, SEARCH_SCOPE));
     
     // Apply fuzzy search with scoring
     const scoredPosts = allPosts.map(post => {
@@ -335,6 +331,16 @@ export async function userWithNameExists(name) {
   return !query.empty
 }
 
+// Load a user's posts by id, skipping ids whose post no longer exists. One
+// dangling id (e.g. a delete that removed the post but not the reference)
+// used to make the whole profile 404.
+async function loadPostsByIds(ids) {
+  const posts = await Promise.all(
+    (Array.isArray(ids) ? ids : []).map(postId => getPostByID(postId).catch(() => null))
+  )
+  return posts.filter(Boolean)
+}
+
 export async function getUserByID(id) {
   const doc = await firestore.collection('users').doc(id).get()
   if (!doc.exists) {
@@ -342,8 +348,7 @@ export async function getUserByID(id) {
   }
 
   const user = doc.data()
-  const postDocPromises = user.posts.map(postId => getPostByID(postId))
-  user.posts = await Promise.all(postDocPromises)
+  user.posts = await loadPostsByIds(user.posts)
 
   return { id: doc.id, ...user }
 }
@@ -359,8 +364,7 @@ export async function getUserByName(name) {
   }
 
   const user = { id: query.docs[0].id, ...query.docs[0].data() }
-  const postDocPromises = user.posts.map(postId => getPostByID(postId))
-  user.posts = await Promise.all(postDocPromises)
+  user.posts = await loadPostsByIds(user.posts)
 
   return user
 }

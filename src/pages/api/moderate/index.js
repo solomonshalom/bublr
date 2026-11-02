@@ -1,65 +1,8 @@
-import Groq from 'groq-sdk'
 import { firestore } from '../../../lib/firebase'
-import { htmlToText } from 'html-to-text'
+import { moderateContent } from '../../../lib/publishing'
+import { hasSharedSecret } from '../../../lib/server-auth'
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-})
-
-// Moderate content using Groq AI
-async function moderateContent(title, content) {
-  const textContent = htmlToText(content || '')
-  const textTitle = htmlToText(title || '')
-
-  const prompt = `You are a content moderator for a writing platform. Analyze the following post and determine if it should be unpublished.
-
-Title: ${textTitle}
-
-Content: ${textContent.substring(0, 3000)}
-
-Evaluate for:
-1. Spam content (promotional, repetitive, meaningless text, excessive links)
-2. NSFW content (explicit sexual content, graphic violence)
-3. Hate speech or harassment
-4. Scams or phishing attempts
-
-Respond with ONLY a JSON object in this exact format:
-{
-  "shouldUnpublish": true/false,
-  "reason": "brief explanation if shouldUnpublish is true, otherwise empty string",
-  "category": "spam" | "nsfw" | "hate" | "scam" | "none"
-}
-
-Be strict about spam and NSFW content. Regular articles, stories, opinions (even controversial ones), and personal blogs should NOT be unpublished. Only unpublish genuinely problematic content.`
-
-  try {
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      model: 'llama-3.1-8b-instant',
-      temperature: 0.1,
-      max_tokens: 200,
-    })
-
-    const response = chatCompletion.choices[0]?.message?.content || ''
-
-    // Parse JSON response
-    const jsonMatch = response.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
-    }
-
-    return { shouldUnpublish: false, reason: '', category: 'none' }
-  } catch (error) {
-    console.error('Groq API error:', error)
-    // On error, don't unpublish - fail safe
-    return { shouldUnpublish: false, reason: 'moderation_error', category: 'none' }
-  }
-}
+// Same moderation as publishing (lib/publishing.js)
 
 export default async function handler(req, res) {
   // Only allow POST requests
@@ -68,8 +11,8 @@ export default async function handler(req, res) {
   }
 
   // Verify secret key (set this in your environment variables)
-  const authHeader = req.headers.authorization
-  if (authHeader !== `Bearer ${process.env.MODERATION_SECRET_KEY}`) {
+  // Fails closed when MODERATION_SECRET_KEY isn't set
+  if (!hasSharedSecret(req, process.env.MODERATION_SECRET_KEY)) {
     return res.status(401).json({ error: { message: 'Unauthorized' } })
   }
 

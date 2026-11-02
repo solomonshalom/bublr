@@ -1,15 +1,19 @@
 import polar, { CUSTOM_DOMAIN_PRODUCT_ID } from '../../../lib/polar'
 import { firestore } from '../../../lib/firebase'
+import { requireSelf } from '../../../lib/server-auth'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  try {
-    const { userId, userEmail, userName } = req.body
+  const userId = await requireSelf(req, res, req.body?.userId)
+  if (!userId) return
 
-    if (!userId || !userEmail) {
+  try {
+    const { userEmail, userName } = req.body
+
+    if (!userEmail) {
       return res.status(400).json({ error: 'Missing userId or userEmail' })
     }
 

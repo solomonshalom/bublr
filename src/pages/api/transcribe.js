@@ -1,5 +1,6 @@
 import formidable from 'formidable'
 import fs from 'fs'
+import { requireAuth } from '../../lib/server-auth'
 
 export const config = {
   api: {
@@ -11,6 +12,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: { message: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' } })
   }
+
+  // Voice input is for signed-in writers; it spends Groq transcription quota
+  const uid = await requireAuth(req, res)
+  if (!uid) return
 
   const groqApiKey = process.env.GROQ_API_KEY
 

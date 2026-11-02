@@ -6,7 +6,8 @@
     "dev": "NODE_OPTIONS='--openssl-legacy-provider' next dev",
     "build": "NODE_OPTIONS='--openssl-legacy-provider' next build",
     "start": "NODE_OPTIONS='--openssl-legacy-provider' next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./test/unit/register.mjs --test \"test/unit/**/*.test.mjs\""
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",
