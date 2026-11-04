@@ -48,6 +48,13 @@ function generateSiteMap(users, postsWithContent) {
     <priority>0.7</priority>
   </url>
 
+  <!-- Changelog -->
+  <url>
+    <loc>${SITE_URL}/changelog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
   <!-- RSS/Atom/JSON Feeds -->
   <url>
     <loc>${SITE_URL}/feed.xml</loc>

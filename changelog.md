@@ -97,3 +97,12 @@ Editor, publishing, profiles and their customisation, Explore, reading list, new
 - **Explore needs a spam clean-up.** Many existing published posts are SEO spam (gambling, "Top 10" listicles, tour packages). New links can't pass search ranking any more, but the existing posts need a moderation pass.
 - **Custom domain verification (#7).** We couldn't reproduce it without Vercel access. One thing to check: two-part domain endings like `example.co.uk` are treated as subdomains by `api/domain/verify`, so they're asked for a CNAME instead of an A record.
 - **Unsubscribe links carry no token** (anyone who knows an address can unsubscribe it), and email link scanners can trigger them. There's no rate limiting on public endpoints (newsletter sign-up, guest book, views) beyond the guest book's in-memory limit.
+
+# Changelog - Weekly check-in (4th November'26)
+Every release note now lives in one place inside Bublr: the new [Changelog](/changelog) page. It reads `changelog.md` directly, so anything added there shows up on the site, newest first, with no copy-pasting. It's linked from every footer.
+
+## Added
+- **A Changelog page** at `/changelog`, linked from the footer of About, Terms, Privacy, Docs and the Comeback page, and listed in the sitemap.
+
+## Changed
+- `changelog` is now a reserved username, since it's a page.
