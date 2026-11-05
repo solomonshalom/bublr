@@ -1,5 +1,6 @@
 import { firestore } from '../../../lib/firebase'
 import { requireSelf } from '../../../lib/server-auth'
+import { isSubdomain as isSub, subdomainLabel } from '../../../lib/domain-utils'
 
 // Vercel API configuration
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN
@@ -146,11 +147,11 @@ export default async function handler(req, res) {
 
     // Add DNS config requirements if not properly configured
     if (!dnsConfigured) {
-      const isSubdomain = domain.split('.').length > 2
+      const isSubdomain = isSub(domain)
 
       if (isSubdomain) {
         // CNAME for subdomains
-        const subdomain = domain.split('.')[0]
+        const subdomain = subdomainLabel(domain)
         const recommendedCname = configData?.cnames?.[0]?.value || 'cname.vercel-dns.com'
         const hasCnameReq = verificationRequirements.some(v => v.type === 'CNAME')
         if (!hasCnameReq) {

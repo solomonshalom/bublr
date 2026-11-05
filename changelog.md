@@ -106,3 +106,11 @@ Every release note now lives in one place inside Bublr: the new [Changelog](/cha
 
 ## Changed
 - `changelog` is now a reserved username, since it's a page.
+
+# Domains - Pre-release (5th November'26)
+A short follow-up to the comeback release, aimed at the custom-domain problem reported in GitHub issue #7.
+
+## Fixed
+- **Root domains with two-part endings get the right DNS record.** `example.co.uk`, `example.com.au` and similar were treated as subdomains, so Bublr asked for a CNAME when it should have asked for an A record. They now get the A record, and real subdomains like `blog.example.co.uk` still get a CNAME.
+- **Deeper subdomains keep their full name.** For `a.b.example.com` the CNAME instructions showed only `a`. They now show `a.b`.
+- **Tests.** `npm test` now runs 69 tests, including the domain rules above.
