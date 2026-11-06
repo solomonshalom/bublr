@@ -148,7 +148,7 @@ function slugifyHeading(text) {
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/[^a-z0-9\u00c0-\uffff]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60)
 }
