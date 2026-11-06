@@ -136,7 +136,37 @@ export function sanitizePostHtml(html) {
   const options = postOptions()
   // With lowerCaseAttributeNames off, SVG's viewBox arrives as "viewBox"
   options.allowedAttributes.svg = options.allowedAttributes.svg.concat(['viewBox'])
-  return sanitizeHtml(String(html || ''), options)
+  return addHeadingAnchors(sanitizeHtml(String(html || ''), options))
+}
+
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' }
+
+function slugifyHeading(text) {
+  return text
+    .replace(/<[^>]*>/g, '')
+    .replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, e) => ENTITIES[e])
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+}
+
+// Gives every heading a stable id plus a small "#" link so readers can share
+// a link to one section of a long post. Runs on already-sanitized HTML, and
+// the ids are generated here (any id a writer typed was stripped), so they
+// can't shadow page elements.
+function addHeadingAnchors(html) {
+  const used = new Set()
+  return html.replace(/<(h[1-3])((?:\s[^>]*)?)>([\s\S]*?)<\/\1>/g, (match, tag, attrs, inner) => {
+    const base = slugifyHeading(inner)
+    if (!base) return match
+    let id = base
+    for (let n = 2; used.has(id); n++) id = `${base}-${n}`
+    used.add(id)
+    return `<${tag}${attrs} id="${id}">${inner}<a class="heading-anchor" href="#${id}" aria-label="Link to this section">#</a></${tag}>`
+  })
 }
 
 export const _private = { HEX_COLOR, CSS_COLOR }

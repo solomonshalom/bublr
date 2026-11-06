@@ -114,3 +114,12 @@ A short follow-up to the comeback release, aimed at the custom-domain problem re
 - **Root domains with two-part endings get the right DNS record.** `example.co.uk`, `example.com.au` and similar were treated as subdomains, so Bublr asked for a CNAME when it should have asked for an A record. They now get the A record, and real subdomains like `blog.example.co.uk` still get a CNAME.
 - **Deeper subdomains keep their full name.** For `a.b.example.com` the CNAME instructions showed only `a`. They now show `a.b`.
 - **Tests.** `npm test` now runs 69 tests, including the domain rules above.
+
+# Anchors - Update (6th November'26)
+A weekly check on what writers ask for and what other writing tools offer. Long essays were the gap: you couldn't send someone to one section of a post. Platforms like Ghost, Bear Blog and Write.as all let you link to a heading. A table of contents, scheduling and comments are on other platforms too, but they pull away from a quiet, single-purpose writing space, so we're leaving them out for now.
+
+## Added
+- **Link to any section.** Every heading (H1 to H3) in a published post now has its own link. Hover a heading and click the `#` to copy a link that opens the post scrolled right to that section. It's there in the preview too.
+
+## Fixed
+- **`npm test` documentation.** Tests need `npm install --force` first; the CLAUDE.md note now matches reality (70 tests).

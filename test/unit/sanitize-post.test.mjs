@@ -90,3 +90,12 @@ test('handles empty input', () => {
   assert.equal(sanitizePostHtml(null), '')
   assert.equal(sanitizePostHtml(undefined), '')
 })
+
+test('gives headings unique ids and a share link; ignores writer-supplied ids', () => {
+  const out = sanitizePostHtml('<h2 id="evil">Why I write</h2><h2>Why I write</h2><h3>Café &amp; Tea</h3><h2>!!!</h2><p>text</p>')
+  assert.match(out, /<h2 id="why-i-write">Why I write<a class="heading-anchor" href="#why-i-write"/)
+  assert.match(out, /<h2 id="why-i-write-2">/)
+  assert.match(out, /<h3 id="cafe-tea">/)
+  assert.doesNotMatch(out, /evil/)
+  assert.match(out, /<h2>!!!<\/h2>/)
+})

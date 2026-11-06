@@ -10,7 +10,7 @@ npm run dev              # Start development server
 npm run build            # Production build
 npm run start            # Start production server
 npm run lint             # Run ESLint
-npm test                 # Unit + API route tests (Node's built-in runner, no extra deps)
+npm test                 # Unit + API route tests (Node built-in runner; run npm install --force first)
 ```
 
 Tests live in `test/unit/`. A loader hook (`test/unit/loader.mjs`) resolves extensionless imports and swaps `src/lib/firebase.js`, `src/lib/resend.js` and `groq-sdk` for in-memory mocks, so real API handlers run offline. `test/unit/helpers.mjs` signs test Firebase ID tokens.

@@ -324,6 +324,34 @@ const PostContainer = ({ textDirection = 'auto', fontSettings, ...props }) => {
         margin: 2rem 0 0.5rem 0;
       }
 
+      h1,
+      h2,
+      h3 {
+        scroll-margin-top: 1.5rem;
+      }
+
+      .heading-anchor {
+        margin-left: 0.4rem;
+        color: var(--grey-3);
+        text-decoration: none;
+        font-style: normal;
+        opacity: 0;
+        transition: opacity 150ms ease;
+      }
+
+      h1:hover .heading-anchor,
+      h2:hover .heading-anchor,
+      h3:hover .heading-anchor,
+      .heading-anchor:focus {
+        opacity: 1;
+      }
+
+      @media (hover: none) {
+        .heading-anchor {
+          display: none;
+        }
+      }
+
       h1 {
         font-size: 1.5rem;
       }
