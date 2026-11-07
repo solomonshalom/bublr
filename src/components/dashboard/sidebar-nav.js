@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { css } from '@emotion/react'
+import { proPill } from '../pro/pro-look'
 
 const navWrapStyle = css`
   display: flex;
@@ -136,6 +137,14 @@ const DeveloperIcon = () => (
   </svg>
 )
 
+const GlobeIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M2 12h20" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+)
+
 const ChevronLeftIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <polyline points="15 18 9 12 15 6" />
@@ -146,15 +155,21 @@ const mainLinks = [
   { href: '/dashboard', label: 'Posts', icon: <PostsIcon />, matchExact: true },
   { href: '/dashboard/list', label: 'Reading List', icon: <ListIcon /> },
   { href: '/dashboard/subscribers', label: 'Subscribers', icon: <UsersIcon /> },
+  { href: '/dashboard/settings/domain', label: 'Custom domain', icon: <GlobeIcon />, pro: true },
   { href: '/dashboard/settings', label: 'Settings', icon: <SettingsIcon /> },
 ]
 
 const settingsLinks = [
   { href: '/dashboard/settings/personal', label: 'Personal', icon: <PersonalIcon /> },
   { href: '/dashboard/settings/customization', label: 'Customization', icon: <CustomizationIcon /> },
+  { href: '/dashboard/settings/domain', label: 'Custom domain', icon: <GlobeIcon />, pro: true },
   { href: '/dashboard/settings/advanced', label: 'Advanced', icon: <AdvancedIcon /> },
   { href: '/dashboard/settings/developer', label: 'Developer', icon: <DeveloperIcon /> },
 ]
+
+const proTagStyle = css`
+  margin-left: auto;
+`
 
 export default function SidebarNav() {
   const router = useRouter()
@@ -163,7 +178,7 @@ export default function SidebarNav() {
   if (inSettings) {
     return (
       <nav css={css`display: flex; flex-direction: column;`} aria-label="Settings">
-        <Link href="/dashboard">
+        <Link href="/dashboard" passHref>
           <a css={backLinkStyle}>
             <ChevronLeftIcon />
             Back to Dashboard
@@ -173,10 +188,11 @@ export default function SidebarNav() {
           {settingsLinks.map(link => {
             const isActive = router.pathname === link.href
             return (
-              <Link key={link.href} href={link.href}>
+              <Link key={link.href} href={link.href} passHref>
                 <a css={[linkStyle, isActive && activeLinkStyle]}>
                   {link.icon}
                   {link.label}
+                  {link.pro && <span css={[proPill, proTagStyle]}>Pro</span>}
                 </a>
               </Link>
             )
@@ -191,13 +207,16 @@ export default function SidebarNav() {
       {mainLinks.map(link => {
         const isActive = link.matchExact
           ? router.pathname === link.href
-          : router.pathname.startsWith(link.href)
+          : router.pathname.startsWith(link.href) &&
+            // "Settings" shouldn't light up for the custom domain page
+            !mainLinks.some(other => other !== link && other.href.length > link.href.length && router.pathname.startsWith(other.href))
 
         return (
-          <Link key={link.href} href={link.href}>
+          <Link key={link.href} href={link.href} passHref>
             <a css={[linkStyle, isActive && activeLinkStyle]}>
               {link.icon}
               {link.label}
+              {link.pro && <span css={[proPill, proTagStyle]}>Pro</span>}
             </a>
           </Link>
         )

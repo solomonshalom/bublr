@@ -4,10 +4,17 @@ import { ThemeProvider } from 'next-themes'
 import { Global, css } from '@emotion/react'
 import { IdProvider } from '@radix-ui/react-id'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 import { I18nProvider } from '../lib/i18n'
 import { SmoothScrollProvider } from '../components/smooth-scroll'
 import { PageTransition } from '../components/page-transition'
 import ComebackBanner from '../components/comeback-banner'
+import { isPlatformHost } from '../lib/domain-utils'
+
+// The only pages a writer's own domain serves: their profile and their posts.
+// Everything else (dashboard, explore, sign-in...) lives on bublr.life.
+const CUSTOM_DOMAIN_PAGES = new Set(['/', '/[username]', '/[username]/[slug]', '/404', '/_error'])
+const SITE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life').replace(/\/+$/, '')
 
 const App = ({ Component, pageProps }) => {
   const getLayout = Component.getLayout || ((page) => page)
@@ -17,12 +24,18 @@ const App = ({ Component, pageProps }) => {
   // the dashboard has its own fixed chrome, /comeback is where the banner points,
   // and writer-owned custom domains aren't ours to announce on.
   const onCustomDomain = Boolean(
-    pageProps?.customDomainUser || pageProps?.user?.isCustomDomain
+    pageProps?.customDomainProfile || pageProps?.customDomainPost || pageProps?.user?.isCustomDomain
   )
   const showComebackBanner =
     !router.pathname.startsWith('/dashboard') &&
     router.pathname !== '/comeback' &&
     !onCustomDomain
+
+  useEffect(() => {
+    if (isPlatformHost(window.location.hostname)) return
+    if (CUSTOM_DOMAIN_PAGES.has(router.pathname)) return
+    window.location.replace(`${SITE_URL}${router.asPath}`)
+  }, [router.pathname, router.asPath])
 
   return (
     <>

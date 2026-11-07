@@ -39,9 +39,10 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `readingList`: array of saved post IDs
 - `about`: user bio
 - `subscribers`: array of newsletter subscriber objects (`{ email, subscribedAt }`)
-- `subscription`: object containing Polar subscription data (`{ id, status, customerId, productId, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd }`)
-- `hasCustomDomainAccess`: boolean flag for active custom domain subscription
-- `customDomain`: object for custom domain config (`{ domain, status, verification, addedAt, verifiedAt }`)
+- `subscription`: Bublr Pro billing record from Dodo Payments (`{ provider: 'dodo', id, status, customerId, productId, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, graceUntil, lastSyncedAt }`); older Polar records have no `provider`
+- `hasCustomDomainAccess`: boolean written whenever billing changes. Read access with `hasActiveAccess(user)` from `src/lib/subscription.js`, never the flag alone (paid-through and grace dates matter)
+- `pendingCheckout`: `{ sessionId, email, createdAt }` while a checkout is open
+- `customDomain`: object for custom domain config (`{ domain, companion, status: 'pending'|'verified', records, message, addedAt, verifiedAt, lastCheckedAt }`); `companion` is the www/apex partner that redirects to `domain`
 - `customBranding`: object for custom branding (`{ footerText, updatedAt }`)
 
 **posts**
@@ -59,7 +60,9 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `/dashboard` - User's post management (create, edit, list)
 - `/dashboard/[pid]` - Post editor with TipTap
 - `/dashboard/list` - Reading list
-- `/dashboard/settings/advanced` - Theme, export (Markdown + JSON .zip), language, custom domain
+- `/dashboard/settings/advanced` - Theme, export (Markdown + JSON .zip), language
+- `/dashboard/settings/domain` - Bublr Pro ($4.99/mo): checkout, plan management, custom domain setup, footer text, newsletter template
+- `/docs/custom-domains` - Public guide to Pro and custom domains
 - `/explore` - Global post discovery with search (public; no account needed)
 - `/[username]` - User profile page
 - `/[username]/[slug]` - Published post view (SSG with ISR)
@@ -91,6 +94,10 @@ PageComponent.getLayout = function PageLayout(page) {
 
 **Reserved usernames**: Any new top-level page must be added to `src/lib/reserved-usernames.js` (a test enforces this).
 
+**Bublr Pro billing (Dodo Payments)**: `src/lib/dodo.js` is a small REST client plus Standard Webhooks verification. Every route funnels a Dodo subscription object through `applyDodoSubscription` (`src/lib/billing.js`), which links it to the writer (metadata, stored IDs, then the open checkout's email), ignores stale/other subscriptions, writes in a transaction and emails only on real state changes. The webhook re-reads the subscription from Dodo because deliveries can be late, duplicated or out of order; `/api/subscription/sync` does the same right after checkout. Price copy lives in `src/lib/pricing.js`.
+
+**Custom domains**: `src/lib/custom-domains.js` talks to Vercel (`src/lib/vercel.js`): a 400 on add means "already on this project" (fine), 409 means "on another project" (refuse). `parseDomainInput` / `isPlatformHost` in `src/lib/domain-utils.js` keep Bublr's own and Vercel hosts unclaimable. Requests on a writer's domain are routed by `routeCustomDomain` (`src/lib/custom-domain-routing.js`): `/` is the profile, `/<slug>` a post, lapsed Pro redirects to bublr.life. Profile and post page props come from `buildProfilePageProps` / `buildPostPageProps` so bublr.life and custom domains render identically.
+
 ### Environment Variables
 
 Required in `.env.local`:
@@ -104,10 +111,11 @@ Required in `.env.local`:
 - `RESEND_FROM_EMAIL` - (Optional) Sender email for newsletters (default: `Bublr <notifications@bublr.life>`)
 - `NEXT_PUBLIC_BASE_URL` - (Optional) Base URL for the app (default: `https://bublr.life`)
 
-**Custom Domain Feature (Polar + Vercel):**
-- `POLAR_ACCESS_TOKEN` - Polar API access token (from polar.sh dashboard)
-- `POLAR_CUSTOM_DOMAIN_PRODUCT_ID` - Product ID for the $2/month custom domain subscription
-- `POLAR_WEBHOOK_SECRET` - Secret for verifying Polar webhook signatures
+**Bublr Pro (Dodo Payments + Vercel):**
+- `DODO_PAYMENTS_API_KEY` - Dodo Payments API key
+- `DODO_PAYMENTS_WEBHOOK_KEY` - Signing secret of the webhook pointing at `/api/subscription/webhook`
+- `DODO_PAYMENTS_PRODUCT_ID` - The $4.99/month subscription product (comma-separate to also honour older products)
+- `DODO_PAYMENTS_ENVIRONMENT` - (Optional) `test_mode` or `live_mode`
 - `VERCEL_TOKEN` - Vercel API token for domain management
 - `VERCEL_PROJECT_ID` - Your Vercel project ID
 - `VERCEL_TEAM_ID` - (Optional) Vercel team ID if using team account

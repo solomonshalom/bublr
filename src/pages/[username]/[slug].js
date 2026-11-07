@@ -3,8 +3,6 @@ import Link from 'next/link'
 import Head from 'next/head'
 import { css } from '@emotion/react'
 import { safeJsonLd } from '../../lib/escape'
-import { toPostAuthor, toPublicPost } from '../../lib/public-user'
-import { toMillis } from '../../lib/timestamps'
 import { sanitizePostHtml } from '../../lib/sanitize-post'
 import { htmlToText } from 'html-to-text'
 import { useState, useEffect, useRef } from 'react'
@@ -12,19 +10,8 @@ import { useAuthState } from 'react-firebase-hooks/auth'
 
 import firebase, { firestore, auth } from '../../lib/firebase'
 import { getPostByUsernameAndSlug, getUserByID } from '../../lib/db'
-import {
-  extractFirstImage,
-  calculateReadingTime,
-  getWordCount,
-  generateMetaDescription,
-  generateKeywords,
-  cleanTitle,
-  generateEnhancedBlogPostingSchema,
-  generateBreadcrumbSchema,
-  extractFAQsFromContent,
-  generateFAQSchema
-} from '../../lib/seo-utils'
-import { sanitizeFontFamily } from '../../lib/fonts'
+import { buildPostPageProps } from '../../lib/post-page'
+import { isPlatformHost } from '../../lib/domain-utils'
 
 // Static Organization schema for posts (defined at module level for SSR compatibility)
 const organizationSchema = {
@@ -294,8 +281,17 @@ function AddToReadingListButton({ uid, pid }) {
   )
 }
 
-export default function Post({ post, seo, fontSettings, customFonts }) {
+export default function Post({ post, seo, fontSettings, customFonts, authorDomain = null, onCustomDomain = false }) {
   const [user, _loading, _error] = useAuthState(auth)
+
+  // This page is static, so it can't see the Host header. If it's opened on a
+  // writer's domain that isn't this author's, send the reader to bublr.life.
+  useEffect(() => {
+    const host = window.location.hostname
+    if (onCustomDomain || isPlatformHost(host)) return
+    if (authorDomain && host === authorDomain) return
+    window.location.replace(`${SITE_URL}/${post.author.name}/${post.slug}`)
+  }, [onCustomDomain, authorDomain, post.author.name, post.slug])
   const [userInfo, setUserInfo] = useState(null)
 
   // Fetch current user info for notifications
@@ -437,7 +433,7 @@ export default function Post({ post, seo, fontSettings, customFonts }) {
           />
           <p>
             <span itemProp="author" itemScope itemType="https://schema.org/Person">
-              <Link href={`/${post.author.name}`}>
+              <Link href={onCustomDomain ? '/' : `/${post.author.name}`}>
                 <a
                   itemProp="url"
                   style={{
@@ -519,100 +515,12 @@ export async function getStaticProps({ params }) {
     if (!post.published) {
       return { notFound: true }
     }
-    // Preserve author ID before overwriting with full author data
-    const authorId = post.author
-    const userDoc = await firestore.collection('users').doc(authorId).get()
-    const userData = userDoc.data()
-    // Only the byline goes to the page. The full user record (subscriber
-    // emails, API key hashes, billing details) used to be baked into this
-    // statically generated page's public JSON.
-    post.author = toPostAuthor(userData)
-    post.authorId = authorId
-
-    // toMillis also reads the { _seconds } maps the public API used to write
-    const lastEditedTime = toMillis(post.lastEdited) || Date.now()
-    post.lastEdited = lastEditedTime
-
-    // Merge user font settings with post overrides (with sanitization for security)
-    const userFontSettings = userData?.fontSettings || {}
-    const postFontOverrides = post.fontOverrides || {}
-    const fontSettings = {
-      headingFont: sanitizeFontFamily(postFontOverrides.headingFont || userFontSettings.headingFont, 'Inter'),
-      bodyFont: sanitizeFontFamily(postFontOverrides.bodyFont || userFontSettings.bodyFont, 'Inter'),
-      codeFont: sanitizeFontFamily(postFontOverrides.codeFont || userFontSettings.codeFont, 'JetBrains Mono'),
-    }
-
-    // Filter out default fonts that are already loaded globally
-    const defaultFonts = ['Inter', 'Newsreader', 'JetBrains Mono']
-    const customFonts = [fontSettings.headingFont, fontSettings.bodyFont, fontSettings.codeFont]
-      .filter(f => f && !defaultFonts.includes(f))
-      .filter((f, i, arr) => arr.indexOf(f) === i) // Remove duplicates
-
-    // Generate comprehensive SEO data
-    const postTitle = cleanTitle(post.title)
-    const postUrl = `${SITE_URL}/${post.author.name}/${post.slug}`
-    const authorUrl = `${SITE_URL}/${post.author.name}`
-    const publishedTime = new Date(lastEditedTime).toISOString()
-    const readingTime = calculateReadingTime(post.content)
-    const wordCount = getWordCount(post.content)
-    const description = generateMetaDescription(post.excerpt, post.content)
-    const keywords = generateKeywords(post.title, post.content, post.author.displayName)
-
-    // Extract first image from content, or fall back to author photo
-    const firstImage = extractFirstImage(post.content)
-    const ogImage = firstImage || post.author.photo
-
-    // Generate structured data schemas with GEO optimizations
-    const blogPostingSchema = generateEnhancedBlogPostingSchema({
-      title: postTitle,
-      description,
-      content: post.content,
-      url: postUrl,
-      imageUrl: ogImage,
-      authorName: post.author.displayName,
-      authorUrl,
-      authorImage: post.author.photo,
-      datePublished: publishedTime,
-      dateModified: publishedTime,
-      wordCount,
-      readingTime,
-      keywords
-    })
-
-    const breadcrumbSchema = generateBreadcrumbSchema([
-      { name: 'Home', url: SITE_URL },
-      { name: post.author.displayName, url: authorUrl },
-      { name: postTitle, url: postUrl }
-    ])
-
-    // Extract FAQs from content for FAQ schema (GEO optimization)
-    const faqs = extractFAQsFromContent(post.content)
-    const faqSchema = faqs.length > 0 ? generateFAQSchema(faqs) : null
-
-    const seo = {
-      title: `${postTitle} - ${post.author.displayName} | Bublr`,
-      cleanTitle: postTitle,
-      description,
-      keywords,
-      url: `/${post.author.name}/${post.slug}`,
-      canonicalUrl: postUrl,
-      image: ogImage,
-      authorUrl,
-      publishedTime,
-      modifiedTime: publishedTime,
-      readingTime,
-      wordCount,
-      blogPostingSchema,
-      breadcrumbSchema,
-      faqSchema
-    }
-
     return {
-      props: { post: toPublicPost(post), seo, fontSettings, customFonts },
+      props: await buildPostPageProps(post),
       revalidate: 60, // Revalidate at most once per minute
     }
   } catch (err) {
-    console.log(err)
+    if (err?.code !== 'user/not-found' && err?.code !== 'post/not-found') console.log(err)
     return { notFound: true }
   }
 }

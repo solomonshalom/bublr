@@ -3,6 +3,7 @@ import { css } from '@emotion/react'
 import { useDocumentData } from 'react-firebase-hooks/firestore'
 
 import { firestore } from '../../lib/firebase'
+import { hasActiveAccess } from '../../lib/subscription'
 
 const wrapStyle = css`
   font-size: 0.825rem;
@@ -49,7 +50,7 @@ export default function WelcomeUser({ uid, email }) {
   const fullName = user?.displayName || 'there'
   const firstName = fullName.trim().split(/\s+/)[0]
   const username = user?.name || ''
-  const isPro = !!user?.hasCustomDomainAccess
+  const isPro = Boolean(user && hasActiveAccess(user))
 
   return (
     <div css={wrapStyle}>

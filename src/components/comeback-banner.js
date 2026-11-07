@@ -2,12 +2,12 @@
 import Link from 'next/link'
 import { css } from '@emotion/react'
 import { useEffect, useState } from 'react'
+import { isPlatformHost } from '../lib/domain-utils'
 
-// Hosts that belong to us. Writer-owned custom domains never show the banner —
+// Writer-owned custom domains never show the banner —
 // the comeback is Bublr's news, not theirs. Pages rendered with getServerSideProps
 // are filtered in _app.js; statically generated post pages can't know the host
 // at build time, so they fall back to this check after hydration.
-const MAIN_HOSTS = ['bublr.life', 'www.bublr.life', 'localhost']
 
 const bannerStyle = css`
   position: sticky;
@@ -55,9 +55,7 @@ export default function ComebackBanner() {
   const [onCustomDomain, setOnCustomDomain] = useState(false)
 
   useEffect(() => {
-    const host = window.location.hostname
-    const isOurs = MAIN_HOSTS.includes(host) || host.endsWith('.vercel.app')
-    setOnCustomDomain(!isOurs)
+    setOnCustomDomain(!isPlatformHost(window.location.hostname))
   }, [])
 
   if (onCustomDomain) return null

@@ -12,6 +12,7 @@ const LINKS = [
   { href: '/explore', label: 'Explore' },
   { href: '/changelog', label: 'Changelog' },
   { href: '/docs', label: 'API Docs' },
+  { href: '/docs/custom-domains', label: 'Custom domains' },
   { href: '/terms', label: 'Terms' },
   { href: '/privacy', label: 'Privacy' },
 ]

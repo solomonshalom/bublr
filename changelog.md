@@ -123,3 +123,31 @@ A weekly check on what writers ask for and what other writing tools offer. Long 
 
 ## Fixed
 - **`npm test` documentation.** Tests need `npm install --force` first; the CLAUDE.md note now matches reality (70 tests).
+
+# Pro - Update (7th November'26)
+Your own domain is now part of **Bublr Pro, $4.99/month**, and the whole custom-domain setup has been rebuilt so it simply works. Payments moved from Polar to [Dodo Payments](https://dodopayments.com). Writing on bublr.life stays free, with no ads and no paywalls; Pro is only for people who want their own address.
+
+## Added
+- **A Custom domain page** in the dashboard (sidebar → Custom domain), with the plan, checkout and the whole domain setup in one place. A Pro card in the sidebar and a small note on the home page point to it.
+- **Guided DNS setup.** Bublr shows the exact records to add, with copy buttons, and checks every 30 seconds by itself. The domain goes live on its own as soon as DNS is right, with HTTPS.
+- **Both spellings work.** Connect `yourname.com` and `www.yourname.com` forwards to it (and the other way round).
+- **Clean post links on your domain:** `yourname.com/my-post`, not `yourname.com/yourname/my-post`.
+- **Cancel, resume and update your card without leaving Bublr**, or open Dodo's billing portal for invoices.
+- **A guide** at [/docs/custom-domains](/docs/custom-domains), with tips for Cloudflare, Namecheap and other DNS providers.
+
+## Changed
+- **Cancelling is gentle.** Your domain keeps working until the end of the month you paid for. If a renewal payment fails, it stays online for 7 days while you update your card. After that, readers who visit your domain are sent to your bublr.life page, so links never die. Nothing is deleted, and resubscribing brings it all back.
+- **Search engines are told your domain is the main address** for your profile and posts once it's live.
+- **Your custom footer text is Pro-only**, like the domain. When Pro ends, "Made with Bublr" comes back.
+
+## Fixed
+- **Connecting a domain no longer silently "succeeds" when it can't.** A domain still attached to another Vercel project used to be saved as if it worked; now you're told what to do. A domain that was already attached to Bublr's project is no longer refused.
+- **The DNS values shown are the ones Vercel actually recommends** for this project, instead of fixed fallbacks.
+- **Changing domains detaches the old one**, and Bublr's own domains can never be claimed or detached by a writer.
+- **A writer's domain only shows their own pages.** Other writers' profiles, drafts, and the dashboard aren't served on it.
+- **The custom-domain profile matches bublr.life**: custom fonts and the guest book were missing there.
+- **The home page loads faster.** It no longer downloads the whole profile page in the background.
+
+## For whoever deploys this
+- Set the Dodo Payments and Vercel environment variables listed in `.env.sample`, and point a Dodo webhook at `/api/subscription/webhook`.
+- Anyone still paying through Polar keeps access, but Polar events are no longer processed. Cancel those subscriptions in Polar and invite the writers to resubscribe.

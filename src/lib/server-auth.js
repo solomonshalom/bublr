@@ -156,13 +156,28 @@ export async function requireAuth(req, res) {
  * about (the `userId` the client sent). Answers 403 on a mismatch.
  */
 export async function requireSelf(req, res, claimedUserId) {
-  const uid = await requireAuth(req, res)
-  if (!uid) return null
-  if (claimedUserId && claimedUserId !== uid) {
+  const claims = await requireSelfClaims(req, res, claimedUserId)
+  return claims ? claims.uid : null
+}
+
+/**
+ * requireSelf, returning the verified token claims ({ uid, email, ... })
+ * instead of just the uid.
+ */
+export async function requireSelfClaims(req, res, claimedUserId) {
+  let claims
+  try {
+    claims = await verifyIdToken(getBearerToken(req))
+  } catch (error) {
+    const status = error instanceof AuthError ? error.status : 401
+    res.status(status).json({ error: 'Please sign in again to continue.', code: 'UNAUTHENTICATED' })
+    return null
+  }
+  if (claimedUserId && claimedUserId !== claims.uid) {
     res.status(403).json({ error: 'You can only do that for your own account.', code: 'FORBIDDEN' })
     return null
   }
-  return uid
+  return claims
 }
 
 /**

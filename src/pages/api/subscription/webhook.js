@@ -1,266 +1,88 @@
-import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
-import { firestore } from '../../../lib/firebase'
-import { WEBHOOK_SECRET } from '../../../lib/polar'
-import { sendSubscriptionEmail } from '../../../lib/resend'
+import { dodoConfig, getSubscription, isBillingConfigured, verifyWebhook, WebhookVerificationError } from '../../../lib/dodo'
+import { applyDodoSubscription } from '../../../lib/billing'
 
-// Disable body parsing, we need the raw body for webhook verification
+// The signature covers the exact bytes Dodo sent, so read the raw body
 export const config = {
   api: {
     bodyParser: false,
   },
 }
 
-// Helper to get raw body
-async function getRawBody(req) {
+const MAX_BODY_BYTES = 1024 * 1024
+
+async function readRawBody(req) {
   const chunks = []
+  let size = 0
   for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+    const buf = typeof chunk === 'string' ? Buffer.from(chunk) : chunk
+    size += buf.length
+    if (size > MAX_BODY_BYTES) throw new Error('Webhook body too large')
+    chunks.push(buf)
   }
   return Buffer.concat(chunks)
 }
 
+/**
+ * Dodo Payments webhook endpoint: https://<your site>/api/subscription/webhook
+ *
+ * Answers 2xx once an event is stored (or deliberately ignored), 401 for a bad
+ * signature, and 5xx when something on our side failed so Dodo retries.
+ */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST')
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  const { webhookKey } = dodoConfig()
+  if (!webhookKey) {
+    console.error('DODO_PAYMENTS_WEBHOOK_KEY is not set; refusing webhook so Dodo retries later')
+    return res.status(500).json({ error: 'Webhook secret not configured' })
+  }
+
+  let raw
   try {
-    const rawBody = await getRawBody(req)
-    const bodyString = rawBody.toString('utf8')
-
-    if (!WEBHOOK_SECRET) {
-      console.error('POLAR_WEBHOOK_SECRET not configured')
-      return res.status(500).json({ error: 'Webhook secret not configured' })
-    }
-
-    // Verify webhook signature
-    let event
-    try {
-      event = validateEvent(bodyString, req.headers, WEBHOOK_SECRET)
-    } catch (error) {
-      if (error instanceof WebhookVerificationError) {
-        console.error('Webhook verification failed:', error.message)
-        return res.status(403).json({ error: 'Invalid webhook signature' })
-      }
-      throw error
-    }
-
-    // Handle different event types
-    switch (event.type) {
-      case 'subscription.created':
-      case 'subscription.active':
-        await handleSubscriptionActive(event.data)
-        break
-
-      case 'subscription.updated':
-        await handleSubscriptionUpdated(event.data)
-        break
-
-      case 'subscription.canceled':
-        await handleSubscriptionCanceled(event.data)
-        break
-
-      case 'subscription.revoked':
-        await handleSubscriptionRevoked(event.data)
-        break
-
-      case 'order.paid':
-        // Order has been paid - subscription should be active
-        console.log('Order paid:', event.data.id)
-        break
-
-      default:
-        console.log('Unhandled event type:', event.type)
-    }
-
-    return res.status(202).json({ received: true })
+    raw = await readRawBody(req)
   } catch (error) {
-    console.error('Webhook error:', error)
+    return res.status(413).json({ error: error.message })
+  }
+
+  let event
+  try {
+    event = verifyWebhook(raw, req.headers, webhookKey)
+  } catch (error) {
+    if (error instanceof WebhookVerificationError) {
+      console.warn('Rejected Dodo webhook:', error.message)
+      return res.status(401).json({ error: 'Invalid webhook signature' })
+    }
+    throw error
+  }
+
+  const type = String(event?.type || '')
+  const data = event?.data
+
+  // Payment, refund, dispute events: the subscription events carry what we need
+  if (!type.startsWith('subscription.') || !data?.subscription_id) {
+    return res.status(200).json({ received: true, ignored: true })
+  }
+
+  // Deliveries can be late or out of order: ask Dodo for the current state
+  // and use the payload only if that fails
+  let subscription = data
+  if (isBillingConfigured()) {
+    try {
+      const fresh = await getSubscription(data.subscription_id)
+      if (fresh?.subscription_id) subscription = { ...data, ...fresh }
+    } catch (error) {
+      console.warn(`Using webhook payload for ${data.subscription_id}; refresh failed:`, error.message)
+    }
+  }
+
+  try {
+    const result = await applyDodoSubscription(subscription, { source: `webhook:${type}` })
+    return res.status(200).json({ received: true, applied: result.applied, reason: result.reason || null })
+  } catch (error) {
+    console.error('Error processing Dodo webhook:', error)
     return res.status(500).json({ error: 'Webhook processing failed' })
   }
-}
-
-async function handleSubscriptionActive(subscription) {
-  const userId = subscription.metadata?.userId
-  if (!userId) {
-    console.error('No userId in subscription metadata')
-    return
-  }
-
-  // Get user email for notification
-  const userDoc = await firestore.collection('users').doc(userId).get()
-  const userData = userDoc.exists ? userDoc.data() : null
-
-  // Update user's subscription status in Firestore
-  await firestore.collection('users').doc(userId).update({
-    subscription: {
-      id: subscription.id,
-      status: subscription.status,
-      customerId: subscription.customerId,
-      productId: subscription.productId,
-      currentPeriodStart: subscription.currentPeriodStart,
-      currentPeriodEnd: subscription.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
-      updatedAt: new Date().toISOString(),
-    },
-    hasCustomDomainAccess: true,
-  })
-
-  // Send welcome email
-  if (userData?.email) {
-    await sendSubscriptionEmail({
-      userEmail: userData.email,
-      userName: userData.displayName || userData.name,
-      type: 'activated',
-    })
-  }
-
-  console.log('Subscription activated for user:', userId)
-}
-
-async function handleSubscriptionUpdated(subscription) {
-  const userId = subscription.metadata?.userId
-  if (!userId) {
-    // Try to find user by subscription ID
-    const usersSnapshot = await firestore
-      .collection('users')
-      .where('subscription.id', '==', subscription.id)
-      .limit(1)
-      .get()
-
-    if (usersSnapshot.empty) {
-      console.error('No user found for subscription:', subscription.id)
-      return
-    }
-
-    const userDoc = usersSnapshot.docs[0]
-    await updateUserSubscription(userDoc.id, subscription)
-    return
-  }
-
-  await updateUserSubscription(userId, subscription)
-}
-
-async function updateUserSubscription(userId, subscription) {
-  const isActive = ['active', 'trialing'].includes(subscription.status)
-
-  await firestore.collection('users').doc(userId).update({
-    subscription: {
-      id: subscription.id,
-      status: subscription.status,
-      customerId: subscription.customerId,
-      productId: subscription.productId,
-      currentPeriodStart: subscription.currentPeriodStart,
-      currentPeriodEnd: subscription.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
-      updatedAt: new Date().toISOString(),
-    },
-    hasCustomDomainAccess: isActive,
-  })
-
-  console.log('Subscription updated for user:', userId, 'Status:', subscription.status)
-}
-
-async function handleSubscriptionCanceled(subscription) {
-  const userId = subscription.metadata?.userId
-
-  // Try to find user by subscription ID if not in metadata
-  let targetUserId = userId
-  if (!targetUserId) {
-    const usersSnapshot = await firestore
-      .collection('users')
-      .where('subscription.id', '==', subscription.id)
-      .limit(1)
-      .get()
-
-    if (!usersSnapshot.empty) {
-      targetUserId = usersSnapshot.docs[0].id
-    }
-  }
-
-  if (!targetUserId) {
-    console.error('No user found for canceled subscription:', subscription.id)
-    return
-  }
-
-  // Get user for email
-  const userDoc = await firestore.collection('users').doc(targetUserId).get()
-  const userData = userDoc.exists ? userDoc.data() : null
-
-  // Check if user should retain access until period end
-  const periodEnd = subscription.currentPeriodEnd
-  const shouldRetainAccess =
-    subscription.cancelAtPeriodEnd === true &&
-    periodEnd &&
-    new Date(periodEnd) > new Date()
-
-  // Update subscription status but keep the custom domain data
-  // User retains access until period ends if cancelAtPeriodEnd is true
-  await firestore.collection('users').doc(targetUserId).update({
-    'subscription.status': subscription.status,
-    'subscription.cancelAtPeriodEnd': subscription.cancelAtPeriodEnd || false,
-    'subscription.currentPeriodEnd': subscription.currentPeriodEnd,
-    'subscription.updatedAt': new Date().toISOString(),
-    hasCustomDomainAccess: shouldRetainAccess,
-  })
-
-  // Send cancellation email
-  if (userData?.email) {
-    await sendSubscriptionEmail({
-      userEmail: userData.email,
-      userName: userData.displayName || userData.name,
-      type: 'canceled',
-      periodEndDate: shouldRetainAccess ? periodEnd : null,
-    })
-  }
-
-  console.log('Subscription canceled for user:', targetUserId,
-    shouldRetainAccess ? '(access retained until period end)' : '(access revoked)')
-}
-
-async function handleSubscriptionRevoked(subscription) {
-  const userId = subscription.metadata?.userId
-
-  // Try to find user by subscription ID if not in metadata
-  let targetUserId = userId
-  if (!targetUserId) {
-    const usersSnapshot = await firestore
-      .collection('users')
-      .where('subscription.id', '==', subscription.id)
-      .limit(1)
-      .get()
-
-    if (!usersSnapshot.empty) {
-      targetUserId = usersSnapshot.docs[0].id
-    }
-  }
-
-  if (!targetUserId) {
-    console.error('No user found for revoked subscription:', subscription.id)
-    return
-  }
-
-  // Get user for email
-  const userDoc = await firestore.collection('users').doc(targetUserId).get()
-  const userData = userDoc.exists ? userDoc.data() : null
-
-  // Revoked means immediate loss of access (payment failure, etc.)
-  await firestore.collection('users').doc(targetUserId).update({
-    'subscription.status': 'revoked',
-    'subscription.cancelAtPeriodEnd': false,
-    'subscription.currentPeriodEnd': subscription.currentPeriodEnd,
-    'subscription.updatedAt': new Date().toISOString(),
-    hasCustomDomainAccess: false,
-  })
-
-  // Send expired email (immediate revocation)
-  if (userData?.email) {
-    await sendSubscriptionEmail({
-      userEmail: userData.email,
-      userName: userData.displayName || userData.name,
-      type: 'expired',
-    })
-  }
-
-  console.log('Subscription revoked for user:', targetUserId)
 }

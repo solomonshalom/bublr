@@ -1,5 +1,6 @@
 import { firestore } from '../../../lib/firebase'
 import { requireSelf } from '../../../lib/server-auth'
+import { hasActiveAccess } from '../../../lib/subscription'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -21,9 +22,9 @@ export default async function handler(req, res) {
 
     const userData = userDoc.data()
 
-    // Check if user has custom domain access (paid subscription)
-    if (!userData.hasCustomDomainAccess) {
-      return res.status(403).json({ error: 'Custom newsletter templates require an active subscription' })
+    // Pro feature (respects the paid-through date after cancelling)
+    if (!hasActiveAccess(userData)) {
+      return res.status(403).json({ error: 'Custom newsletter templates are part of Bublr Pro.', code: 'PRO_REQUIRED' })
     }
 
     // Validate template if provided

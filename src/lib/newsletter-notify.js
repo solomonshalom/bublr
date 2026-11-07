@@ -1,6 +1,7 @@
 import { firestore } from './firebase'
 import { sendBatchNotifications } from './resend'
 import { hasActiveAccess } from './subscription'
+import { liveCustomDomain } from './custom-domains'
 
 /**
  * Email a writer's newsletter subscribers about one of their posts — at most
@@ -39,8 +40,12 @@ export async function notifySubscribersOfPost(postId) {
   const customTemplate =
     hasActiveAccess(author) && author.newsletterTemplate?.html ? author.newsletterTemplate.html : null
 
+  // Send readers to the writer's own domain once it's live
+  const domain = liveCustomDomain(author)
+
   const result = await sendBatchNotifications({
     subscribers,
+    postUrl: domain ? `https://${domain}/${encodeURIComponent(post.slug)}` : undefined,
     authorName: author.displayName || author.name,
     authorPhoto: author.photo,
     authorUsername: author.name,

@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { escapeHtml } from './escape'
 
 // Initialize Resend with API key
 // Created on first use. Building it at import threw "Missing API key" and
@@ -338,6 +339,7 @@ export async function sendNewPostNotification({
  * @param {string} options.postSlug - Post URL slug
  * @param {string} options.postColor - Post's custom color
  * @param {string} [options.customTemplate] - Optional custom HTML template
+ * @param {string} [options.postUrl] - Where the post lives, when not bublr.life (a writer's own domain)
  */
 export async function sendBatchNotifications({
   subscribers,
@@ -350,6 +352,7 @@ export async function sendBatchNotifications({
   postSlug,
   postColor,
   customTemplate,
+  postUrl: postUrlOverride,
 }) {
   if (!process.env.RESEND_API_KEY) {
     console.error('RESEND_API_KEY not configured')
@@ -360,7 +363,7 @@ export async function sendBatchNotifications({
     return { success: true, sent: 0 }
   }
 
-  const postUrl = `https://bublr.life/${authorUsername}/${postSlug}`
+  const postUrl = postUrlOverride || `https://bublr.life/${authorUsername}/${postSlug}`
 
   // Clean post title for subject line
   const cleanTitle = postTitle ? postTitle.replace(/<[^>]*>/g, '') : 'New Post'
@@ -440,12 +443,12 @@ export async function sendBatchNotifications({
 }
 
 /**
- * Send subscription status email (activated, canceled, expired)
+ * Send a Bublr Pro billing email.
  * @param {Object} options - Email options
  * @param {string} options.userEmail - User's email address
  * @param {string} [options.userName] - User's display name
- * @param {string} options.type - Email type: 'activated', 'canceled', or 'expired'
- * @param {string} [options.periodEndDate] - End date for grace period (ISO string)
+ * @param {string} options.type - 'activated', 'canceled', 'resumed', 'payment_failed' or 'expired'
+ * @param {string} [options.periodEndDate] - When access ends (canceled) or the grace period ends (payment_failed), ISO string
  */
 export async function sendSubscriptionEmail({ userEmail, userName, type, periodEndDate }) {
   if (!process.env.RESEND_API_KEY) {
@@ -455,6 +458,10 @@ export async function sendSubscriptionEmail({ userEmail, userName, type, periodE
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
   const logoUrl = `${baseUrl}/images/logo.png`
+  const domainPage = `${baseUrl}/dashboard/settings/domain`
+  const formatDate = value =>
+    new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+  const hasDate = periodEndDate && !Number.isNaN(new Date(periodEndDate).getTime())
 
   let subject, heading, message, ctaText, ctaUrl
 
@@ -462,27 +469,45 @@ export async function sendSubscriptionEmail({ userEmail, userName, type, periodE
     case 'activated':
       subject = 'Welcome to Bublr Pro!'
       heading = 'Your subscription is active'
-      message = 'Thank you for subscribing! You now have access to custom domains, custom branding, and custom newsletter templates.'
-      ctaText = 'Set Up Your Domain'
-      ctaUrl = `${baseUrl}/dashboard`
+      message = 'Thank you for subscribing! Connect your own domain, set your footer text and design your newsletter email from your dashboard.'
+      ctaText = 'Connect your domain'
+      ctaUrl = domainPage
       break
 
     case 'canceled':
       subject = 'Your Bublr Pro subscription has been canceled'
       heading = 'Subscription canceled'
-      message = periodEndDate
-        ? `Your subscription has been canceled. You'll continue to have access to Pro features until ${new Date(periodEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.`
+      message = hasDate
+        ? `Your subscription has been canceled. Your domain and Pro features keep working until ${formatDate(periodEndDate)}. Changed your mind? You can resume any time before then.`
         : 'Your subscription has been canceled. Your Pro features have been deactivated.'
-      ctaText = 'Resubscribe'
-      ctaUrl = `${baseUrl}/dashboard`
+      ctaText = hasDate ? 'Resume subscription' : 'Resubscribe'
+      ctaUrl = domainPage
+      break
+
+    case 'resumed':
+      subject = 'Your Bublr Pro subscription will continue'
+      heading = 'Welcome back'
+      message = 'Your subscription is no longer set to cancel. Your domain and Pro features carry on as before.'
+      ctaText = 'Open your dashboard'
+      ctaUrl = domainPage
+      break
+
+    case 'payment_failed':
+      subject = 'Action needed: your Bublr Pro payment didn\u2019t go through'
+      heading = 'We couldn\u2019t renew your subscription'
+      message = hasDate
+        ? `Your last payment for Bublr Pro failed. Your domain keeps working until ${formatDate(periodEndDate)} — update your payment method before then to keep it online.`
+        : 'Your last payment for Bublr Pro failed. Update your payment method to keep your domain online.'
+      ctaText = 'Update payment method'
+      ctaUrl = domainPage
       break
 
     case 'expired':
       subject = 'Your Bublr Pro access has ended'
       heading = 'Pro access expired'
-      message = 'Your subscription period has ended. Your custom domain and branding features have been deactivated, but all your settings are saved and will be restored if you resubscribe.'
+      message = 'Your subscription period has ended. Your custom domain now sends readers to your bublr.life profile, and your branding is paused. Everything is saved and comes back the moment you resubscribe.'
       ctaText = 'Resubscribe'
-      ctaUrl = `${baseUrl}/dashboard`
+      ctaUrl = domainPage
       break
 
     default:
@@ -559,7 +584,7 @@ function generateSubscriptionEmailHTML({ logoUrl, heading, userName, message, ct
               </h1>
 
               <p style="margin: 0 0 8px 0; color: #6f6f6f; text-align: center;">
-                Hi${userName ? ` ${userName}` : ''},
+                Hi${userName ? ` ${escapeHtml(userName)}` : ''},
               </p>
 
               <p style="margin: 0 0 24px 0; color: #6f6f6f; text-align: center;">

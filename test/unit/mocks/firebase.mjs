@@ -221,6 +221,21 @@ class Batch {
   }
 }
 
+// Reads go straight through; writes are queued and applied after the callback
+// returns, like a Firestore transaction commit.
+async function runTransaction(fn) {
+  const writes = new Batch()
+  const tx = {
+    get: ref => ref.get(),
+    set: (ref, data, options) => (writes.set(ref, data, options), tx),
+    update: (ref, data) => (writes.update(ref, data), tx),
+    delete: ref => (writes.delete(ref), tx),
+  }
+  const result = await fn(tx)
+  await writes.commit()
+  return result
+}
+
 export const firestore = {
   collection: name => new Query(name),
   doc: path => {
@@ -228,6 +243,7 @@ export const firestore = {
     return new DocRef(parts.slice(0, -1).join('/'), parts[parts.length - 1])
   },
   batch: () => new Batch(),
+  runTransaction,
   settings: () => {},
 }
 

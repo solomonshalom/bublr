@@ -1,19 +1,18 @@
 /** @jsxImportSource @emotion/react */
 import Head from 'next/head'
+import Link from 'next/link'
 import { css } from '@emotion/react'
 import { safeJsonLd } from '../lib/escape'
-import { toPublicUser } from '../lib/public-user'
-import { toMillis } from '../lib/timestamps'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
 import { useRouter } from 'next/router'
 import { auth } from '../lib/firebase'
 import { getUserByName } from '../lib/db'
-import { generateProfilePageSchema, generateOrganizationSchema } from '../lib/seo-utils'
+import { buildProfilePageProps } from '../lib/profile-page'
+import { routeCustomDomain } from '../lib/custom-domain-routing'
 
 import meta from '../components/meta'
 import Spinner from '../components/spinner'
-import Profile from './[username]/index'
 import { FadeIn, FadeInGroup, FadeInItem } from '../components/fade-in'
 
 // Static schema objects for homepage (defined at module level for SSR compatibility)
@@ -73,6 +72,10 @@ const siteNavigationSchema = {
 
 import dynamic from 'next/dynamic'
 import Container from '../components/container'
+
+// A writer's profile, for "/" on their own domain. Loaded only there, so the
+// landing page doesn't ship the whole profile page.
+const Profile = dynamic(() => import('./[username]/index'))
 import Button, { LinkButton } from '../components/button'
 
 // Dynamic import PeepWalk - it uses GSAP (heavy) and only renders on home page
@@ -84,17 +87,72 @@ const PeepWalk = dynamic(() => import('../components/PeepWalk'), {
   ),
 })
 import CTAButton from '../components/cta-button'
+import { PRO_PLAN } from '../lib/pricing'
+import { PRO_GRADIENT, SparkleIcon } from '../components/pro/pro-look'
 import CTAButtonDashboard from '../components/cta-button-dashboard'
 import CTAButtonSignOut from '../components/cta-button-signout'
 
-export default function Home({ customDomainUser, organizationSchema: orgSchema, profilePageSchema }) {
+// A quiet nudge toward Bublr Pro under the sign-in button
+function ProAnnouncement() {
+  return (
+    <Link href="/docs/custom-domains" passHref>
+      <a
+        css={css`
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          margin-top: 1.4rem;
+          padding: 0.35rem 0.75rem 0.35rem 0.4rem;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          color: var(--grey-4);
+          text-decoration: none;
+          background: var(--grey-1);
+          border: 1px solid transparent;
+          background-image: linear-gradient(var(--grey-1), var(--grey-1)), ${PRO_GRADIENT};
+          background-origin: border-box;
+          background-clip: padding-box, border-box;
+          transition: transform 150ms ease, box-shadow 150ms ease;
+
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px -10px rgba(188, 60, 0, 0.6);
+          }
+        `}
+      >
+        <span
+          css={css`
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: #fff;
+            background: ${PRO_GRADIENT};
+          `}
+        >
+          <SparkleIcon size={9} /> New
+        </span>
+        Your own domain, {PRO_PLAN.shortPriceLabel} →
+      </a>
+    </Link>
+  )
+}
+
+export default function Home({ customDomainProfile }) {
+  // A writer's own domain: render their profile (hooks below stay unconditional)
+  if (customDomainProfile) {
+    return <Profile {...customDomainProfile} />
+  }
+  return <Landing />
+}
+
+function Landing() {
   const [user, loading, error] = useAuthState(auth)
   const router = useRouter()
-
-  // If this is a custom domain request, render the Profile component directly
-  if (customDomainUser) {
-    return <Profile user={customDomainUser} organizationSchema={orgSchema} profilePageSchema={profilePageSchema} />
-  }
 
   if (error) {
     return (
@@ -195,6 +253,9 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
         </div>
       )}
         </FadeInItem>
+        <FadeInItem>
+          <ProAnnouncement />
+        </FadeInItem>
       </FadeInGroup>
       <div
         css={css`
@@ -214,7 +275,7 @@ export default function Home({ customDomainUser, organizationSchema: orgSchema, 
 
 Home.getLayout = function HomeLayout(page, pageProps) {
   // For custom domain requests, don't wrap in Container (Profile has its own layout)
-  if (pageProps?.customDomainUser) {
+  if (pageProps?.customDomainProfile) {
     return page
   }
 
@@ -250,134 +311,16 @@ Home.getLayout = function HomeLayout(page, pageProps) {
   )
 }
 
-// Check for custom domain and render profile directly (no redirect)
+// On a writer's own domain, "/" is their profile
 export async function getServerSideProps({ req }) {
-  const host = req.headers.host || ''
-
-  // List of main domains that should show the home page
-  const mainDomains = ['bublr.life', 'www.bublr.life', 'localhost', 'localhost:3000']
-  const hostWithoutPort = host.split(':')[0]
-
-  // Check if it's a main domain or Vercel preview
-  const isMainDomain = mainDomains.some(domain => {
-    const domainWithoutPort = domain.split(':')[0]
-    return hostWithoutPort === domainWithoutPort
-  })
-  const isVercelPreview = host.includes('.vercel.app')
-
-  if (isMainDomain || isVercelPreview) {
-    // Show normal home page
-    return { props: {} }
+  const route = await routeCustomDomain(req.headers.host)
+  if (route.kind === 'redirect') {
+    return { redirect: { destination: route.destination, permanent: false } }
   }
-
-  // This might be a custom domain - look up the user and render profile directly
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
-    const res = await fetch(`${baseUrl}/api/domain/lookup?domain=${encodeURIComponent(host)}`)
-
-    if (res.ok) {
-      const data = await res.json()
-
-      // Fetch full user data (same logic as [username]/index.js getServerSideProps)
-      const user = await getUserByName(data.userName)
-
-      // Mark as custom domain access
-      user.isCustomDomain = true
-
-      // Serialize subscription Firestore Timestamps to avoid JSON serialization errors
-      if (user.subscription) {
-        user.subscription = {
-          ...user.subscription,
-          currentPeriodStart: user.subscription.currentPeriodStart?.toDate?.()
-            ? user.subscription.currentPeriodStart.toDate().getTime()
-            : user.subscription.currentPeriodStart?.toMillis?.()
-              ? user.subscription.currentPeriodStart.toMillis()
-              : user.subscription.currentPeriodStart || null,
-          currentPeriodEnd: user.subscription.currentPeriodEnd?.toDate?.()
-            ? user.subscription.currentPeriodEnd.toDate().getTime()
-            : user.subscription.currentPeriodEnd?.toMillis?.()
-              ? user.subscription.currentPeriodEnd.toMillis()
-              : user.subscription.currentPeriodEnd || null,
-        }
-      }
-
-      // Process posts efficiently
-      const processedPosts = user.posts
-        .filter(p => p.published)
-        .map(p => ({
-          ...p,
-          lastEdited: toMillis(p.lastEdited) || Date.now(),
-        }))
-        .sort((a, b) => b.lastEdited - a.lastEdited)
-        .slice(0, 20)
-
-      user.posts = processedPosts
-
-      // Ensure all required fields exist (same as [username]/index.js)
-      if (!user.socialLinks) user.socialLinks = {}
-      if (!user.skills) user.skills = []
-      if (!user.customSections) user.customSections = []
-      if (!user.skillsSectionTitle) user.skillsSectionTitle = ''
-      const normalizeExperienceList = (list) =>
-        (Array.isArray(list) ? list : []).map(e => ({
-          title: e?.title || '',
-          organization: e?.organization || '',
-          url: e?.url || '',
-          avatarSource: e?.avatarSource || 'glass',
-          startDate: e?.startDate || '',
-          endDate: e?.endDate || '',
-          current: e?.current || false,
-          location: e?.location || '',
-          description: e?.description || '',
-        }))
-      user.workExperience = normalizeExperienceList(user.workExperience)
-      user.education = normalizeExperienceList(user.education)
-      if (!user.workSectionTitle) user.workSectionTitle = ''
-      if (!user.educationSectionTitle) user.educationSectionTitle = ''
-      if (!user.workStyle) user.workStyle = 'timeline'
-      if (!user.educationStyle) user.educationStyle = 'timeline'
-      if (!user.sectionOrder) user.sectionOrder = ['skills', 'writing', 'custom']
-      if (!user.customBranding) user.customBranding = data.customBranding || null
-      if (!user.followers) user.followers = []
-      if (!user.following) user.following = []
-      if (!user.subscribers) user.subscribers = []
-      if (!user.statsVisibility) user.statsVisibility = { followers: false, following: false, subscribers: false }
-      if (!user.statsOrder) user.statsOrder = ['followers', 'following', 'subscribers']
-      if (!user.statsStyle) user.statsStyle = 'separator'
-      if (!user.statsAlignment) user.statsAlignment = 'center'
-      if (!user.buttonsVisibility) user.buttonsVisibility = { follow: false, newsletter: true }
-      if (!user.buttonsOrder) user.buttonsOrder = ['follow', 'newsletter']
-      if (!user.dividersVisibility) user.dividersVisibility = { skills: true, work: true, education: true, writing: true, custom: true }
-      if (!user.banner) user.banner = null
-      if (!user.bannerPosition) user.bannerPosition = 'center'
-      if (!user.avatarFrame) user.avatarFrame = { type: 'none', color: null, gradientColors: null, customUrl: null, size: 'medium' }
-
-      // Generate schemas for SEO
-      const organizationSchema = generateOrganizationSchema()
-      const profilePageSchema = generateProfilePageSchema({
-        name: user.displayName,
-        username: user.name,
-        photo: user.photo,
-        about: user.about,
-        socialLinks: user.socialLinks,
-        website: user.link,
-        postCount: user.posts?.length || 0,
-        followerCount: user.followers?.length || 0,
-        subscriberCount: user.subscribers?.length || 0
-      })
-
-      return {
-        props: {
-          customDomainUser: toPublicUser(user),
-          organizationSchema,
-          profilePageSchema,
-        },
-      }
-    }
-  } catch (error) {
-    console.error('Custom domain lookup error:', error)
+  if (route.kind === 'profile') {
+    const owner = await getUserByName(route.owner.name)
+    const customDomainProfile = await buildProfilePageProps(owner, { customDomain: route.host })
+    return { props: { customDomainProfile } }
   }
-
-  // Domain not found or error - show home page
   return { props: {} }
 }

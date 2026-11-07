@@ -1,8 +1,10 @@
 import { firestore } from '../../../lib/firebase'
-import { checkSubscriptionAccess } from '../../../lib/subscription'
-import { sendSubscriptionEmail } from '../../../lib/resend'
 import { requireSelf } from '../../../lib/server-auth'
+import { refreshSubscription, reconcileAccess, statusPayload } from '../../../lib/billing'
+import { hasActiveAccess } from '../../../lib/subscription'
+import { isVercelConfigured } from '../../../lib/vercel'
 
+// The writer's Pro plan and custom domain, for the dashboard
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -11,43 +13,31 @@ export default async function handler(req, res) {
   const userId = await requireSelf(req, res, req.query?.userId)
   if (!userId) return
 
+  res.setHeader('Cache-Control', 'no-store')
+
   try {
-
-    const userDoc = await firestore.collection('users').doc(userId).get()
-
-    if (!userDoc.exists) {
+    const ref = firestore.collection('users').doc(userId)
+    let doc = await ref.get()
+    if (!doc.exists) {
       return res.status(404).json({ error: 'User not found' })
     }
+    let userData = doc.data()
 
-    const userData = userDoc.data()
-
-    // Check if grace period just expired (for sending email)
-    const wasAccessible = userData.hasCustomDomainAccess
-    const hadGracePeriod = userData.subscription?.cancelAtPeriodEnd
-    const periodEnd = userData.subscription?.currentPeriodEnd
-    const gracePeriodJustExpired = wasAccessible && hadGracePeriod && periodEnd &&
-      new Date(periodEnd) < new Date()
-
-    // Check access with lazy update (will update DB if grace period expired)
-    const hasAccess = await checkSubscriptionAccess(userData, userId, true)
-
-    // Send expiry email if grace period just ended
-    if (gracePeriodJustExpired && userData.email) {
-      await sendSubscriptionEmail({
-        userEmail: userData.email,
-        userName: userData.displayName || userData.name,
-        type: 'expired',
-      })
+    // Catch up on anything a missed webhook would have told us
+    const refreshed = await refreshSubscription(userId, userData)
+    if (refreshed?.applied) {
+      doc = await ref.get()
+      userData = doc.data()
     }
 
-    return res.status(200).json({
-      hasSubscription: !!userData.subscription,
-      hasCustomDomainAccess: hasAccess,
-      subscription: userData.subscription || null,
-      customDomain: userData.customDomain || null,
-      customBranding: userData.customBranding || null,
-      newsletterTemplate: userData.newsletterTemplate || null,
-    })
+    // A paid or grace period ran out quietly: switch the flag off (and email once)
+    if (userData.hasCustomDomainAccess && !hasActiveAccess(userData)) {
+      await reconcileAccess(userId)
+      doc = await ref.get()
+      userData = doc.data()
+    }
+
+    return res.status(200).json(statusPayload(userData, { domainsConfigured: isVercelConfigured() }))
   } catch (error) {
     console.error('Error fetching subscription status:', error)
     return res.status(500).json({ error: 'Failed to fetch subscription status' })

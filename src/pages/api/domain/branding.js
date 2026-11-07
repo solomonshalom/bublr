@@ -1,6 +1,8 @@
 import { firestore } from '../../../lib/firebase'
 import { requireSelf } from '../../../lib/server-auth'
+import { hasActiveAccess } from '../../../lib/subscription'
 
+// Pro: replace (or hide) the "Made with Bublr" footer line
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -9,29 +11,28 @@ export default async function handler(req, res) {
   const userId = await requireSelf(req, res, req.body?.userId)
   if (!userId) return
 
-  try {
-    const { footerText } = req.body
+  const { footerText = '' } = req.body || {}
+  if (typeof footerText !== 'string') {
+    return res.status(400).json({ error: 'Footer text must be text' })
+  }
+  const text = footerText.trim()
+  if (text.length > 100) {
+    return res.status(400).json({ error: 'Footer text must be 100 characters or less' })
+  }
 
-    // Check if user has subscription access
+  try {
     const userDoc = await firestore.collection('users').doc(userId).get()
     if (!userDoc.exists) {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    const userData = userDoc.data()
-    if (!userData.hasCustomDomainAccess) {
-      return res.status(403).json({ error: 'Custom branding requires an active subscription' })
+    if (!hasActiveAccess(userDoc.data())) {
+      return res.status(403).json({ error: 'Custom branding is part of Bublr Pro.', code: 'PRO_REQUIRED' })
     }
 
-    // Validate footer text (max 100 characters)
-    if (footerText && footerText.length > 100) {
-      return res.status(400).json({ error: 'Footer text must be 100 characters or less' })
-    }
-
-    // Update custom branding
     await firestore.collection('users').doc(userId).update({
       customBranding: {
-        footerText: footerText || '',
+        footerText: text,
         updatedAt: new Date().toISOString(),
       },
     })

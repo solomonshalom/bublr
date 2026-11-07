@@ -520,6 +520,12 @@ async function createPost(title, content) {
                   </Link>
                   {' — Customize the emails sent to your subscribers'}
                 </li>
+                <li>
+                  <Link href="/docs/custom-domains">
+                    <a css={css`border-bottom: 1px dotted var(--grey-3);`}>Custom Domains</a>
+                  </Link>
+                  {' — Put your Bublr page on your own domain with Bublr Pro'}
+                </li>
               </ul>
 
               {/* Footer */}
