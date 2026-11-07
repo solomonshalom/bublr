@@ -2,6 +2,7 @@ import Groq from 'groq-sdk'
 import { htmlToText } from 'html-to-text'
 import { firestore } from './firebase'
 import { notifySubscribersOfPost } from './newsletter-notify'
+import { sendModerationEmail } from './resend'
 
 /**
  * Publishing a post, shared by the dashboard (/api/posts/publish) and the
@@ -87,6 +88,30 @@ Be strict about spam and NSFW content. Regular articles, stories, opinions (even
   }
 }
 
+/**
+ * Email a writer that moderation took their post(s) down, and why.
+ * Never throws: a failed email must not undo or fail the takedown.
+ * @param {{ authorId: string, postTitles: string[], reason: string, unpublished?: boolean }} params
+ */
+export async function emailWriterAboutTakedown({ authorId, postTitles, reason, unpublished = true }) {
+  try {
+    if (!authorId) return { success: false, error: 'No author' }
+    const authorDoc = await firestore.collection('users').doc(authorId).get()
+    const author = authorDoc.exists ? authorDoc.data() : null
+    if (!author?.email) return { success: false, error: 'No email address' }
+    return await sendModerationEmail({
+      userEmail: author.email,
+      userName: author.displayName || author.name,
+      postTitles,
+      reason,
+      unpublished,
+    })
+  } catch (error) {
+    console.error('Takedown email error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
 async function notifyFollowers(postId, post) {
   const authorDoc = await firestore.collection('users').doc(post.author).get()
   if (!authorDoc.exists) return
@@ -138,6 +163,22 @@ export async function setPostPublished({ postId, publish }) {
   if (!publish) {
     await postRef.update({ published: false })
     return { success: true, published: false, message: 'Post unpublished' }
+  }
+
+  // Suspended accounts can't publish. Moderation sets `suspended` on the
+  // user document when it removes an account's posts for spam.
+  const authorDoc = post.author ? await firestore.collection('users').doc(post.author).get() : null
+  if (authorDoc?.exists && authorDoc.data().suspended) {
+    const reason = authorDoc.data().suspensionReason
+    return {
+      success: false,
+      published: false,
+      moderated: true,
+      suspended: true,
+      reason: reason ? `Your account has been suspended. ${reason}` : 'Your account has been suspended.',
+      category: 'suspended',
+      message: 'Post was not published because your account has been suspended',
+    }
   }
 
   const moderationResult = await moderateContent(post.title, post.content)

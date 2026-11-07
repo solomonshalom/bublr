@@ -43,6 +43,8 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `hasCustomDomainAccess`: boolean flag for active custom domain subscription
 - `customDomain`: object for custom domain config (`{ domain, status, verification, addedAt, verifiedAt }`)
 - `customBranding`: object for custom branding (`{ footerText, updatedAt }`)
+- `email`: the writer's sign-in email (private; used for subscription and moderation emails)
+- `suspended`, `suspendedAt`, `suspensionReason`: set when moderation suspends an account for spam; `setPostPublished` refuses to publish for suspended writers
 
 **posts**
 - `title`, `content`, `excerpt`: post content (HTML from TipTap)
@@ -86,6 +88,8 @@ PageComponent.getLayout = function PageLayout(page) {
 **Rendering post HTML**: Always use `sanitizePostHtml` (`src/lib/sanitize-post.js`). It keeps what the editor produces (callouts, task lists, highlights) and marks links `nofollow ugc`. Inline JSON-LD goes through `safeJsonLd` (`src/lib/escape.js`).
 
 **Publishing**: `setPostPublished` in `src/lib/publishing.js` runs moderation and, on the first successful publish only, notifies followers and emails subscribers. Both `/api/posts/publish` (dashboard) and `/api/v1/posts` (API) call it directly.
+
+**Moderation emails**: When a live post is taken down (`/api/moderate`, `/api/moderate/batch`), `emailWriterAboutTakedown` emails the writer the reason via Resend. The email is built by `buildModerationEmail` (`src/lib/moderation-email.js`, no imports, so admin scripts can reuse it) and sent by `sendModerationEmail` in `src/lib/resend.js`.
 
 **Timestamps**: Read `lastEdited` with `toMillis` (`src/lib/timestamps.js`). Older API-created posts stored `{ _seconds }` maps; write `firebase.firestore.Timestamp` values.
 

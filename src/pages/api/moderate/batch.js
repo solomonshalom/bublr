@@ -1,5 +1,5 @@
 import { firestore } from '../../../lib/firebase'
-import { moderateContent } from '../../../lib/publishing'
+import { moderateContent, emailWriterAboutTakedown } from '../../../lib/publishing'
 import { hasSharedSecret } from '../../../lib/server-auth'
 
 // Same moderation as publishing (lib/publishing.js)
@@ -56,12 +56,20 @@ export default async function handler(req, res) {
             moderatedAt: new Date().toISOString(),
           })
 
+          // Tell the writer why their post came down
+          const email = await emailWriterAboutTakedown({
+            authorId: post.author,
+            postTitles: [post.title],
+            reason: result.reason,
+          })
+
           results.unpublished++
           results.details.push({
             postId,
             action: 'unpublished',
             reason: result.reason,
             category: result.category,
+            writerEmailed: Boolean(email.success),
           })
         } else {
           // Mark as moderated (passed)

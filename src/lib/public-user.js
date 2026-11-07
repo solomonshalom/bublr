@@ -19,6 +19,9 @@ const PRIVATE_USER_FIELDS = [
   'subscribers',
   'followers',
   'following',
+  'suspended',
+  'suspendedAt',
+  'suspensionReason',
 ]
 
 // Post fields readers don't need (who liked it, moderation bookkeeping)

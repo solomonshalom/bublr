@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { buildModerationEmail } from './moderation-email'
 
 // Initialize Resend with API key
 // Created on first use. Building it at import threw "Missing API key" and
@@ -523,6 +524,40 @@ export async function sendSubscriptionEmail({ userEmail, userName, type, periodE
     return { success: true, data }
   } catch (err) {
     console.error('Subscription email send error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * Tell a writer that moderation removed their posts (and, if so, suspended
+ * their account), and why. Replies go to the sending address.
+ * @param {Object} options
+ * @param {string} options.userEmail - writer's email address
+ * @param {string} [options.userName] - writer's display name
+ * @param {string[]} options.postTitles - titles of the removed posts
+ * @param {string} options.reason - why they were removed
+ * @param {boolean} [options.suspended] - the account can no longer publish
+ * @param {boolean} [options.unpublished] - taken down but kept as drafts
+ */
+export async function sendModerationEmail({ userEmail, userName, postTitles, reason, suspended = false, unpublished = false }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.error('RESEND_API_KEY not configured')
+    return { success: false, error: 'Email service not configured' }
+  }
+  if (!userEmail) return { success: false, error: 'No email address' }
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
+  const { subject, html, text } = buildModerationEmail({ userName, postTitles, reason, suspended, unpublished, baseUrl })
+
+  try {
+    const { data, error } = await resend().emails.send({ from: FROM_EMAIL, to: userEmail, subject, html, text })
+    if (error) {
+      console.error('Moderation email error:', error)
+      return { success: false, error: error.message }
+    }
+    return { success: true, data }
+  } catch (err) {
+    console.error('Moderation email send error:', err)
     return { success: false, error: err.message }
   }
 }
