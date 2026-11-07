@@ -5,7 +5,8 @@
  * public pages all agree. The user document carries:
  *
  *   hasCustomDomainAccess  boolean written whenever billing state changes.
- *                          Setting it to false by hand revokes access.
+ *                          It is rewritten on every billing update, so to
+ *                          take Pro away, cancel the subscription in Dodo.
  *   subscription           the billing record (see lib/billing.js), or
  *                          absent for comped accounts.
  *
@@ -108,7 +109,8 @@ export function describeSubscription(userData, now = Date.now()) {
       result = { hasAccess: false, state: 'ended', accessUntil: null }
   }
 
-  // The stored flag can only take access away (a manual revoke), never grant it
+  // The stored flag can only take access away (e.g. after reconcileAccess),
+  // never grant it
   if (!flag && result.hasAccess) {
     return { ...result, hasAccess: false }
   }

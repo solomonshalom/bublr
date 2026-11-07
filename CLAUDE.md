@@ -119,3 +119,4 @@ Required in `.env.local`:
 - `VERCEL_TOKEN` - Vercel API token for domain management
 - `VERCEL_PROJECT_ID` - Your Vercel project ID
 - `VERCEL_TEAM_ID` - (Optional) Vercel team ID if using team account
+- `RESERVED_DOMAINS` - (Optional) Other Bublr-owned domains on the Vercel project, comma-separated; never claimable by writers

@@ -69,17 +69,23 @@ export default async function handler(req, res) {
   // Deliveries can be late or out of order: ask Dodo for the current state
   // and use the payload only if that fails
   let subscription = data
+  // How current our copy is: the event time for the payload, or when we asked Dodo
+  let snapshotAt = Date.parse(event.timestamp) || Date.now()
   if (isBillingConfigured()) {
     try {
+      const askedAt = Date.now()
       const fresh = await getSubscription(data.subscription_id)
-      if (fresh?.subscription_id) subscription = { ...data, ...fresh }
+      if (fresh?.subscription_id) {
+        subscription = { ...data, ...fresh }
+        snapshotAt = askedAt
+      }
     } catch (error) {
       console.warn(`Using webhook payload for ${data.subscription_id}; refresh failed:`, error.message)
     }
   }
 
   try {
-    const result = await applyDodoSubscription(subscription, { source: `webhook:${type}` })
+    const result = await applyDodoSubscription(subscription, { source: `webhook:${type}`, snapshotAt })
     return res.status(200).json({ received: true, applied: result.applied, reason: result.reason || null })
   } catch (error) {
     console.error('Error processing Dodo webhook:', error)

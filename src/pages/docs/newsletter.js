@@ -177,7 +177,7 @@ export default function NewsletterDocs() {
               </p>
 
               <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
-                Access this feature from <Link href="/dashboard/settings/domain"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Dashboard → Custom domain</a></Link> → Newsletter email.
+                Access this feature from <Link href="/dashboard/settings/domain" passHref><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Dashboard → Custom domain</a></Link> → Newsletter email.
               </p>
 
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
@@ -301,7 +301,7 @@ export default function NewsletterDocs() {
                 How to Set Your Template
               </p>
               <ol css={css`color: var(--grey-3); margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
-                <li>Go to <Link href="/dashboard/settings/domain"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Dashboard → Custom domain</a></Link></li>
+                <li>Go to <Link href="/dashboard/settings/domain" passHref><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Dashboard → Custom domain</a></Link></li>
                 <li>Scroll to &quot;Newsletter email&quot; and click &quot;Customize&quot;</li>
                 <li>Click &quot;Load Default&quot; to start with our template, or paste your own</li>
                 <li>Click &quot;Save Template&quot;</li>

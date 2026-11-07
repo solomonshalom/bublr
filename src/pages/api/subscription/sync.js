@@ -44,6 +44,7 @@ export default async function handler(req, res) {
     }
 
     let subscription
+    const snapshotAt = Date.now()
     try {
       subscription = await getSubscription(subscriptionId)
     } catch (error) {
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'That subscription belongs to a different account.', code: 'FORBIDDEN' })
     }
 
-    await applyDodoSubscription(subscription, { userId, source: 'sync' })
+    await applyDodoSubscription(subscription, { userId, source: 'sync', snapshotAt })
     const updated = await ref.get()
     return res.status(200).json(statusPayload(updated.data(), { domainsConfigured }))
   } catch (error) {

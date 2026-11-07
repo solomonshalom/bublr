@@ -1,4 +1,5 @@
 // Domain helpers shared by the browser and the server (no Node-only APIs).
+import { isReservedUsername } from './reserved-usernames'
 //
 // Tells apart "example.com" (needs an A record) from "blog.example.com"
 // (needs a CNAME). Counting dots isn't enough: "example.co.uk" has three
@@ -101,6 +102,26 @@ function sameOrSubdomainOf(host, parent) {
   return host === parent || host.endsWith(`.${parent}`)
 }
 
+// Other domains Bublr itself serves from this Vercel project (aliases, old
+// names), comma-separated in RESERVED_DOMAINS. They can never be claimed or
+// detached by a writer. Read on the server; the browser doesn't need them.
+function reservedDomains() {
+  const raw = typeof process !== 'undefined' && process.env ? process.env.RESERVED_DOMAINS : ''
+  return String(raw || '')
+    .split(',')
+    .map(d => normalizeHost(d))
+    .filter(Boolean)
+}
+
+/**
+ * Can a post with this slug be reached at <writer's domain>/<slug>? Not when
+ * the slug matches one of Bublr's own pages (/about, /explore...): that page
+ * wins. Link to the post on bublr.life instead.
+ */
+export function slugServedOnCustomDomain(slug) {
+  return Boolean(slug) && !isReservedUsername(slug)
+}
+
 /**
  * Hosts that are Bublr itself rather than a writer's domain: bublr.life, the
  * configured base URL, Vercel deployment URLs, and local/dev addresses.
@@ -113,6 +134,7 @@ export function isPlatformHost(rawHost) {
   const base = baseUrlHost()
   if (base && sameOrSubdomainOf(host, base)) return true
   if (sameOrSubdomainOf(host, 'vercel.app')) return true
+  if (reservedDomains().some(domain => sameOrSubdomainOf(host, domain))) return true
   if (sameOrSubdomainOf(host, 'localhost')) return true
   if (/\.(local|internal|test|lan|home|ngrok\.io|ngrok-free\.app)$/.test(host)) return true
   return !host.includes('.')

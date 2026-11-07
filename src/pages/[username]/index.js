@@ -14,6 +14,7 @@ import { buildProfilePageProps } from '../../lib/profile-page'
 import { buildPostPageProps } from '../../lib/post-page'
 import { routeCustomDomain } from '../../lib/custom-domain-routing'
 import dynamic from 'next/dynamic'
+import { slugServedOnCustomDomain } from '../../lib/domain-utils'
 
 // Only needed for posts on a writer's own domain; keep it out of the profile bundle
 const Post = dynamic(() => import('./[slug]'))
@@ -630,6 +631,13 @@ const AvatarWithFrame = ({ user, size = 48 }) => {
       `}
     />
   )
+}
+
+// On the writer's own domain posts live at /<slug>, unless the slug is one of
+// Bublr's own pages (/about...), which would win: those link to bublr.life.
+function postHref(user, post) {
+  if (!user.isCustomDomain) return `/${user.name}/${post.slug}`
+  return slugServedOnCustomDomain(post.slug) ? `/${post.slug}` : `https://bublr.life/${user.name}/${post.slug}`
 }
 
 // A post on a writer's own domain (blog.example.com/<slug>) arrives here too
@@ -1342,7 +1350,7 @@ function ProfileView({ user, organizationSchema, profilePageSchema, breadcrumbSc
                       </p>
                       <div css={css`display: flex; flex-direction: column; gap: 20px; margin-top: 16px;`}>
                         {user.posts.map((post) => (
-                          <Link key={post.id} href={user.isCustomDomain ? `/${post.slug}` : `/${user.name}/${post.slug}`}>
+                          <Link key={post.id} href={postHref(user, post)} passHref>
                             <a
                               css={css`
                                 cursor: pointer;

@@ -461,12 +461,17 @@ test('lookup API: public, minimal answer', async () => {
 // ---- page props ----
 
 test('profile props: custom footer and canonical domain follow Pro status', async () => {
-  const base = { id: 'alice', name: 'alice', displayName: 'Alice', posts: [], customBranding: { footerText: 'By Alice' }, email: 'a@x.com' }
+  const base = {
+    id: 'alice', name: 'alice', displayName: 'Alice', posts: [], customBranding: { footerText: 'By Alice' }, email: 'a@x.com',
+    pendingCheckout: { sessionId: 'cks_1', email: 'a@x.com', createdAt: iso(Date.now()) },
+  }
   const pro = await buildProfilePageProps({ ...base, ...PRO, customDomain: { domain: 'example.com', status: 'verified' } })
   assert.equal(pro.user.customBranding.footerText, 'By Alice')
   assert.equal(pro.user.liveCustomDomain, 'example.com')
   assert.equal(pro.user.subscription, undefined, 'billing never reaches the page')
   assert.equal(pro.user.email, undefined)
+  assert.equal(pro.user.pendingCheckout, undefined, 'the billing email never reaches the page')
+  assert.doesNotMatch(JSON.stringify(pro), /a@x\.com|cks_1/)
 
   const lapsed = await buildProfilePageProps({ ...base, ...LAPSED, customDomain: { domain: 'example.com', status: 'verified' } })
   assert.equal(lapsed.user.customBranding, null)
@@ -512,4 +517,47 @@ test('newsletter emails link to the writer’s live domain', async () => {
   seed('users', 'alice', { name: 'alice', ...LAPSED, subscribers: [{ email: 'reader@example.com' }], customDomain: { domain: 'example.com', status: 'verified' } })
   await notifySubscribersOfPost('p1')
   assert.equal(sent[0].postUrl, undefined)
+})
+
+test('posts whose slug is one of Bublr’s pages link to bublr.life from a writer’s domain', async () => {
+  assert.equal(utils.slugServedOnCustomDomain('hello'), true)
+  for (const slug of ['about', 'explore', 'dashboard', 'docs', 'changelog', '']) {
+    assert.equal(utils.slugServedOnCustomDomain(slug), false, slug)
+  }
+  const author = { name: 'alice', displayName: 'Alice', photo: '', ...PRO, customDomain: { domain: 'example.com', status: 'verified' } }
+  const about = await buildPostPageProps(
+    { id: 'p3', author: 'alice', title: 'About me', slug: 'about', content: '<p>Hi</p>', published: true, lastEdited: new Date() },
+    { authorData: author }
+  )
+  assert.equal(about.seo.canonicalUrl, 'https://bublr.life/alice/about')
+
+  const { notifySubscribersOfPost } = await import('../../src/lib/newsletter-notify.js')
+  const { sent, resetSent } = await import('./mocks/resend.mjs')
+  resetSent()
+  seed('users', 'alice', { name: 'alice', ...PRO, subscribers: [{ email: 'r@example.com' }], customDomain: { domain: 'example.com', status: 'verified' } })
+  seed('posts', 'p3', { author: 'alice', title: 'About me', slug: 'about', content: '<p>Hi</p>', published: true })
+  await notifySubscribersOfPost('p3')
+  assert.equal(sent[0].postUrl, undefined, 'falls back to the bublr.life link')
+})
+
+test('RESERVED_DOMAINS: other Bublr-owned domains can’t be claimed and are served as Bublr', async () => {
+  process.env.RESERVED_DOMAINS = 'bublr.app, Old-Bublr.com'
+  try {
+    assert.ok(utils.parseDomainInput('bublr.app').error)
+    assert.ok(utils.parseDomainInput('blog.old-bublr.com').error)
+    assert.equal(utils.isPlatformHost('www.bublr.app'), true)
+    const res = await set('alice', 'bublr.app')
+    assert.equal(res.statusCode, 400)
+    assert.equal(calls.length, 0, 'Vercel never touched')
+    assert.deepEqual(await routeCustomDomain('bublr.app', 'alice'), { kind: 'platform' })
+
+    // Even if bad data says a writer owns it, removing never detaches it
+    project['bublr.app'] = { name: 'bublr.app' }
+    seed('users', 'mallory', { name: 'mallory', ...PRO, customDomain: { domain: 'bublr.app', status: 'verified' } })
+    await call(removeDomain, POST(authHeader('mallory'), { userId: 'mallory' }))
+    assert.ok(project['bublr.app'])
+  } finally {
+    delete process.env.RESERVED_DOMAINS
+  }
+  assert.equal(utils.parseDomainInput('bublr.app').domain, 'bublr.app')
 })

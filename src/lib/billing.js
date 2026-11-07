@@ -105,7 +105,7 @@ export async function findUserForSubscription(sub, now = Date.now()) {
 }
 
 /** The billing record we store for a Dodo subscription object. */
-export function buildSubscriptionRecord(sub, previous, now = Date.now()) {
+export function buildSubscriptionRecord(sub, previous, now = Date.now(), snapshotAt = now) {
   const status = String(sub.status || 'pending')
   const sameSubscription = previous?.provider === 'dodo' && previous?.id === sub.subscription_id
   const wasInTrouble = sameSubscription && ['on_hold', 'past_due'].includes(previous?.status)
@@ -132,21 +132,28 @@ export function buildSubscriptionRecord(sub, previous, now = Date.now()) {
     graceUntil,
     environment: dodoConfig().environment,
     updatedAt: new Date(now).toISOString(),
-    lastSyncedAt: new Date(now).toISOString(),
+    // When this copy of Dodo's state was read; older copies are refused
+    lastSyncedAt: new Date(snapshotAt).toISOString(),
   }
   if (sameSubscription && Array.isArray(previous.duplicateIds)) record.duplicateIds = previous.duplicateIds
   return record
 }
 
-/** Which email (if any) a change from `before` to `after` deserves. */
-export function transitionEmail(before, after) {
+/**
+ * Which email (if any) a change from `before` to `after` deserves.
+ * `wasOn` is the stored flag: whether the writer last had Pro as far as we
+ * told them. Dodo usually reports the end of a plan only once the paid
+ * period is already over, when `before` (worked out from dates) has no access
+ * any more, so the goodbye email keys off the flag.
+ */
+export function transitionEmail(before, after, wasOn = before.hasAccess) {
   if (!before.hasAccess && after.hasAccess && after.state === 'active') return { type: 'activated' }
   if (before.state === 'active' && after.state === 'canceling') return { type: 'canceled', periodEndDate: after.accessUntil }
   if (before.state === 'canceling' && after.state === 'active') return { type: 'resumed' }
   if (['active', 'canceling'].includes(before.state) && after.state === 'past_due') {
     return { type: 'payment_failed', periodEndDate: after.accessUntil }
   }
-  if (before.hasAccess && !after.hasAccess) return { type: 'expired' }
+  if ((before.hasAccess || wasOn) && !after.hasAccess) return { type: 'expired' }
   return null
 }
 
@@ -169,10 +176,14 @@ async function notify(userData, sub, email) {
  * Store the latest state of a Dodo subscription on its writer.
  *
  * @param {object} sub      Dodo subscription object (webhook `data` or GET /subscriptions/:id)
- * @param {object} options  { userId } when the caller already proved ownership
+ * @param {object} options
+ * @param {string} [options.userId]     set when the caller already proved ownership
+ * @param {number} [options.snapshotAt] when `sub` was read from Dodo (ms). A copy
+ *   older than the one already stored is ignored, so a slow request can't undo
+ *   a newer change (e.g. a refresh racing a cancel).
  * @returns {Promise<{ applied: boolean, reason?: string, userId?: string, before?: object, after?: object, email?: object }>}
  */
-export async function applyDodoSubscription(sub, { userId = null, source = 'webhook', now = Date.now() } = {}) {
+export async function applyDodoSubscription(sub, { userId = null, source = 'webhook', now = Date.now(), snapshotAt = now } = {}) {
   if (!sub?.subscription_id) return { applied: false, reason: 'not-a-subscription' }
 
   let target = null
@@ -213,19 +224,26 @@ export async function applyDodoSubscription(sub, { userId = null, source = 'webh
       // Otherwise it's a re-subscription replacing an ended/ending one
     }
 
-    const record = buildSubscriptionRecord(sub, current, now)
+    if (current?.provider === 'dodo' && current.id === String(sub.subscription_id)) {
+      const storedAt = toMs(current.lastSyncedAt)
+      if (storedAt && storedAt > snapshotAt) {
+        return { applied: false, reason: 'stale-snapshot', userId: target.id }
+      }
+    }
+
+    const record = buildSubscriptionRecord(sub, current, now, snapshotAt)
     const after = describeSubscription({ ...userData, hasCustomDomainAccess: true, subscription: record }, now)
     const update = { subscription: record, hasCustomDomainAccess: after.hasAccess }
     if (record.status !== 'pending' && userData.pendingCheckout) {
       update.pendingCheckout = firebase.firestore.FieldValue.delete()
     }
     tx.update(ref, update)
-    return { applied: true, userId: target.id, before, after, userData }
+    return { applied: true, userId: target.id, before, after, wasOn: Boolean(userData.hasCustomDomainAccess), userData }
   })
 
   if (!outcome.applied) return outcome
 
-  const email = transitionEmail(outcome.before, outcome.after)
+  const email = transitionEmail(outcome.before, outcome.after, outcome.wasOn)
   await notify(outcome.userData, sub, email)
 
   // Tag the subscription with the writer so later webhooks match directly
@@ -237,7 +255,7 @@ export async function applyDodoSubscription(sub, { userId = null, source = 'webh
     }
   }
 
-  const { userData, ...result } = outcome
+  const { userData, wasOn, ...result } = outcome
   return { ...result, email }
 }
 
@@ -254,8 +272,9 @@ export async function refreshSubscription(userId, userData, { force = false, now
     if (lastSynced && now - lastSynced < REFRESH_AFTER_MS) return null
   }
   try {
+    const snapshotAt = Date.now()
     const fresh = await getSubscription(sub.id)
-    return await applyDodoSubscription(fresh, { userId, source: 'refresh', now })
+    return await applyDodoSubscription(fresh, { userId, source: 'refresh', now, snapshotAt })
   } catch (error) {
     console.warn(`Could not refresh subscription ${sub.id}:`, error.message)
     return null

@@ -16,6 +16,7 @@ const PRIVATE_USER_FIELDS = [
   'newsletterTemplate',
   'readingList',
   'subscription',
+  'pendingCheckout',
   'subscribers',
   'followers',
   'following',

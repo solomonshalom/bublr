@@ -104,9 +104,10 @@ function webhookReq(event, { secret = SECRET, id = `msg_${Math.random()}`, times
   }
 }
 
-async function deliver(type, data, options) {
+async function deliver(type, data, options = {}) {
   const res = mockRes()
-  await webhook(webhookReq({ business_id: 'bus_1', type, timestamp: iso(Date.now()), data }, options), res)
+  const { eventTime = Date.now(), ...rest } = options
+  await webhook(webhookReq({ business_id: 'bus_1', type, timestamp: iso(eventTime), data }, rest), res)
   return res
 }
 
@@ -673,4 +674,47 @@ test('billing helpers: transition emails are decided from state, not event names
   assert.deepEqual(t({ hasAccess: true, state: 'active' }, { hasAccess: true, state: 'canceling', accessUntil: 'x' }), { type: 'canceled', periodEndDate: 'x' })
   assert.deepEqual(t({ hasAccess: true, state: 'canceling' }, { hasAccess: false, state: 'ended' }), { type: 'expired' })
   assert.equal(t({ hasAccess: false, state: 'none' }, { hasAccess: false, state: 'pending' }), null)
+})
+
+// ---- review fixes ----
+
+test('the goodbye email goes out when Dodo reports the end after the paid period', async () => {
+  // Typical: cancelled at period end, and Dodo's "cancelled" arrives just after it
+  seed('users', 'alice', {
+    name: 'alice',
+    email: 'alice@example.com',
+    hasCustomDomainAccess: true,
+    subscription: { provider: 'dodo', id: 'sub_1', status: 'active', cancelAtPeriodEnd: true, customerId: 'cus_1', currentPeriodEnd: iso(NOW - 60 * 1000), lastSyncedAt: iso(NOW - DAY) },
+  })
+  dodo.sub_1 = sub({ status: 'cancelled', next_billing_date: iso(NOW - 60 * 1000), cancel_at_next_billing_date: true })
+  await deliver('subscription.cancelled', dodo.sub_1)
+  assert.equal(read('users', 'alice').hasCustomDomainAccess, false)
+  assert.deepEqual(subscriptionEmails(), ['expired'])
+
+  // Replays and the status page don't say goodbye twice
+  await deliver('subscription.cancelled', dodo.sub_1)
+  await call(status, { method: 'GET', headers: authHeader('alice'), query: { userId: 'alice' } })
+  assert.deepEqual(subscriptionEmails(), ['expired'])
+})
+
+test('an older copy of the subscription can’t undo a newer change', async () => {
+  dodo.sub_1 = sub()
+  await deliver('subscription.active', sub())
+  const cancelled = await call(manage, POST(authHeader('alice'), { userId: 'alice', action: 'cancel' }))
+  assert.equal(cancelled.body.state, 'canceling')
+
+  // A status refresh that read Dodo before the cancel finishes afterwards
+  const result = await billing.applyDodoSubscription(sub(), { userId: 'alice', source: 'refresh', snapshotAt: Date.now() - 60 * 1000 })
+  assert.equal(result.reason, 'stale-snapshot')
+  assert.equal(read('users', 'alice').subscription.cancelAtPeriodEnd, true)
+  assert.deepEqual(subscriptionEmails(), ['activated', 'canceled'], 'no bogus "resumed" email')
+})
+
+test('with Dodo unreachable, a late webhook payload can’t roll state back', async () => {
+  dodo.sub_1 = sub({ cancel_at_next_billing_date: true })
+  await deliver('subscription.updated', dodo.sub_1) // stored: cancelling, read just now
+  dodoDown = true
+  const late = await deliver('subscription.active', sub(), { eventTime: Date.now() - 2 * 60 * 60 * 1000 })
+  assert.equal(late.body.reason, 'stale-snapshot')
+  assert.equal(read('users', 'alice').subscription.cancelAtPeriodEnd, true)
 })

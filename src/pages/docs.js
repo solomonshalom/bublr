@@ -515,13 +515,13 @@ async function createPost(title, content) {
               </p>
               <ul css={css`color: var(--grey-3); margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
                 <li>
-                  <Link href="/docs/newsletter">
+                  <Link href="/docs/newsletter" passHref>
                     <a css={css`border-bottom: 1px dotted var(--grey-3);`}>Newsletter Email Templates</a>
                   </Link>
                   {' — Customize the emails sent to your subscribers'}
                 </li>
                 <li>
-                  <Link href="/docs/custom-domains">
+                  <Link href="/docs/custom-domains" passHref>
                     <a css={css`border-bottom: 1px dotted var(--grey-3);`}>Custom Domains</a>
                   </Link>
                   {' — Put your Bublr page on your own domain with Bublr Pro'}

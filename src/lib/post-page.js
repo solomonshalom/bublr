@@ -2,6 +2,7 @@ import { firestore } from './firebase'
 import { toPostAuthor, toPublicPost } from './public-user'
 import { toMillis } from './timestamps'
 import { liveCustomDomain } from './custom-domains'
+import { slugServedOnCustomDomain } from './domain-utils'
 import { sanitizeFontFamily } from './fonts'
 import {
   extractFirstImage,
@@ -64,7 +65,7 @@ export async function buildPostPageProps(post, { authorData = null, customDomain
 
   // Generate comprehensive SEO data
   const postTitle = cleanTitle(post.title)
-  const postUrl = authorDomain
+  const postUrl = authorDomain && slugServedOnCustomDomain(post.slug)
     ? `https://${authorDomain}/${post.slug}`
     : `${SITE_URL}/${post.author.name}/${post.slug}`
   const authorUrl = authorDomain ? `https://${authorDomain}/` : `${SITE_URL}/${post.author.name}`

@@ -54,9 +54,10 @@ export default async function handler(req, res) {
       })
     }
 
+    const snapshotAt = Date.now()
     let updated = await updateSubscription(sub.id, { cancel_at_next_billing_date: action === 'cancel' })
     if (!updated?.subscription_id) updated = await getSubscription(sub.id)
-    await applyDodoSubscription(updated, { userId, source: `manage:${action}` })
+    await applyDodoSubscription(updated, { userId, source: `manage:${action}`, snapshotAt })
 
     const fresh = await ref.get()
     return res.status(200).json(statusPayload(fresh.data(), { domainsConfigured }))
