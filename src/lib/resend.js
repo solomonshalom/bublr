@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { unsubscribeUrl as buildUnsubscribeUrl } from './unsubscribe-token'
 
 // Initialize Resend with API key
 // Created on first use. Building it at import threw "Missing API key" and
@@ -274,7 +275,7 @@ export async function sendNewPostNotification({
   }
 
   const postUrl = `https://bublr.life/${authorUsername}/${postSlug}`
-  const unsubscribeUrl = `https://bublr.life/api/newsletter/unsubscribe?email=${encodeURIComponent(subscriberEmail)}&author=${encodeURIComponent(authorUsername)}`
+  const unsubscribeUrl = buildUnsubscribeUrl(subscriberEmail, authorUsername)
 
   const templateData = {
     authorName,
@@ -310,6 +311,7 @@ export async function sendNewPostNotification({
       subject: `New post from ${authorName}: ${cleanTitle}`,
       html: htmlContent,
       text: textContent,
+      headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },
     })
 
     if (error) {
@@ -376,7 +378,7 @@ export async function sendBatchNotifications({
     // Send each email in the batch
     const promises = batch.map(async (subscriber) => {
       const email = typeof subscriber === 'string' ? subscriber : subscriber.email
-      const unsubscribeUrl = `https://bublr.life/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}&author=${encodeURIComponent(authorUsername)}`
+      const unsubscribeUrl = buildUnsubscribeUrl(email, authorUsername)
 
       const templateData = {
         authorName,
@@ -409,6 +411,7 @@ export async function sendBatchNotifications({
           subject: `New post from ${authorName}: ${cleanTitle}`,
           html: htmlContent,
           text: textContent,
+          headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },
         })
 
         if (error) {

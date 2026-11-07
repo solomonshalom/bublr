@@ -6,12 +6,14 @@ import assert from 'node:assert/strict'
 import { installTestCerts, authHeader, call } from './helpers.mjs'
 import { resetStore, seed, read, all } from './mocks/firebase.mjs'
 import { sent, resetSent } from './mocks/resend.mjs'
+import { signUnsubscribe, unsubscribeUrl } from '../../src/lib/unsubscribe-token.js'
 
 process.env.GROQ_API_KEY = 'test-groq-key' // lets modules build their client; no real calls are made
 process.env.CLOUDINARY_CLOUD_NAME = 'demo'
 process.env.CLOUDINARY_API_KEY = '123'
 process.env.CLOUDINARY_API_SECRET = 'shh'
 delete process.env.MODERATION_SECRET_KEY
+process.env.UNSUBSCRIBE_SECRET = 'test-unsub-secret'
 // Keep the publish route's fire-and-forget newsletter call off the network
 globalThis.fetch = async () => ({ ok: true, json: async () => ({}) })
 
@@ -128,13 +130,32 @@ test('newsletter template: cannot overwrite another writer’s template', async 
   assert.equal(read('users', 'alice').newsletterTemplate, undefined)
 })
 
-test('unsubscribe page escapes the writer’s display name', async () => {
+test('unsubscribe: page escapes the writer’s display name and only confirms on GET', async () => {
   seed('users', 'alice', { name: 'alice', displayName: '<img src=x onerror=alert(1)>', subscribers: [{ email: 'r@example.com' }] })
-  const res = await call(unsubscribe, { method: 'GET', query: { email: 'r@example.com', author: 'alice' } })
+  const token = signUnsubscribe('r@example.com', 'alice')
+  const res = await call(unsubscribe, { method: 'GET', query: { email: 'r@example.com', author: 'alice', token } })
   assert.equal(res.statusCode, 200)
   assert.doesNotMatch(res.body, /<img src=x/)
   assert.match(res.body, /&lt;img src=x onerror=alert\(1\)&gt;/)
+  assert.equal(read('users', 'alice').subscribers.length, 1) // a link scanner opening the link changes nothing
+})
+
+test('unsubscribe: links without a valid token do nothing', async () => {
+  for (const token of [undefined, '', 'nope', signUnsubscribe('other@example.com', 'alice')]) {
+    const get = await call(unsubscribe, { method: 'GET', query: { email: 'r@example.com', author: 'alice', token } })
+    assert.equal(get.statusCode, 400)
+    const post = await call(unsubscribe, { method: 'POST', headers: {}, body: { email: 'r@example.com', author: 'alice', token } })
+    assert.equal(post.statusCode, 403)
+  }
+  assert.equal(read('users', 'alice').subscribers.length, 1)
+})
+
+test('unsubscribe: POST with the emailed token removes the subscriber', async () => {
+  const token = signUnsubscribe('R@Example.com', 'alice')
+  const res = await call(unsubscribe, { method: 'POST', headers: {}, body: { email: 'R@Example.com', author: 'alice', token } })
+  assert.equal(res.statusCode, 200)
   assert.equal(read('users', 'alice').subscribers.length, 0)
+  assert.match(unsubscribeUrl('r@example.com', 'alice'), /token=[0-9a-f]{32}$/)
 })
 
 // ---- Likes, follows, notifications ----

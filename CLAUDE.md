@@ -101,6 +101,7 @@ Required in `.env.local`:
 - `GROQ_API_KEY` - Groq API key for AI content moderation
 - `MODERATION_SECRET_KEY` - Secret key for moderation API endpoints
 - `RESEND_API_KEY` - Resend API key for newsletter email notifications
+- `UNSUBSCRIBE_SECRET` - (Optional) Signs newsletter unsubscribe links (falls back to `RESEND_API_KEY`)
 - `RESEND_FROM_EMAIL` - (Optional) Sender email for newsletters (default: `Bublr <notifications@bublr.life>`)
 - `NEXT_PUBLIC_BASE_URL` - (Optional) Base URL for the app (default: `https://bublr.life`)
 

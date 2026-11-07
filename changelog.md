@@ -123,3 +123,22 @@ A weekly check on what writers ask for and what other writing tools offer. Long 
 
 ## Fixed
 - **`npm test` documentation.** Tests need `npm install --force` first; the CLAUDE.md note now matches reality (70 tests).
+
+# Unsubscribe - Update (7th November'26)
+Newsletter unsubscribe links were one of the open items in the comeback release's known issues. This week's check closes it. Readers should be able to leave a newsletter in one click, and nobody else should be able to do it for them.
+
+## Fixed
+- **Only the owner of an email address can unsubscribe it.** Unsubscribe links used to be just an address and a writer's name, so anyone who knew an address could remove it from a list. Links in newsletter emails are now signed by the server, and links without a valid signature do nothing.
+- **Mail scanners can't unsubscribe people by accident.** Opening the link now shows an "Unsubscribe" button, and only pressing it removes the address. Security scanners that pre-open every link in an email used to do it for the reader.
+- **Unsubscribing also works for addresses typed with capital letters** (`Reader@Example.com`).
+
+## Added
+- **A `List-Unsubscribe` header on every newsletter.** Gmail, Apple Mail and others now show their own "Unsubscribe" button next to the sender, which keeps your emails out of the spam folder.
+- **Tests.** `npm test` now runs 72 tests, including the signed-link checks above.
+
+## For whoever deploys this
+- Links in emails sent before this release have no signature, so they show "Invalid Unsubscribe Link". Newsletter emails sent from now on work normally. The signing key is `UNSUBSCRIBE_SECRET`, falling back to `RESEND_API_KEY`, so no setup is needed. If you rotate that key, older emails' links stop working.
+
+## Known issues
+- Spam clean-up of Explore, the Firestore rules and rate limiting on public endpoints are still open (see the comeback release).
+- We looked at comments, scheduling, a table of contents, paid subscriptions and analytics dashboards on other platforms again. They don't fit a quiet, ad-free writing space, so we're leaving them out.
