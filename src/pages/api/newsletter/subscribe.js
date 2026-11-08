@@ -1,5 +1,6 @@
 import firebase from '../../../lib/firebase'
 import { firestore } from '../../../lib/firebase'
+import { clientIp, isRateLimited } from '../../../lib/rate-limit'
 
 // Simple email validation
 function isValidEmail(email) {
@@ -23,6 +24,10 @@ async function createNotification(data) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  if (isRateLimited(`subscribe:${clientIp(req)}`, { max: 10, windowMs: 10 * 60 * 1000 })) {
+    return res.status(429).json({ error: 'Too many attempts. Please try again in a few minutes.' })
   }
 
   const { email, authorUsername } = req.body

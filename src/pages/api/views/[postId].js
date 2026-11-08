@@ -1,4 +1,5 @@
 import firebase, { firestore } from '../../../lib/firebase'
+import { clientIp, isRateLimited } from '../../../lib/rate-limit'
 
 export default async function handler(req, res) {
   const { postId } = req.query
@@ -11,6 +12,12 @@ export default async function handler(req, res) {
     const postRef = firestore.collection('posts').doc(postId)
 
     if (req.method === 'POST') {
+      // One counted view per visitor per post per 30 minutes
+      if (isRateLimited(`view:${clientIp(req)}:${postId}`, { max: 1, windowMs: 30 * 60 * 1000 })) {
+        const current = await postRef.get()
+        return res.status(200).json({ views: current.data()?.views || 0 })
+      }
+
       // Increment view count
       await postRef.update({
         views: firebase.firestore.FieldValue.increment(1)

@@ -6,6 +6,7 @@ import assert from 'node:assert/strict'
 import { installTestCerts, authHeader, call } from './helpers.mjs'
 import { resetStore, seed, read, all } from './mocks/firebase.mjs'
 import { sent, resetSent } from './mocks/resend.mjs'
+import { resetRateLimits } from '../../src/lib/rate-limit.js'
 import { signUnsubscribe, unsubscribeUrl } from '../../src/lib/unsubscribe-token.js'
 
 process.env.GROQ_API_KEY = 'test-groq-key' // lets modules build their client; no real calls are made
@@ -33,6 +34,8 @@ const unsubscribe = await api('newsletter/unsubscribe')
 const template = await api('newsletter/template')
 const domainVerify = await api('domain/verify')
 const transcribe = await api('transcribe')
+const subscribe = await api('newsletter/subscribe')
+const views = await api('views/[postId]')
 
 beforeEach(() => {
   installTestCerts()
@@ -265,4 +268,21 @@ test('moderation endpoint refuses "Bearer undefined" when no secret is set', asy
 test('domain verify: cannot poke someone else’s domain', async () => {
   const res = await call(domainVerify, POST(authHeader('bob'), { userId: 'alice' }))
   assert.equal(res.statusCode, 403)
+})
+
+test('public endpoints are rate limited per visitor', async () => {
+  resetRateLimits()
+  seed('users', 'alice', { name: 'alice', subscribers: [] })
+  seed('posts', 'post1', { views: 3 })
+  const hit = (n) => call(subscribe, { method: 'POST', headers: { 'x-forwarded-for': '1.2.3.4' }, body: { email: `r${n}@example.com`, authorUsername: 'alice' } })
+  let last
+  for (let i = 0; i < 10; i++) last = await hit(i)
+  assert.equal(last.statusCode, 200)
+  assert.equal((await hit(11)).statusCode, 429)
+  assert.equal((await call(subscribe, { method: 'POST', headers: { 'x-forwarded-for': '9.9.9.9' }, body: { email: 'x@example.com', authorUsername: 'alice' } })).statusCode, 200)
+
+  const view = () => call(views, { method: 'POST', headers: { 'x-forwarded-for': '1.2.3.4' }, query: { postId: 'post1' } })
+  assert.equal((await view()).body.views, 4)
+  assert.equal((await view()).body.views, 4) // same visitor, not counted twice
+  assert.equal(read('posts', 'post1').views, 4)
 })

@@ -142,3 +142,17 @@ Newsletter unsubscribe links were one of the open items in the comeback release'
 ## Known issues
 - Spam clean-up of Explore, the Firestore rules and rate limiting on public endpoints are still open (see the comeback release).
 - We looked at comments, scheduling, a table of contents, paid subscriptions and analytics dashboards on other platforms again. They don't fit a quiet, ad-free writing space, so we're leaving them out.
+
+# Guardrails - Update (8th November'26)
+Rate limiting on public endpoints was the last open item from the comeback release that we could close without database access. Writers' lists and view counts shouldn't be easy to flood.
+
+## Fixed
+- **Newsletter sign-up can't be spammed.** One visitor can make 10 sign-up attempts per 10 minutes. After that they get a "try again in a few minutes" message. This stops scripts from filling a writer's list with made-up addresses.
+- **View counts can't be inflated by refreshing.** A visitor counts as one view per post every 30 minutes.
+
+## Added
+- **Tests.** `npm test` now runs 73 tests, including the rate limits above.
+
+## Known issues
+- Limits are kept in each server's memory, so they slow down casual abuse rather than stop a determined attacker. Sign-ups also still have no email confirmation step. The Firestore rules and the Explore spam clean-up are still open.
+- We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.
