@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { unsubscribeUrl as buildUnsubscribeUrl } from './unsubscribe-token'
+import { unsubscribeUrl as buildUnsubscribeUrl, confirmUrl as buildConfirmUrl } from './unsubscribe-token'
 
 // Initialize Resend with API key
 // Created on first use. Building it at import threw "Missing API key" and
@@ -439,6 +439,50 @@ export async function sendBatchNotifications({
     sent: totalSent,
     total: subscribers.length,
     errors: errors.length > 0 ? errors : undefined,
+  }
+}
+
+const escHtml = v =>
+  String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+
+/**
+ * Ask a new newsletter sign-up to confirm their address. Nothing is sent to
+ * them until they press the button, so nobody can be signed up by a stranger.
+ */
+export async function sendConfirmationEmail({ subscriberEmail, authorName, authorUsername }) {
+  if (!process.env.RESEND_API_KEY) {
+    return { success: false, error: 'Email service not configured' }
+  }
+  const url = buildConfirmUrl(subscriberEmail, authorUsername)
+  const name = authorName || authorUsername
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Confirm your subscription</title></head>
+<body style="margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.6; color: #2e2e2e; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;"><tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background-color: #ffffff; border-radius: 8px;"><tr><td style="padding: 32px; text-align: center;">
+      <h1 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 500;">Confirm your subscription</h1>
+      <p style="margin: 0 0 24px 0; color: #6f6f6f;">Press the button to get an email whenever ${escHtml(name)} publishes a new post on Bublr. If this wasn't you, ignore this email and nothing will happen.</p>
+      <a href="${url}" style="display: inline-block; padding: 12px 24px; background-color: #2e2e2e; color: #ffffff; text-decoration: none; font-weight: 500; font-size: 14px; border-radius: 6px;">Confirm subscription</a>
+    </td></tr></table>
+  </td></tr></table>
+</body></html>`
+  const text = `Confirm your subscription\n\nOpen this link to get an email whenever ${name} publishes a new post on Bublr:\n${url}\n\nIf this wasn't you, ignore this email and nothing will happen.\n`
+  try {
+    const { error } = await resend().emails.send({
+      from: FROM_EMAIL,
+      to: subscriberEmail,
+      subject: `Confirm your subscription to ${String(name).replace(/[\r\n]+/g, ' ')}`,
+      html,
+      text,
+    })
+    if (error) {
+      console.error('Confirmation email error:', error)
+      return { success: false, error: error.message }
+    }
+    return { success: true }
+  } catch (err) {
+    console.error('Confirmation email send error:', err)
+    return { success: false, error: err.message }
   }
 }
 

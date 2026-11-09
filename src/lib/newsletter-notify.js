@@ -1,6 +1,7 @@
 import { firestore } from './firebase'
 import { sendBatchNotifications } from './resend'
 import { hasActiveAccess } from './subscription'
+import { confirmedSubscribers } from './subscribers'
 
 /**
  * Email a writer's newsletter subscribers about one of their posts — at most
@@ -30,7 +31,7 @@ export async function notifySubscribersOfPost(postId) {
   if (!authorDoc.exists) return { status: 404, body: { error: 'Author not found' } }
 
   const author = authorDoc.data()
-  const subscribers = author.subscribers || []
+  const subscribers = confirmedSubscribers(author.subscribers)
   if (subscribers.length === 0) {
     return { status: 200, body: { success: true, sent: 0, message: 'No subscribers to notify' } }
   }

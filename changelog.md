@@ -156,3 +156,24 @@ Rate limiting on public endpoints was the last open item from the comeback relea
 ## Known issues
 - Limits are kept in each server's memory, so they slow down casual abuse rather than stop a determined attacker. Sign-ups also still have no email confirmation step. The Firestore rules and the Explore spam clean-up are still open.
 - We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.
+
+# Confirmed - Update (9th November'26)
+Newsletter sign-up had no email confirmation, which was an open item in the last three notes. Anyone could type someone else's address into a writer's form, and that address then got the writer's emails. Substack, Ghost and Buttondown all ask readers to confirm first. We now do too.
+
+## Added
+- **Readers confirm their subscription by email.** After signing up they get one email with a "Confirm subscription" button. Only after pressing it do they join the list. Nobody can be subscribed by a stranger, and fake addresses no longer fill up a writer's list.
+- **Pending sign-ups show in Subscribers.** The count only includes confirmed readers. People still waiting are marked "(unconfirmed)" and show up as a note under the count. The CSV export has a new `status` column.
+- **Tests.** `npm test` now runs 78 tests, including the confirmation flow.
+
+## Changed
+- **Writers are notified when a reader confirms,** not when they type their address.
+- **Only confirmed subscribers get your posts,** and only confirmed readers count in subscriber numbers on your profile and in the API.
+- **Asking again is safe.** Signing up twice before confirming sends the email again (at most once a minute) and never creates a duplicate. As with unsubscribing, opening the link only shows a button, so mail scanners can't confirm anyone.
+
+## For whoever deploys this
+- Everyone already on a list stays subscribed, with no action needed. Only new sign-ups need to confirm.
+- If `RESEND_API_KEY` isn't set there is no way to send the email, so sign-ups join the list straight away, as before.
+
+## Known issues
+- The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
+- We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.

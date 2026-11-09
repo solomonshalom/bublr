@@ -35,3 +35,26 @@ export function unsubscribeUrl(email, author, base = 'https://bublr.life') {
   const t = signUnsubscribe(email, author)
   return `${base}/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}&author=${encodeURIComponent(author)}&token=${t}`
 }
+
+// Confirmation links (double opt-in) use a different prefix so an unsubscribe
+// token can never be replayed as a confirmation, or the other way round.
+export function signConfirm(email, author) {
+  const key = secret()
+  if (!key) return ''
+  return crypto
+    .createHmac('sha256', key)
+    .update(`confirm:${norm(email)}:${norm(author)}`)
+    .digest('hex')
+    .slice(0, 32)
+}
+
+export function verifyConfirm(email, author, token) {
+  const expected = signConfirm(email, author)
+  if (!expected || typeof token !== 'string' || token.length !== expected.length) return false
+  return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected))
+}
+
+export function confirmUrl(email, author, base = 'https://bublr.life') {
+  const t = signConfirm(email, author)
+  return `${base}/api/newsletter/confirm?email=${encodeURIComponent(email)}&author=${encodeURIComponent(author)}&token=${t}`
+}

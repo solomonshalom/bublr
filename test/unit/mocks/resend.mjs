@@ -21,4 +21,9 @@ export async function sendSubscriptionEmail(params) {
   return { success: true }
 }
 
+export async function sendConfirmationEmail(params) {
+  sent.push({ kind: 'confirm', ...params })
+  return { success: true }
+}
+
 export default { emails: { send: async () => ({}) }, batch: { send: async () => ({}) } }

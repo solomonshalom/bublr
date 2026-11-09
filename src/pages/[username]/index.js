@@ -1829,7 +1829,7 @@ export async function getServerSideProps({ params, req }) {
       website: user.link,
       postCount: user.posts?.length || 0,
       followerCount: user.followers?.length || 0,
-      subscriberCount: user.subscribers?.length || 0
+      subscriberCount: (user.subscribers || []).filter(s => !(s && s.pending === true)).length
     })
 
     // Breadcrumb schema for navigation SEO
@@ -1846,7 +1846,7 @@ export async function getServerSideProps({ params, req }) {
           authorUsername: user.name,
           authorPhoto: user.photo,
           authorAbout: user.about,
-          subscriberCount: user.subscribers?.length || 0
+          subscriberCount: (user.subscribers || []).filter(s => !(s && s.pending === true)).length
         })
       : null
 

@@ -53,7 +53,7 @@ export function toPublicUser(user) {
 
   out.followerCount = count(user.followers)
   out.followingCount = count(user.following)
-  out.subscriberCount = count(user.subscribers)
+  out.subscriberCount = Array.isArray(user.subscribers) ? user.subscribers.filter(s => !(s && s.pending === true)).length : 0
 
   if (user.customDomain) {
     out.customDomain = {

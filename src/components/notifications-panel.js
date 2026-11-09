@@ -369,7 +369,7 @@ function SubscriberItem({ subscriber, onRemove, isRemoving }) {
           `}
         >
           {subscribedAt
-            ? `Subscribed ${formatRelativeTime(new Date(subscribedAt).getTime())}`
+            ? `${subscriber.pending === true ? 'Waiting to confirm, asked' : 'Subscribed'} ${formatRelativeTime(new Date(subscribedAt).getTime())}`
             : 'Subscribed'}
         </span>
       </div>
@@ -1038,7 +1038,7 @@ export default function NotificationsPanel({ isOpen, onClose }) {
                 border-radius: 10px;
               `}
             >
-              {subscribers.length}
+              {subscribers.filter(s => !(s && s.pending === true)).length}
             </span>
           )}
         </button>

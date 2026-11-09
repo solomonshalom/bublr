@@ -136,16 +136,18 @@ export default function SubscribeOrSign({
 
       if (data.alreadySubscribed) {
         setStatus('already')
+      } else if (data.pendingConfirmation) {
+        setStatus('confirm')
       } else {
         setStatus('success')
       }
 
-      // Reset after a few seconds
+      // Reset after a few seconds (longer when they need to read "check your email")
       setTimeout(() => {
         setStatus('idle')
         setEmail('')
         setMode(null)
-      }, 3000)
+      }, data.pendingConfirmation ? 8000 : 3000)
     } catch (err) {
       setErrorMessage(err.message || 'Something went wrong')
       setStatus('error')
@@ -211,7 +213,7 @@ export default function SubscribeOrSign({
   }
 
   // Success state
-  if (status === 'success' || status === 'already') {
+  if (status === 'success' || status === 'already' || status === 'confirm') {
     return (
       <div
         css={css`
@@ -230,7 +232,9 @@ export default function SubscribeOrSign({
           ? 'Successfully signed the guest book!'
           : status === 'already'
             ? 'Already subscribed!'
-            : 'Successfully subscribed!'
+            : status === 'confirm'
+              ? 'Check your email to confirm'
+              : 'Successfully subscribed!'
         }
       </div>
     )

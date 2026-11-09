@@ -125,12 +125,12 @@ const formatDate = ts => {
 }
 
 function downloadCSV(subscribers) {
-  const header = 'email,subscribedAt\n'
+  const header = 'email,subscribedAt,status\n'
   const rows = subscribers
     .map(s => {
       const email = (s.email || '').replace(/"/g, '""')
       const date = toDateString(s.subscribedAt)
-      return `"${email}","${date}"`
+      return `"${email}","${date}","${s.pending === true ? 'pending' : 'confirmed'}"`
     })
     .join('\n')
   const csv = header + rows
@@ -153,10 +153,11 @@ function SubscribersContent() {
   )
 
   const subscribers = userDoc?.subscribers || []
-  const count = subscribers.length
+  const pendingCount = subscribers.filter(s => s && s.pending === true).length
+  const count = subscribers.length - pendingCount
 
   const handleExport = () => {
-    if (count === 0) return
+    if (subscribers.length === 0) return
     downloadCSV(subscribers)
   }
 
@@ -170,7 +171,7 @@ function SubscribersContent() {
             type="button"
             css={exportButtonStyle}
             onClick={handleExport}
-            disabled={count === 0}
+            disabled={subscribers.length === 0}
             aria-label="Export subscribers as CSV"
           >
             <DownloadIcon />
@@ -184,10 +185,13 @@ function SubscribersContent() {
             <span css={countStyle}>
               {count} {count === 1 ? 'subscriber' : 'subscribers'}
             </span>
-            <span>People receiving your newsletter.</span>
+            <span>
+              People receiving your newsletter.
+              {pendingCount > 0 && ` ${pendingCount} more ${pendingCount === 1 ? 'is' : 'are'} waiting to confirm by email.`}
+            </span>
           </div>
 
-          {count === 0 ? (
+          {subscribers.length === 0 ? (
             <div css={emptyStateStyle}>
               No subscribers yet. Share your profile to start growing your list.
             </div>
@@ -209,7 +213,10 @@ function SubscribersContent() {
                   })
                   .map((sub, idx) => (
                     <tr key={`${sub.email || idx}-${idx}`}>
-                      <td css={tdStyle}>{sub.email || '—'}</td>
+                      <td css={tdStyle}>
+                        {sub.email || '—'}
+                        {sub.pending === true && <span css={tdMutedStyle}> (unconfirmed)</span>}
+                      </td>
                       <td css={tdMutedStyle}>{formatDate(sub.subscribedAt)}</td>
                     </tr>
                   ))}

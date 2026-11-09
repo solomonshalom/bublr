@@ -1,24 +1,13 @@
-import firebase from '../../../lib/firebase'
 import { firestore } from '../../../lib/firebase'
 import { clientIp, isRateLimited } from '../../../lib/rate-limit'
+import { sendConfirmationEmail } from '../../../lib/resend'
+import { isPending, subscriberEmail } from '../../../lib/subscribers'
+import { notifyNewSubscriber } from '../../../lib/subscriber-notify'
 
 // Simple email validation
 function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
-}
-
-// Helper to create notification
-async function createNotification(data) {
-  try {
-    await firestore.collection('notifications').add({
-      ...data,
-      read: false,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    })
-  } catch (error) {
-    console.error('Failed to create notification:', error)
-  }
 }
 
 export default async function handler(req, res) {
@@ -58,12 +47,10 @@ export default async function handler(req, res) {
     // Get current subscribers array or initialize empty
     const subscribers = authorData.subscribers || []
 
-    // Check if already subscribed
-    const isAlreadySubscribed = subscribers.some(
-      (sub) => (typeof sub === 'string' ? sub : sub.email) === email.toLowerCase()
-    )
+    const normalizedEmail = email.trim().toLowerCase()
+    const existing = subscribers.find(sub => subscriberEmail(sub) === normalizedEmail)
 
-    if (isAlreadySubscribed) {
+    if (existing && !isPending(existing)) {
       return res.status(200).json({
         success: true,
         message: 'Already subscribed',
@@ -71,40 +58,64 @@ export default async function handler(req, res) {
       })
     }
 
-    // Add subscriber with timestamp
+    // With email configured, new sign-ups must confirm from their inbox
+    // first, so nobody can be signed up (or flood a list) with addresses
+    // they don't own. Without email there is nothing to confirm with.
+    const needsConfirmation = !!process.env.RESEND_API_KEY
+
+    if (existing) {
+      // Still waiting for confirmation: send the email again, at most once a minute
+      const last = Date.parse(existing.lastRequestedAt || existing.subscribedAt || '') || 0
+      if (Date.now() - last > 60 * 1000) {
+        const mail = await sendConfirmationEmail({
+          subscriberEmail: normalizedEmail,
+          authorName: authorData.displayName,
+          authorUsername: authorData.name,
+        })
+        if (mail.success) {
+          await firestore.collection('users').doc(authorDoc.id).update({
+            subscribers: subscribers.map(sub =>
+              sub === existing ? { ...existing, lastRequestedAt: new Date().toISOString() } : sub
+            ),
+          })
+        }
+      }
+      return res.status(200).json({
+        success: true,
+        message: 'Check your email to confirm your subscription',
+        pendingConfirmation: true,
+      })
+    }
+
     const newSubscriber = {
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       subscribedAt: new Date().toISOString(),
+      ...(needsConfirmation ? { pending: true, lastRequestedAt: new Date().toISOString() } : {}),
+    }
+
+    if (needsConfirmation) {
+      const mail = await sendConfirmationEmail({
+        subscriberEmail: normalizedEmail,
+        authorName: authorData.displayName,
+        authorUsername: authorData.name,
+      })
+      if (!mail.success) {
+        return res.status(502).json({ error: "We couldn't send the confirmation email. Please try again." })
+      }
+      await firestore.collection('users').doc(authorDoc.id).update({
+        subscribers: [...subscribers, newSubscriber],
+      })
+      return res.status(200).json({
+        success: true,
+        message: 'Check your email to confirm your subscription',
+        pendingConfirmation: true,
+      })
     }
 
     await firestore.collection('users').doc(authorDoc.id).update({
       subscribers: [...subscribers, newSubscriber],
     })
-
-    // Create notification for the author about new subscriber
-    try {
-      // Mask email for privacy (show first few chars and domain)
-      const emailParts = email.toLowerCase().split('@')
-      const maskedEmail = emailParts[0].substring(0, 3) + '***@' + emailParts[1]
-
-      await createNotification({
-        recipientId: authorDoc.id,
-        type: 'subscriber',
-        actorId: null, // Anonymous subscriber
-        actorName: maskedEmail,
-        actorPhoto: `https://api.dicebear.com/7.x/initials/svg?seed=${email}`,
-        postId: null,
-        postTitle: null,
-        postSlug: null,
-        postAuthorName: null,
-        message: `${maskedEmail} subscribed to your newsletter`,
-        metadata: {
-          subscriberCount: subscribers.length + 1,
-        },
-      })
-    } catch (notifError) {
-      console.error('Failed to create subscriber notification:', notifError)
-    }
+    await notifyNewSubscriber(authorDoc.id, normalizedEmail, subscribers.filter(s => !isPending(s)).length + 1)
 
     return res.status(200).json({
       success: true,

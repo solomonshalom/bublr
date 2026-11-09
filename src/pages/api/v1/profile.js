@@ -86,7 +86,7 @@ export default async function handler(req, res) {
         }
       }),
       postsCount: (userData.posts || []).length,
-      subscribersCount: (userData.subscribers || []).length
+      subscribersCount: (userData.subscribers || []).filter(s => !(s && s.pending === true)).length
     }
 
     return res.status(200).json({ profile })

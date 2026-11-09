@@ -7,7 +7,7 @@ import { installTestCerts, authHeader, call } from './helpers.mjs'
 import { resetStore, seed, read, all } from './mocks/firebase.mjs'
 import { sent, resetSent } from './mocks/resend.mjs'
 import { resetRateLimits } from '../../src/lib/rate-limit.js'
-import { signUnsubscribe, unsubscribeUrl } from '../../src/lib/unsubscribe-token.js'
+import { signUnsubscribe, unsubscribeUrl, signConfirm } from '../../src/lib/unsubscribe-token.js'
 
 process.env.GROQ_API_KEY = 'test-groq-key' // lets modules build their client; no real calls are made
 process.env.CLOUDINARY_CLOUD_NAME = 'demo'
@@ -35,6 +35,7 @@ const template = await api('newsletter/template')
 const domainVerify = await api('domain/verify')
 const transcribe = await api('transcribe')
 const subscribe = await api('newsletter/subscribe')
+const confirm = await api('newsletter/confirm')
 const views = await api('views/[postId]')
 
 beforeEach(() => {
@@ -285,4 +286,86 @@ test('public endpoints are rate limited per visitor', async () => {
   assert.equal((await view()).body.views, 4)
   assert.equal((await view()).body.views, 4) // same visitor, not counted twice
   assert.equal(read('posts', 'post1').views, 4)
+})
+
+// ---- Newsletter double opt-in ----
+
+const withEmailOn = async fn => {
+  process.env.RESEND_API_KEY = 'test-resend'
+  try { await fn() } finally { delete process.env.RESEND_API_KEY }
+}
+
+test('subscribe: with email on, a sign-up is pending until confirmed and is not emailed or counted', () =>
+  withEmailOn(async () => {
+    resetRateLimits()
+    const res = await call(subscribe, POST({}, { email: 'New@Example.com', authorUsername: 'alice' }))
+    assert.equal(res.statusCode, 200)
+    assert.equal(res.body.pendingConfirmation, true)
+    const subs = read('users', 'alice').subscribers
+    assert.equal(subs.length, 2)
+    assert.equal(subs[1].email, 'new@example.com')
+    assert.equal(subs[1].pending, true)
+    assert.equal(sent.filter(m => m.kind === 'confirm').length, 1)
+    assert.equal(all('notifications').length, 0, 'the writer is told only after confirmation')
+
+    // asking again right away does not send a second email
+    await call(subscribe, POST({}, { email: 'new@example.com', authorUsername: 'alice' }))
+    assert.equal(sent.filter(m => m.kind === 'confirm').length, 1)
+    assert.equal(read('users', 'alice').subscribers.length, 2)
+  }))
+
+test('subscribe: with email off, sign-ups are confirmed straight away (nothing to confirm with)', async () => {
+  resetRateLimits()
+  delete process.env.RESEND_API_KEY
+  const res = await call(subscribe, POST({}, { email: 'direct@example.com', authorUsername: 'alice' }))
+  assert.equal(res.statusCode, 200)
+  assert.notEqual(read('users', 'alice').subscribers[1].pending, true)
+  assert.equal(sent.length, 0)
+})
+
+test('confirm: GET only shows a button; POST with the emailed token confirms once', () =>
+  withEmailOn(async () => {
+    resetRateLimits()
+    await call(subscribe, POST({}, { email: 'new@example.com', authorUsername: 'alice' }))
+    const token = signConfirm('new@example.com', 'alice')
+    const get = await call(confirm, { method: 'GET', query: { email: 'new@example.com', author: 'alice', token } })
+    assert.equal(get.statusCode, 200)
+    assert.equal(read('users', 'alice').subscribers[1].pending, true, 'a scanner opening the link confirms nothing')
+
+    const post = await call(confirm, POST({}, { email: 'new@example.com', author: 'alice', token }))
+    assert.equal(post.statusCode, 200)
+    const subs = read('users', 'alice').subscribers
+    assert.equal(subs.length, 2)
+    assert.equal(subs[1].pending, undefined)
+    assert.equal(all('notifications').length, 1)
+
+    await call(confirm, POST({}, { email: 'new@example.com', author: 'alice', token }))
+    assert.equal(read('users', 'alice').subscribers.length, 2, 'confirming twice does not duplicate')
+    assert.equal(all('notifications').length, 1)
+  }))
+
+test('confirm: bad tokens, unsubscribe tokens and removed subscribers do nothing', () =>
+  withEmailOn(async () => {
+    resetRateLimits()
+    await call(subscribe, POST({}, { email: 'new@example.com', authorUsername: 'alice' }))
+    for (const token of [undefined, 'nope', signUnsubscribe('new@example.com', 'alice'), signConfirm('other@example.com', 'alice')]) {
+      const res = await call(confirm, POST({}, { email: 'new@example.com', author: 'alice', token }))
+      assert.equal(res.statusCode, 400)
+    }
+    assert.equal(read('users', 'alice').subscribers[1].pending, true)
+
+    // writer removes them, then a stale link is used: not added back
+    seed('users', 'alice', { name: 'alice', displayName: 'Alice', subscribers: [] })
+    const res = await call(confirm, POST({}, { email: 'new@example.com', author: 'alice', token: signConfirm('new@example.com', 'alice') }))
+    assert.equal(res.statusCode, 410)
+    assert.equal(read('users', 'alice').subscribers.length, 0)
+  }))
+
+test('notify: pending subscribers are never emailed', async () => {
+  seed('users', 'alice', { name: 'alice', displayName: 'Alice', posts: ['post1'], subscribers: [{ email: 'ok@example.com' }, { email: 'wait@example.com', pending: true }] })
+  seed('posts', 'post1', { author: 'alice', title: 'Hi', content: '<p>x</p>', slug: 'hi', published: true, lastEdited: new Date() })
+  const res = await call(notify, POST(authHeader('alice'), { postId: 'post1' }))
+  assert.equal(res.statusCode, 200)
+  const batch = sent.find(m => m.kind === 'batch')
+  assert.deepEqual(batch.subscribers.map(s => s.email), ['ok@example.com'])
 })
