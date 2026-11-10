@@ -5,7 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { escapeHtml, safeJsonLd } from '../../src/lib/escape.js'
-import { toPublicUser, toPublicPost, toPostAuthor } from '../../src/lib/public-user.js'
+import { toPublicUser, toPublicPost, toPostAuthor, toPostNewsletter } from '../../src/lib/public-user.js'
 import { isReservedUsername, RESERVED_USERNAMES } from '../../src/lib/reserved-usernames.js'
 
 test('safeJsonLd cannot close the surrounding <script> tag', () => {
@@ -70,6 +70,18 @@ test('toPublicUser tolerates missing fields', () => {
 test('toPostAuthor exposes only the byline', () => {
   assert.deepEqual(toPostAuthor(USER), { name: 'ada', displayName: 'Ada', photo: 'https://x/ada.png' })
   assert.deepEqual(Object.keys(toPostAuthor(undefined)), ['name', 'displayName', 'photo'])
+})
+
+test('toPostNewsletter follows the profile newsletter setting', () => {
+  assert.deepEqual(toPostNewsletter({ name: 'ada' }), { enabled: true, buttonText: '' })
+  assert.deepEqual(toPostNewsletter({ buttonsVisibility: { follow: true } }), { enabled: true, buttonText: '' })
+  assert.deepEqual(toPostNewsletter({ buttonsVisibility: { newsletter: false }, newsletterButtonText: 'Hi' }), { enabled: false, buttonText: '' })
+  assert.deepEqual(toPostNewsletter({ newsletterButtonText: '  Join me  ' }), { enabled: true, buttonText: 'Join me' })
+  assert.equal(toPostNewsletter({ newsletterButtonText: 'x'.repeat(500) }).buttonText.length, 100)
+  assert.deepEqual(toPostNewsletter({ newsletterButtonText: 42 }), { enabled: true, buttonText: '' })
+  assert.deepEqual(toPostNewsletter(undefined), { enabled: false, buttonText: '' })
+  // Only these two fields reach the public page
+  assert.deepEqual(Object.keys(toPostNewsletter({ subscribers: [{ email: 'a@b.c' }] })), ['enabled', 'buttonText'])
 })
 
 test('toPublicPost drops liker ids and moderation bookkeeping', () => {

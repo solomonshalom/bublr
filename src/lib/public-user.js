@@ -78,3 +78,15 @@ export function toPostAuthor(user) {
     photo: user.photo || '',
   }
 }
+
+/**
+ * The end-of-post newsletter sign-up. It follows the writer's profile
+ * setting: if they hid the newsletter button there, posts hide it too.
+ */
+export function toPostNewsletter(user) {
+  const enabled = !!user && user.buttonsVisibility?.newsletter !== false
+  const buttonText = enabled && typeof user.newsletterButtonText === 'string'
+    ? user.newsletterButtonText.trim().slice(0, 100)
+    : ''
+  return { enabled, buttonText }
+}

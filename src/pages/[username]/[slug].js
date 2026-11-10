@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Head from 'next/head'
 import { css } from '@emotion/react'
 import { safeJsonLd } from '../../lib/escape'
-import { toPostAuthor, toPublicPost } from '../../lib/public-user'
+import { toPostAuthor, toPostNewsletter, toPublicPost } from '../../lib/public-user'
 import { toMillis } from '../../lib/timestamps'
 import { sanitizePostHtml } from '../../lib/sanitize-post'
 import { htmlToText } from 'html-to-text'
@@ -56,6 +56,18 @@ import PostContainer from '../../components/post-container'
 import { authedFetch } from '../../lib/authed-fetch'
 import ThemeToggle from '../../components/theme-toggle'
 import TranslateModal from '../../components/translate-modal'
+import SubscribeOrSign from '../../components/guestbook/SubscribeOrSign'
+
+// The site's own theme colours, so the sign-up matches the post in both modes
+const NEWSLETTER_COLORS = {
+  bg: 'var(--grey-1)',
+  text: 'var(--grey-4)',
+  muted: 'var(--grey-3)',
+  mutedLight: 'var(--grey-2)',
+  border: 'var(--grey-2)',
+  hoverText: 'var(--grey-4)',
+  hoverIcon: 'var(--grey-5)',
+}
 
 const SITE_URL = 'https://bublr.life'
 
@@ -294,7 +306,7 @@ function AddToReadingListButton({ uid, pid }) {
   )
 }
 
-export default function Post({ post, seo, fontSettings, customFonts }) {
+export default function Post({ post, seo, fontSettings, customFonts, newsletter }) {
   const [user, _loading, _error] = useAuthState(auth)
   const [userInfo, setUserInfo] = useState(null)
 
@@ -469,6 +481,21 @@ export default function Post({ post, seo, fontSettings, customFonts }) {
         />
       </article>
 
+      {/* Readers mostly arrive on a post, not the profile, so offer the
+          newsletter here too (unless the writer turned it off, or it's theirs) */}
+      {newsletter?.enabled && user?.uid !== post.authorId && (
+        <div css={css`margin-bottom: 2rem;`}>
+          <SubscribeOrSign
+            authorUsername={post.author.name}
+            authorDisplayName={post.author.displayName}
+            colors={NEWSLETTER_COLORS}
+            enableNewsletter={true}
+            enableGuestbook={false}
+            newsletterButtonText={newsletter.buttonText}
+          />
+        </div>
+      )}
+
       {/* Footer with views and likes on left, theme toggle and bookmark on right */}
       <footer
         css={css`
@@ -608,7 +635,7 @@ export async function getStaticProps({ params }) {
     }
 
     return {
-      props: { post: toPublicPost(post), seo, fontSettings, customFonts },
+      props: { post: toPublicPost(post), seo, fontSettings, customFonts, newsletter: toPostNewsletter(userData) },
       revalidate: 60, // Revalidate at most once per minute
     }
   } catch (err) {

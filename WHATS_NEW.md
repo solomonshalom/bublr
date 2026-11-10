@@ -17,7 +17,7 @@ Hit record and speak your thoughts. Bublr transcribes them for you—perfect for
 Use your own domain (like yourname.com) for just $2/month. Your profile, your brand, your space.
 
 ### Built-in newsletters
-Readers can subscribe to you and confirm by email. When you publish, they get an email. No extra tools needed.
+Readers can subscribe to you from your profile or the end of any post, and confirm by email. When you publish, they get an email. No extra tools needed.
 
 ### Follow your favorite writers
 Follow people. Get notified when they post. See who's following you.

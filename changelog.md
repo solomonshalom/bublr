@@ -177,3 +177,15 @@ Newsletter sign-up had no email confirmation, which was an open item in the last
 ## Known issues
 - The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
 - We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.
+
+# Inbox - Update (10th November'26)
+Most readers find a writer through one post: a shared link, a search result, a feed. But the only place to subscribe to a writer's newsletter was their profile page, and nothing on a post pointed there. Substack, Ghost, Buttondown and Bear Blog all put the sign-up at the end of every post. Now Bublr does too.
+
+## Added
+- **Subscribe from any post.** Every published post now ends with the same "Subscribe to …'s newsletter" button that's on the writer's profile. Readers confirm by email, just like on the profile.
+- **It follows your settings.** If you hid the newsletter button on your profile, it's hidden on your posts too. Your custom button text shows here as well. You won't see it on your own posts.
+- **Tests.** `npm test` now runs 79 tests, including the setting check above.
+
+## Known issues
+- The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
+- We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.
