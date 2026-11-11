@@ -116,6 +116,7 @@ import DsButton from '../../components/dashboard/ds-button'
 import DsSwitch from '../../components/dashboard/ds-switch'
 import { DsInput, DsLabel, DsField } from '../../components/dashboard/ds-input'
 import { DsTray, DsTile } from '../../components/dashboard/ds-section'
+import ShareDraftTile from '../../components/dashboard/share-draft-tile'
 
 function SelectionMenu({ editor }) {
   const [editingLink, setEditingLink] = useState(false)
@@ -1300,6 +1301,10 @@ function Editor({ post, onBeforeDelete }) {
                     <ExternalLinkIcon width={14} height={14} />
                   </span>
                 </DsTile>
+                {/* Drafts can be shared by private link for feedback before publishing */}
+                {!post.published && (
+                  <ShareDraftTile postId={post.id} shareToken={post.shareToken} />
+                )}
                 {post.published && userdata && (
                   <DsTile>
                     <p css={css`

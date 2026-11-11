@@ -155,6 +155,7 @@ export default function About() {
               </p>
               <ul css={css`color: var(--grey-3); margin-top: 12px; margin-left: 1.25rem; line-height: 1.7;`}>
                 <li><strong>Clean Editor</strong> — Distraction-free writing with rich text support</li>
+                <li><strong>Private Drafts</strong> — Nothing is public until you publish. Want feedback first? Share a draft with a private link</li>
                 <li><strong>Your Profile</strong> — Customize your page with bio, social links, and custom sections</li>
                 <li><strong>Explore</strong> — Discover writing from everyone on Bublr, no account needed</li>
                 <li><strong>Reading List</strong> — Save posts from other writers to read later</li>

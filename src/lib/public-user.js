@@ -21,8 +21,10 @@ const PRIVATE_USER_FIELDS = [
   'following',
 ]
 
-// Post fields readers don't need (who liked it, moderation bookkeeping)
+// Post fields readers don't need (who liked it, moderation bookkeeping, the
+// private draft link)
 const PRIVATE_POST_FIELDS = [
+  'shareToken',
   'likedBy',
   'searchQueries',
   'moderationReason',

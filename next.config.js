@@ -73,7 +73,8 @@ module.exports = {
           // Permissions Policy - limit browser features for security
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+            // microphone=(self): the editor's voice input records on our own pages
+            value: 'camera=(), microphone=(self), geolocation=(), interest-cohort=()'
           },
           // Strict Transport Security - force HTTPS
           {

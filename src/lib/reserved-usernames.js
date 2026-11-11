@@ -11,6 +11,7 @@ export const RESERVED_USERNAMES = new Set([
   'comeback',
   'dashboard',
   'docs',
+  'draft',
   'explore',
   'feed',
   'for-sale',

@@ -52,6 +52,7 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `lastEdited`: Firestore timestamp
 - `searchQueries`: array of tokenized terms for fuzzy search
 - `dotColor`: optional custom color for the post (hex string, e.g. `#4D96FF`)
+- `shareToken`: optional 48-char hex token for a draft's private link (`/draft/<token>`); never send it to public pages
 
 ### Page Structure (`src/pages/`)
 
@@ -61,6 +62,7 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `/dashboard/list` - Reading list
 - `/dashboard/settings/advanced` - Theme, export (Markdown + JSON .zip), language, custom domain
 - `/explore` - Global post discovery with search (public; no account needed)
+- `/draft/[token]` - A draft shared by private link (SSR, noindex; redirects to the live post once published)
 - `/[username]` - User profile page
 - `/[username]/[slug]` - Published post view (SSG with ISR)
 
@@ -86,6 +88,8 @@ PageComponent.getLayout = function PageLayout(page) {
 **Rendering post HTML**: Always use `sanitizePostHtml` (`src/lib/sanitize-post.js`). It keeps what the editor produces (callouts, task lists, highlights) and marks links `nofollow ugc`. Inline JSON-LD goes through `safeJsonLd` (`src/lib/escape.js`).
 
 **Publishing**: `setPostPublished` in `src/lib/publishing.js` runs moderation and, on the first successful publish only, notifies followers and emails subscribers. Both `/api/posts/publish` (dashboard) and `/api/v1/posts` (API) call it directly.
+
+**Draft sharing**: `POST /api/posts/share` (`{ postId, enabled }`, author only) sets or deletes `shareToken`; `getSharedDraft` in `src/lib/draft-share.js` returns only what the `/draft/[token]` page shows. `toPublicPost` strips the token.
 
 **Timestamps**: Read `lastEdited` with `toMillis` (`src/lib/timestamps.js`). Older API-created posts stored `{ _seconds }` maps; write `firebase.firestore.Timestamp` values.
 

@@ -189,3 +189,25 @@ Most readers find a writer through one post: a shared link, a search result, a f
 ## Known issues
 - The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
 - We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.
+
+# Second Reader - Update (11th November'26)
+This week's check went back to what people said about Bublr on Product Hunt. Two things stood out. One reader couldn't tell whether Bublr was for private notes or for publishing. Another asked for a way to share a draft and get feedback before it goes live, and we said we'd build it. Medium, Ghost and Write.as all have a private link for drafts. Now Bublr does too, without adding comments or accounts for readers.
+
+## Added
+- **Share a draft with a private link.** Open post settings (the ⋮ button) on any draft and press *Create link* under Visibility. Send the link to a friend or an editor and they can read the draft exactly as it will look when published. They don't need an account.
+- **You stay in control.** *Turn off* stops the link working straight away. If you create a link again later it's a brand new one, so an old link never comes back to life.
+- **Private means private.** The link is a long random address nobody can guess. Search engines are told not to index it, the page isn't cached, and sites you link to from the draft can't see the address. Views, likes and the newsletter button stay off until you publish.
+- **After you publish, the same link opens the live post,** so nobody you sent it to ends up on a dead page.
+- **Tests.** `npm test` now runs 90 tests, including who can create a link and what a link shows.
+
+## Changed
+- **The About page says how drafts work:** nothing is public until you publish, and you can share a draft privately first.
+- `draft` is now a reserved username, since it's a page.
+
+## Fixed
+- **Voice input can use the microphone again.** A security setting on the site told browsers to block the microphone on every page, including the editor, so voice input could never start recording. The microphone is now allowed on Bublr's own pages only. The camera and location stay blocked.
+
+## Known issues
+- A draft link is only as private as the people you send it to. Anyone who has the link can read the draft until you turn it off.
+- The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
+- We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space. Feedback on a shared draft happens wherever you already talk to your reader.
