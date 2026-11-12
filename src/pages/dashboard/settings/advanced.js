@@ -13,6 +13,7 @@ import DashboardLayout, {
 import PageHeader from '../../../components/dashboard/page-header'
 import { DsCard, DsSection } from '../../../components/dashboard/ds-section'
 import ExportWritingButton from '../../../components/dashboard/export-writing'
+import DeleteAccount from '../../../components/dashboard/delete-account'
 
 const appearanceRowStyle = css`
   display: flex;
@@ -80,6 +81,15 @@ function AdvancedContent() {
         </DsSection>
 
         <ProfileEditor uid={user?.uid} authEmail={user?.email} section="advanced" />
+
+        <DsSection
+          title="Account"
+          description="Leaving? Your words leave with you."
+        >
+          <DsCard dashed>
+            <DeleteAccount user={user} />
+          </DsCard>
+        </DsSection>
       </DashboardBody>
     </>
   )

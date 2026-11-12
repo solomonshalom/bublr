@@ -60,7 +60,7 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `/dashboard` - User's post management (create, edit, list)
 - `/dashboard/[pid]` - Post editor with TipTap
 - `/dashboard/list` - Reading list
-- `/dashboard/settings/advanced` - Theme, export (Markdown + JSON .zip), language, custom domain
+- `/dashboard/settings/advanced` - Theme, export (Markdown + JSON .zip), language, custom domain, delete account
 - `/explore` - Global post discovery with search (public; no account needed)
 - `/draft/[token]` - A draft shared by private link (SSR, noindex; redirects to the live post once published)
 - `/[username]` - User profile page
@@ -90,6 +90,8 @@ PageComponent.getLayout = function PageLayout(page) {
 **Publishing**: `setPostPublished` in `src/lib/publishing.js` runs moderation and, on the first successful publish only, notifies followers and emails subscribers. Both `/api/posts/publish` (dashboard) and `/api/v1/posts` (API) call it directly.
 
 **Draft sharing**: `POST /api/posts/share` (`{ postId, enabled }`, author only) sets or deletes `shareToken`; `getSharedDraft` in `src/lib/draft-share.js` returns only what the `/draft/[token]` page shows. `toPublicPost` strips the token.
+
+**Account deletion**: `POST /api/account/delete` (`{ confirm: "delete my account" }`) needs a sign-in from the last 10 minutes (`auth_time`), refuses while a subscription would renew, then runs `deleteAccountData` in `src/lib/delete-account.js`. Anything new that stores a writer's data (a collection, or their uid in someone else's document) must be removed there too. The browser deletes the Firebase sign-in record afterwards.
 
 **Timestamps**: Read `lastEdited` with `toMillis` (`src/lib/timestamps.js`). Older API-created posts stored `{ _seconds }` maps; write `firebase.firestore.Timestamp` values.
 

@@ -34,6 +34,9 @@ Leaving Medium, Substack, WordPress, Ghost, Blogger, Hashnode or DEV? Bring your
 ### Take your words anywhere
 Export every post and draft as Markdown (plus a JSON copy with the original HTML) in one .zip. Your words are yours.
 
+### Leave whenever you like
+Delete your account yourself from Settings → Advanced. Your profile, posts, drafts and subscriber list go with you.
+
 ### Explore without an account
 Readers can discover writing on Bublr without signing up.
 

@@ -161,7 +161,7 @@ export default function Privacy() {
                 <li>Access your personal data</li>
                 <li>Edit or update your information</li>
                 <li>Delete your posts and content</li>
-                <li>Request account deletion</li>
+                <li>Export everything you wrote, and delete your account yourself, at any time (Settings → Advanced)</li>
               </ul>
 
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />

@@ -211,3 +211,24 @@ This week's check went back to what people said about Bublr on Product Hunt. Two
 - A draft link is only as private as the people you send it to. Anyone who has the link can read the draft until you turn it off.
 - The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
 - We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space. Feedback on a shared draft happens wherever you already talk to your reader.
+
+# Clean Exit - Update (12th November'26)
+This week's check started from Bublr's own privacy page. It says you can "request account deletion", but there was nowhere to do that, and no reply address on the page either. Bear Blog, Write.as, Mataroa, Ghost, Medium and Substack all let a writer delete their account from settings. People told us they like Bublr as "a private space to write without feeling tracked". A place like that should let you leave without asking anyone. The comeback release made it easy to take your words with you. Now you can also take them down.
+
+## Added
+- **Delete your account yourself.** *Settings → Advanced → Account → Delete account* removes your profile, every post and draft, your subscriber list, API keys, guest book, notifications, follows and likes. Your sign-in is removed too. There's no waiting period and nobody to email.
+- **Hard to do by accident.** You type *delete my account* and confirm it's you (your password, or signing in with Google once more). A tab left open on a shared computer can't delete anything, because the server only accepts a sign-in from the last 10 minutes.
+- **No surprise charges.** If your custom domain subscription would renew, Bublr asks you to cancel it first, so you're never billed for an account that no longer exists. Your domain is released when the account goes.
+- **Tests.** `npm test` now runs 103 tests, including who can delete an account and that nothing of the writer is left while everyone else's data stays untouched.
+
+## Changed
+- **The privacy page says what's true:** you can export everything and delete your account yourself, at any time.
+- **The About page lists it** next to Export.
+
+## Known issues
+- Published posts can stay visible for up to a minute after deletion, and feeds and the sitemap for up to an hour, until their saved copies refresh. Search engines take longer to forget a page.
+- Images you uploaded stay on our image host for now. Bublr doesn't keep a list of which images belong to which writer, so it can't remove them automatically yet.
+- Emails already sent to your subscribers can't be recalled.
+- If the last step (removing the sign-in) fails, you're signed out and your data is still gone. Signing in again with the same address starts an empty account.
+- The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
+- We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.

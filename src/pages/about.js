@@ -162,6 +162,7 @@ export default function About() {
                 <li><strong>Newsletters &amp; RSS</strong> — Readers can subscribe by email or follow your feed at bublr.life/yourname/feed.xml</li>
                 <li><strong>Import Articles</strong> — Bring your posts from Medium, Substack, WordPress, Ghost and more</li>
                 <li><strong>Export</strong> — Download everything you&apos;ve written as Markdown, any time</li>
+                <li><strong>Leave whenever you like</strong> — Delete your account and everything in it yourself, no email needed</li>
                 <li><strong>Dark Mode</strong> — Easy on the eyes, day or night</li>
                 <li><strong>Custom Domains</strong> — Use your own domain for your Bublr page ($2/month, optional)</li>
               </ul>
