@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { css } from '@emotion/react'
-import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuthState } from '../lib/firebase-hooks'
 
 import firebase, { auth } from '../lib/firebase'
 import { ensureUserDocument } from '../lib/db'
@@ -182,21 +182,19 @@ export default function SignUp() {
   return (
     <FadeInGroup staggerDelay={0.08}>
       <FadeInItem>
-        <Link href="/" passHref>
-          <a
-            aria-label="Back to Bublr home"
-            css={css`
-              display: inline-block;
-              font-size: 2.5rem;
-              line-height: 1;
-              margin-bottom: 1.25rem;
-              text-decoration: none;
-              font-family: 'Apple Color Emoji', 'Segoe UI Emoji',
-                'Segoe UI Symbol', 'Noto Color Emoji', emoji, sans-serif;
-            `}
-          >
+        <Link
+          href="/"
+          aria-label="Back to Bublr home"
+          css={css`
+            display: inline-block;
+            font-size: 2.5rem;
+            line-height: 1;
+            margin-bottom: 1.25rem;
+            text-decoration: none;
+            font-family: 'Apple Color Emoji', 'Segoe UI Emoji',
+              'Segoe UI Symbol', 'Noto Color Emoji', emoji, sans-serif;
+          `}>
             🍱
-          </a>
         </Link>
       </FadeInItem>
       <FadeInItem>

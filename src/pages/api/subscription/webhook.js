@@ -2,6 +2,7 @@ import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
 import { firestore } from '../../../lib/firebase'
 import { WEBHOOK_SECRET } from '../../../lib/polar'
 import { sendSubscriptionEmail } from '../../../lib/resend'
+import { isPlanInterval } from '../../../lib/plans'
 
 // Disable body parsing, we need the raw body for webhook verification
 export const config = {
@@ -48,6 +49,15 @@ export default async function handler(req, res) {
     // Handle different event types
     switch (event.type) {
       case 'subscription.created':
+        // Polar creates the subscription before the first payment has gone
+        // through, so "created" on its own isn't proof of payment. Access
+        // starts here only if it's already active; otherwise the
+        // subscription.active event that follows the payment grants it.
+        if (isActiveStatus(event.data.status)) {
+          await handleSubscriptionActive(event.data)
+        }
+        break
+
       case 'subscription.active':
         await handleSubscriptionActive(event.data)
         break
@@ -80,6 +90,24 @@ export default async function handler(req, res) {
   }
 }
 
+const isActiveStatus = status => ['active', 'trialing'].includes(status)
+
+// What we keep on the user document about their Polar subscription.
+// `interval` is the billing cycle: 'month' ($2) or 'year' ($18).
+function subscriptionRecord(subscription) {
+  return {
+    id: subscription.id,
+    status: subscription.status,
+    customerId: subscription.customerId,
+    productId: subscription.productId,
+    interval: isPlanInterval(subscription.recurringInterval) ? subscription.recurringInterval : null,
+    currentPeriodStart: subscription.currentPeriodStart,
+    currentPeriodEnd: subscription.currentPeriodEnd,
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
+    updatedAt: new Date().toISOString(),
+  }
+}
+
 async function handleSubscriptionActive(subscription) {
   const userId = subscription.metadata?.userId
   if (!userId) {
@@ -93,16 +121,7 @@ async function handleSubscriptionActive(subscription) {
 
   // Update user's subscription status in Firestore
   await firestore.collection('users').doc(userId).update({
-    subscription: {
-      id: subscription.id,
-      status: subscription.status,
-      customerId: subscription.customerId,
-      productId: subscription.productId,
-      currentPeriodStart: subscription.currentPeriodStart,
-      currentPeriodEnd: subscription.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
-      updatedAt: new Date().toISOString(),
-    },
+    subscription: subscriptionRecord(subscription),
     hasCustomDomainAccess: true,
   })
 
@@ -142,20 +161,9 @@ async function handleSubscriptionUpdated(subscription) {
 }
 
 async function updateUserSubscription(userId, subscription) {
-  const isActive = ['active', 'trialing'].includes(subscription.status)
-
   await firestore.collection('users').doc(userId).update({
-    subscription: {
-      id: subscription.id,
-      status: subscription.status,
-      customerId: subscription.customerId,
-      productId: subscription.productId,
-      currentPeriodStart: subscription.currentPeriodStart,
-      currentPeriodEnd: subscription.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
-      updatedAt: new Date().toISOString(),
-    },
-    hasCustomDomainAccess: isActive,
+    subscription: subscriptionRecord(subscription),
+    hasCustomDomainAccess: isActiveStatus(subscription.status),
   })
 
   console.log('Subscription updated for user:', userId, 'Status:', subscription.status)

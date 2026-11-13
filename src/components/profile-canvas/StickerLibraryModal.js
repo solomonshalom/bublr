@@ -308,6 +308,8 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
 
   return (
     <Dialog.Root open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      {/* Radix no longer portals dialogs by itself */}
+      <Dialog.Portal>
       <Dialog.Overlay
         css={css`
           background: rgba(0, 0, 0, 0.4);
@@ -319,6 +321,7 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
         `}
       />
       <Dialog.Content
+          aria-describedby={undefined}
           css={css`
             position: fixed;
             top: 50%;
@@ -396,6 +399,7 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
               Add Decoration
             </Dialog.Title>
             <Dialog.Close
+              aria-label="Close"
               css={css`
                 display: flex;
                 align-items: center;
@@ -672,6 +676,7 @@ export default function StickerLibraryModal({ open, onClose, onAddSticker }) {
             )}
           </div>
         </Dialog.Content>
+      </Dialog.Portal>
     </Dialog.Root>
   )
 }

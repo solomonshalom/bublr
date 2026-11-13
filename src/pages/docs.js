@@ -172,10 +172,8 @@ export default function Docs() {
                 }
               `}
             >
-              <Link href="/">
-                <a css={css`text-decoration: none; font-size: 2rem;`}>
+              <Link href="/" css={css`text-decoration: none; font-size: 2rem;`}>
                   🍱
-                </a>
               </Link>
 
               <h1
@@ -216,7 +214,7 @@ export default function Docs() {
                 Authentication
               </p>
               <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
-                All API requests require authentication using an API key. You can create API keys from your <Link href="/dashboard"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Profile Settings</a></Link> → Advanced.
+                All API requests require authentication using an API key. You can create API keys from your <Link href="/dashboard" css={css`border-bottom: 1px dotted var(--grey-3); text-decoration: none;`}>Profile Settings</Link> → Advanced.
               </p>
 
               <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
@@ -515,8 +513,10 @@ async function createPost(title, content) {
               </p>
               <ul css={css`color: var(--grey-3); margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
                 <li>
-                  <Link href="/docs/newsletter">
-                    <a css={css`border-bottom: 1px dotted var(--grey-3);`}>Newsletter Email Templates</a>
+                  <Link
+                    href="/docs/newsletter"
+                    css={css`border-bottom: 1px dotted var(--grey-3); text-decoration: none;`}>
+                    Newsletter Email Templates
                   </Link>
                   {' — Customize the emails sent to your subscribers'}
                 </li>

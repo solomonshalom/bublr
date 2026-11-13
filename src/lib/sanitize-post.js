@@ -12,6 +12,9 @@ import sanitizeHtml from 'sanitize-html'
  */
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
+// The same colour as the browser writes it back out. Since Tiptap 3 the editor
+// saves inline styles that way, e.g. `rgb(207, 82, 242)` for `#cf52f2`.
+const RGB_COLOR = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*(?:0|1|0?\.\d+)\s*)?\)$/i
 const CSS_COLOR = /^(?:#[0-9a-f]{3,8}|rgba?\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?\s*(?:,\s*[\d.]+\s*)?\)|[a-z]{3,20})$/i
 
 // The callout's pop-up body is stored as HTML inside an attribute, so it gets
@@ -100,7 +103,8 @@ function postOptions() {
     },
     allowedStyles: {
       ...options.allowedStyles,
-      span: { 'background-color': [HEX_COLOR] },
+      // the coloured dot on a pop-up callout's trigger
+      span: { 'background-color': [HEX_COLOR, RGB_COLOR] },
     },
     transformTags: {
       ...options.transformTags,

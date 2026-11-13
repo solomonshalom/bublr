@@ -3,7 +3,7 @@ import { css, keyframes } from '@emotion/react'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Cross2Icon, PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon, DragHandleDots2Icon, ExternalLinkIcon, CheckCircledIcon, CrossCircledIcon } from '@radix-ui/react-icons'
-import { useDocumentData } from 'react-firebase-hooks/firestore'
+import { useDocumentData } from '../lib/firebase-hooks'
 
 import { firestore, auth } from '../lib/firebase'
 import { authedFetch } from '../lib/authed-fetch'
@@ -50,6 +50,7 @@ import { useI18n, SUPPORTED_UI_LANGUAGES } from '../lib/i18n'
 import FontPicker from './font-picker'
 import { DEFAULT_FONTS } from '../lib/fonts'
 import DsSwitch from './dashboard/ds-switch'
+import { CustomDomainUpgrade, SubscriptionSummary } from './dashboard/custom-domain-plans'
 
 // Status badge component for domain status
 const StatusBadge = ({ status }) => {
@@ -1473,7 +1474,7 @@ function CustomDomainSection({ userId, userName }) {
     }
   }, [userId])
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = async (interval) => {
     // Validate required fields before making API call
     if (!userId) {
       setDomainError('User ID not available. Please try refreshing the page.')
@@ -1490,7 +1491,7 @@ function CustomDomainSection({ userId, userName }) {
       const res = await authedFetch('/api/subscription/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, userEmail, userName }),
+        body: JSON.stringify({ userId, userEmail, userName, interval }),
       })
       const data = await res.json()
       if (data.checkoutUrl) {
@@ -1500,6 +1501,28 @@ function CustomDomainSection({ userId, userName }) {
       }
     } catch (err) {
       setDomainError('Failed to create checkout session')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleManageBilling = async () => {
+    setActionLoading(true)
+    setDomainError(null)
+    try {
+      const res = await authedFetch('/api/subscription/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json()
+      if (data.portalUrl) {
+        window.open(data.portalUrl, '_blank')
+      } else {
+        setDomainError(data.error || 'Failed to open billing portal')
+      }
+    } catch (err) {
+      setDomainError('Failed to open billing portal')
     } finally {
       setActionLoading(false)
     }
@@ -1645,100 +1668,14 @@ function CustomDomainSection({ userId, userName }) {
 
       {/* Subscription promo / status */}
       {!hasAccess ? (
-        <div
-          css={css`
-            position: relative;
-            background: #DD814C;
-            background: linear-gradient(315deg, #DD814C, #BC3C00);
-            border-radius: 0.75rem;
-            padding: 1.25rem;
-            color: white;
-            margin-bottom: 1rem;
-            overflow: hidden;
-
-            &::before {
-              content: '';
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              background-image: url('https://lovable.dev/_next/static/media/grain.1ccdda41.png');
-              background-size: 100px 100px;
-              background-repeat: repeat;
-              background-position: left top;
-              mix-blend-mode: overlay;
-              opacity: 0.5;
-              pointer-events: none;
-            }
-          `}
-        >
-          <div css={css`position: relative; z-index: 1;`}>
-            <h4 css={css`margin: 0 0 0.5rem 0; font-size: 1rem; font-weight: 600;`}>
-              Upgrade to Custom Domain
-            </h4>
-            <p css={css`font-size: 0.85rem; margin: 0 0 1rem 0; opacity: 0.9;`}>
-              Use your own domain (e.g., blog.yoursite.com) and customize the &quot;Made with Bublr&quot; footer text.
-            </p>
-
-            {/* Email input if not available from auth */}
-            {!emailFromAuth && (
-              <div css={css`margin-bottom: 1rem;`}>
-                <input
-                  type="email"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  placeholder="Enter your email for billing"
-                  css={css`
-                    width: 100%;
-                    padding: 0.6rem 0.75rem;
-                    border: none;
-                    border-radius: 0.5rem;
-                    font-size: 0.85rem;
-                    background: rgba(255,255,255,0.9);
-                    color: #333;
-
-                    &::placeholder {
-                      color: #999;
-                    }
-
-                    &:focus {
-                      outline: none;
-                      background: white;
-                    }
-                  `}
-                />
-              </div>
-            )}
-
-            <div css={css`display: flex; align-items: center; justify-content: space-between;`}>
-              <span css={css`font-size: 1.25rem; font-weight: 700;`}>$2/month</span>
-              <button
-                onClick={handleSubscribe}
-                disabled={actionLoading || (!emailFromAuth && !userEmail.includes('@'))}
-                css={css`
-                  background: white;
-                  color: #BC3C00;
-                  border: none;
-                  padding: 0.6rem 1.25rem;
-                  border-radius: 0.5rem;
-                  font-weight: 600;
-                  font-size: 0.85rem;
-                  cursor: pointer;
-                  transition: all 0.2s ease;
-                  opacity: ${actionLoading || (!emailFromAuth && !userEmail.includes('@')) ? 0.7 : 1};
-
-                  &:hover:not(:disabled) {
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                  }
-                `}
-              >
-                {actionLoading ? 'Loading...' : 'Subscribe'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CustomDomainUpgrade
+          availablePlans={subscriptionStatus?.availablePlans}
+          needsEmail={!emailFromAuth}
+          email={userEmail}
+          onEmailChange={setUserEmail}
+          onSubscribe={handleSubscribe}
+          busy={actionLoading}
+        />
       ) : (
         <>
           {/* Domain input section */}
@@ -2039,64 +1976,11 @@ function CustomDomainSection({ userId, userName }) {
           />
 
           {/* Subscription info */}
-          <div css={css`
-            background: var(--grey-1);
-            border: 1px solid var(--grey-2);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            font-size: 0.8rem;
-            color: var(--grey-4);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-          `}>
-            <div css={css`display: flex; align-items: center; gap: 0.5rem;`}>
-              <CheckCircledIcon css={css`color: #22c55e; flex-shrink: 0;`} />
-              <span>Subscription is active</span>
-            </div>
-            <button
-              onClick={async () => {
-                setActionLoading(true)
-                setDomainError(null)
-                try {
-                  const res = await authedFetch('/api/subscription/portal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId }),
-                  })
-                  const data = await res.json()
-                  if (data.portalUrl) {
-                    window.open(data.portalUrl, '_blank')
-                  } else {
-                    setDomainError(data.error || 'Failed to open billing portal')
-                  }
-                } catch (err) {
-                  setDomainError('Failed to open billing portal')
-                } finally {
-                  setActionLoading(false)
-                }
-              }}
-              disabled={actionLoading}
-              css={css`
-                background: none;
-                color: var(--grey-3);
-                border: 1px solid var(--grey-2);
-                padding: 0.35rem 0.6rem;
-                border-radius: 0.375rem;
-                font-size: 0.75rem;
-                cursor: pointer;
-                white-space: nowrap;
-
-                &:hover:not(:disabled) {
-                  border-color: var(--grey-3);
-                  color: var(--grey-4);
-                }
-              `}
-            >
-              Manage Billing
-            </button>
-          </div>
+          <SubscriptionSummary
+            subscription={subscriptionStatus?.subscription}
+            onManageBilling={handleManageBilling}
+            busy={actionLoading}
+          />
         </>
       )}
 
@@ -2240,7 +2124,6 @@ function Editor({ user, section }) {
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved', 'saving', 'unsaved'
   const [openBannerDropdown, setOpenBannerDropdown] = useState(null) // 'fade' | 'overlay' | null
   const saveTimeoutRef = useRef(null)
-  const isInitialMount = useRef(true)
 
   useEffect(() => {
     setClientUser({
@@ -2758,11 +2641,11 @@ function Editor({ user, section }) {
 
   // Trigger auto-save when clientUser changes (with debounce)
   useEffect(() => {
-    // Skip initial mount
-    if (isInitialMount.current) {
-      isInitialMount.current = false
-      return
-    }
+    // Nothing to save until clientUser is this writer's copy. It starts as
+    // placeholder defaults and is filled in from the saved profile above.
+    // (Checked by id rather than "is this the first run?": React runs effects
+    // twice in development.)
+    if (clientUser.id !== user.id) return
 
     // Don't auto-save if there are no changes
     if (!hasChanges()) return
@@ -4931,6 +4814,8 @@ export default function ProfileSettingsModal(props) {
         <props.Trigger />
       </Dialog.Trigger>
 
+      {/* Radix no longer portals dialogs by itself, or lifts them above the overlay */}
+      <Dialog.Portal>
       <ModalOverlay />
 
       <Dialog.Content
@@ -4947,6 +4832,7 @@ export default function ProfileSettingsModal(props) {
           max-height: 85vh;
           display: flex;
           flex-direction: column;
+          z-index: 100;
         `}
       >
         {/* Fixed Header */}
@@ -4987,17 +4873,20 @@ export default function ProfileSettingsModal(props) {
           <ProfileEditor uid={props.uid} authEmail={props.email} />
         </div>
 
-        <Dialog.Close
-          as={IconButton}
-          css={css`
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-          `}
-        >
-          <Cross2Icon />
+        <Dialog.Close asChild>
+          <IconButton
+            aria-label="Close"
+            css={css`
+              position: absolute;
+              top: 1rem;
+              right: 1rem;
+            `}
+          >
+            <Cross2Icon />
+          </IconButton>
         </Dialog.Close>
       </Dialog.Content>
+      </Dialog.Portal>
     </Dialog.Root>
   )
 }

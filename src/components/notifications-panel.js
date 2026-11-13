@@ -2,12 +2,12 @@
 import { css } from '@emotion/react'
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
-import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuthState } from '../lib/firebase-hooks'
 import { motion, AnimatePresence } from 'framer-motion'
 import { auth, firestore } from '../lib/firebase'
 import { authedFetch } from '../lib/authed-fetch'
 import { getPostByID, getUserByID } from '../lib/db'
-import { htmlToText } from 'html-to-text'
+import { htmlToText } from '../lib/html-to-text'
 import { panelVariants, backdropVariants } from '../lib/animation-config'
 import { LoadingContainer } from './loading-container'
 import { FadeIn } from './fade-in'
@@ -220,10 +220,10 @@ function NotificationItem({ notification, onMarkRead }) {
   // For new_post notifications, link to the post
   if (notification.type === 'new_post' && notification.postSlug && notification.postAuthorName) {
     return (
-      <Link href={`/${notification.postAuthorName}/${notification.postSlug}`}>
-        <a css={css`text-decoration: none; display: block; color: inherit;`}>
-          {content}
-        </a>
+      <Link
+        href={`/${notification.postAuthorName}/${notification.postSlug}`}
+        css={css`text-decoration: none; display: block; color: inherit;`}>
+        {content}
       </Link>
     )
   }
@@ -231,10 +231,10 @@ function NotificationItem({ notification, onMarkRead }) {
   // For like notifications, link to the user who liked (same as follow)
   if (notification.type === 'like' && notification.actorUsername) {
     return (
-      <Link href={`/${notification.actorUsername}`}>
-        <a css={css`text-decoration: none; display: block; color: inherit;`}>
-          {content}
-        </a>
+      <Link
+        href={`/${notification.actorUsername}`}
+        css={css`text-decoration: none; display: block; color: inherit;`}>
+        {content}
       </Link>
     )
   }
@@ -245,10 +245,10 @@ function NotificationItem({ notification, onMarkRead }) {
     const username = notification.actorUsername || notification.postAuthorName
     if (username) {
       return (
-        <Link href={`/${username}`}>
-          <a css={css`text-decoration: none; display: block; color: inherit;`}>
-            {content}
-          </a>
+        <Link
+          href={`/${username}`}
+          css={css`text-decoration: none; display: block; color: inherit;`}>
+          {content}
         </Link>
       )
     }
@@ -261,54 +261,51 @@ function NotificationItem({ notification, onMarkRead }) {
 // Reading list item (reusing existing pattern)
 function ReadingListItem({ post }) {
   return (
-    <Link href={`/${post.author.name}/${post.slug}`}>
-      <a
+    <Link
+      href={`/${post.author.name}/${post.slug}`}
+      css={css`
+        display: block;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+        transition: background 0.2s;
+        &:hover {
+          background: var(--grey-2);
+        }
+      `}>
+      <h4
         css={css`
-          display: block;
-          padding: 0.75rem;
-          border-radius: 0.5rem;
-          text-decoration: none;
-          color: inherit;
-          cursor: pointer;
-          transition: background 0.2s;
-
-          &:hover {
-            background: var(--grey-2);
-          }
+          font-size: 0.9rem;
+          font-weight: 400;
+          margin: 0 0 0.4rem 0;
+          color: var(--grey-4);
         `}
       >
-        <h4
+        {post.title ? htmlToText(post.title) : 'Untitled'}
+      </h4>
+      <div
+        css={css`
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: var(--grey-3);
+          font-size: 0.8rem;
+        `}
+      >
+        <img
+          src={post.author.photo}
+          alt={post.author.displayName}
+          data-pfp="true"
           css={css`
-            font-size: 0.9rem;
-            font-weight: 400;
-            margin: 0 0 0.4rem 0;
-            color: var(--grey-4);
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 50%;
           `}
-        >
-          {post.title ? htmlToText(post.title) : 'Untitled'}
-        </h4>
-        <div
-          css={css`
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--grey-3);
-            font-size: 0.8rem;
-          `}
-        >
-          <img
-            src={post.author.photo}
-            alt={post.author.displayName}
-            data-pfp="true"
-            css={css`
-              width: 1.25rem;
-              height: 1.25rem;
-              border-radius: 50%;
-            `}
-          />
-          <span>{post.author.displayName}</span>
-        </div>
-      </a>
+        />
+        <span>{post.author.displayName}</span>
+      </div>
     </Link>
   )
 }
@@ -408,57 +405,55 @@ function SubscriberItem({ subscriber, onRemove, isRemoving }) {
 // Following/Follower item component
 function FollowingItem({ user: profile, onClose }) {
   return (
-    <Link href={`/${profile.name}`}>
-      <a
-        onClick={onClose}
+    <Link
+      href={`/${profile.name}`}
+      onClick={onClose}
+      css={css`
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        color: inherit;
+        transition: background 0.2s;
+        &:hover {
+          background: var(--grey-2);
+        }
+      `}>
+      <img
+        src={profile.photo || `https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(profile.name)}`}
+        alt={profile.displayName}
+        data-pfp="true"
         css={css`
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem;
-          border-radius: 0.5rem;
-          text-decoration: none;
-          color: inherit;
-          transition: background 0.2s;
-
-          &:hover {
-            background: var(--grey-2);
-          }
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+          flex-shrink: 0;
         `}
-      >
-        <img
-          src={profile.photo || `https://api.dicebear.com/9.x/dylan/svg?seed=${encodeURIComponent(profile.name)}`}
-          alt={profile.displayName}
-          data-pfp="true"
+      />
+      <div css={css`flex: 1; min-width: 0;`}>
+        <p
           css={css`
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            flex-shrink: 0;
+            font-size: 0.85rem;
+            color: var(--grey-4);
+            margin: 0;
+            font-weight: 500;
           `}
-        />
-        <div css={css`flex: 1; min-width: 0;`}>
-          <p
-            css={css`
-              font-size: 0.85rem;
-              color: var(--grey-4);
-              margin: 0;
-              font-weight: 500;
-            `}
-          >
-            @{profile.name}
-          </p>
-          <span
-            css={css`
-              font-size: 0.75rem;
-              color: var(--grey-3);
-            `}
-          >
-            {profile.displayName}
-          </span>
-        </div>
-      </a>
+        >
+          @{profile.name}
+        </p>
+        <span
+          css={css`
+            font-size: 0.75rem;
+            color: var(--grey-3);
+          `}
+        >
+          {profile.displayName}
+        </span>
+      </div>
+
     </Link>
   )
 }

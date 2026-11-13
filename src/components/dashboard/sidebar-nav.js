@@ -163,21 +163,19 @@ export default function SidebarNav() {
   if (inSettings) {
     return (
       <nav css={css`display: flex; flex-direction: column;`} aria-label="Settings">
-        <Link href="/dashboard">
-          <a css={backLinkStyle}>
-            <ChevronLeftIcon />
-            Back to Dashboard
-          </a>
+        <Link href="/dashboard" css={backLinkStyle}>
+          <ChevronLeftIcon />Back to Dashboard
         </Link>
         <div css={navWrapStyle}>
           {settingsLinks.map(link => {
             const isActive = router.pathname === link.href
             return (
-              <Link key={link.href} href={link.href}>
-                <a css={[linkStyle, isActive && activeLinkStyle]}>
-                  {link.icon}
-                  {link.label}
-                </a>
+              <Link
+                key={link.href}
+                href={link.href}
+                css={[linkStyle, isActive && activeLinkStyle]}>
+                {link.icon}
+                {link.label}
               </Link>
             )
           })}
@@ -194,11 +192,12 @@ export default function SidebarNav() {
           : router.pathname.startsWith(link.href)
 
         return (
-          <Link key={link.href} href={link.href}>
-            <a css={[linkStyle, isActive && activeLinkStyle]}>
-              {link.icon}
-              {link.label}
-            </a>
+          <Link
+            key={link.href}
+            href={link.href}
+            css={[linkStyle, isActive && activeLinkStyle]}>
+            {link.icon}
+            {link.label}
           </Link>
         )
       })}

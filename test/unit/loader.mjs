@@ -1,14 +1,20 @@
 // Node module hooks for the unit tests:
 //  - resolve extensionless relative imports the way Next's bundler does
 //    ('../lib/db' -> '../lib/db.js' or '../lib/db/index.js')
-//  - swap Firebase, Resend and Groq for in-memory mocks so API handlers run offline
+//  - swap Firebase, Resend, Groq and Polar for in-memory mocks so API handlers run offline
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const srcLib = path.resolve(here, '../../src/lib')
 
-const PACKAGE_MOCKS = new Map([['groq-sdk', pathToFileURL(path.join(here, 'mocks/groq.mjs')).href]])
+const mock = file => pathToFileURL(path.join(here, 'mocks', file)).href
+
+const PACKAGE_MOCKS = new Map([
+  ['groq-sdk', mock('groq.mjs')],
+  ['@polar-sh/sdk', mock('polar.mjs')],
+  ['@polar-sh/sdk/webhooks', mock('polar.mjs')],
+])
 
 const MOCKS = new Map([
   [path.join(srcLib, 'firebase'), pathToFileURL(path.join(here, 'mocks/firebase.mjs')).href],

@@ -46,13 +46,13 @@ function Inline({ text }) {
     if (t.type === 'code') return <code key={i}>{t.text}</code>
     if (t.type === 'link') {
       return t.href.startsWith('/') ? (
-        <Link key={i} href={t.href}><a css={linkStyle}>{t.text}</a></Link>
+        <Link key={i} href={t.href} css={linkStyle}>{t.text}</Link>
       ) : (
         <a key={i} href={t.href} css={linkStyle} rel="noopener noreferrer">{t.text}</a>
       )
     }
     return <span key={i}>{t.text}</span>
-  })
+  });
 }
 
 export async function getStaticProps() {
@@ -109,8 +109,8 @@ export default function Changelog({ entries }) {
             `}
           >
             <div css={css`padding: 1.5rem; @media (min-width: 992px) { padding: 3rem; }`}>
-              <Link href="/">
-                <a css={css`text-decoration: none; font-size: 2rem;`}>🍱</a>
+              <Link href="/" css={css`text-decoration: none; font-size: 2rem;`}>
+                🍱
               </Link>
               <h1 css={css`font-size: 1.25rem; font-weight: 500; margin: 32px 0 8px; line-height: 1.2;`}>
                 Changelog

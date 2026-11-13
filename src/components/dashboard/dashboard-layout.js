@@ -5,7 +5,7 @@ import { useGSAP } from '@gsap/react'
 import { css } from '@emotion/react'
 import { useRouter } from 'next/router'
 import { useEffect, useState, useRef, useCallback, createContext, useContext } from 'react'
-import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuthState } from '../../lib/firebase-hooks'
 import { tinykeys } from 'tinykeys'
 
 import { auth } from '../../lib/firebase'
@@ -300,6 +300,11 @@ export default function DashboardLayout({ children, pageTitle }) {
         event.preventDefault()
         router.push('/dashboard/settings/developer')
       },
+    }, {
+      // tinykeys 4 skips keys pressed in inputs and editors by default. These
+      // handlers already decide that themselves (isTyping), and ⌘B has to work
+      // from anywhere, so hear everything as before.
+      ignore: () => false,
     })
 
     return unsubscribe

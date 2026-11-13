@@ -38,12 +38,21 @@ function CalloutComponent({ node, updateAttributes, editor: parentEditor, getPos
 
   // Create a separate editor instance for the popup content
   const popupEditor = useEditor({
+    // Tiptap 3 wants these spelled out; they keep what Tiptap 2 did by default
+    immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
     extensions: [
       StarterKit.configure({
         // Enable markdown shortcuts
         heading: { levels: [1, 2, 3] },
         bulletList: { keepMarks: true },
         orderedList: { keepMarks: true },
+        // StarterKit 3 bundles Link (ours is configured below) and three things
+        // this little editor never had; off, so it behaves as before
+        link: false,
+        underline: false,
+        trailingNode: false,
+        listKeymap: false,
       }),
       Placeholder.configure({
         placeholder: 'Write something... (Markdown supported)',
@@ -153,7 +162,7 @@ function CalloutComponent({ node, updateAttributes, editor: parentEditor, getPos
   // Update popup editor content when node content changes externally
   useEffect(() => {
     if (popupEditor && !isOpen && content !== popupEditor.getHTML()) {
-      popupEditor.commands.setContent(content || '<p></p>')
+      popupEditor.commands.setContent(content || '<p></p>', { emitUpdate: false })
     }
   }, [content, popupEditor, isOpen])
 

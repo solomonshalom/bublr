@@ -3,8 +3,8 @@ This file contains important context about this repo for [Tonkotsu](https://www.
 
 ## Setup
 ```bash
-# Install dependencies
-npm install --force
+# Install dependencies (Node 24.12 or newer)
+npm install
 ```
 
 ## Build
@@ -20,7 +20,10 @@ npm run lint
 ```
 
 ## Tests
-This repo does not appear to have specific test commands defined in package.json.
+```bash
+# Unit and API route tests (Node's built-in runner)
+npm test
+```
 
 ## Dev Server
 ```bash
@@ -35,6 +38,6 @@ npm run start
 ```
 
 ## Additional Notes
-- This project uses Next.js
+- This project uses Next.js 16 (Pages Router) and React 19
 - Firebase is used for authentication and database
-- Node options include '--openssl-legacy-provider' for compatibility
+- See CLAUDE.md for architecture notes and conventions

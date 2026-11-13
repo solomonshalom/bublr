@@ -6,9 +6,9 @@ import { safeJsonLd } from '../../lib/escape'
 import { toPostAuthor, toPostNewsletter, toPublicPost } from '../../lib/public-user'
 import { toMillis } from '../../lib/timestamps'
 import { sanitizePostHtml } from '../../lib/sanitize-post'
-import { htmlToText } from 'html-to-text'
+import { htmlToText } from '../../lib/html-to-text'
 import { useState, useEffect, useRef } from 'react'
-import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuthState } from '../../lib/firebase-hooks'
 
 import firebase, { firestore, auth } from '../../lib/firebase'
 import { getPostByUsernameAndSlug, getUserByID } from '../../lib/db'
@@ -449,17 +449,15 @@ export default function Post({ post, seo, fontSettings, customFonts, newsletter 
           />
           <p>
             <span itemProp="author" itemScope itemType="https://schema.org/Person">
-              <Link href={`/${post.author.name}`}>
-                <a
-                  itemProp="url"
-                  style={{
-                    color: 'inherit',
-                    textDecoration: 'none',
-                    borderBottom: `1px dotted var(--grey-2)`,
-                  }}
-                >
-                  <span itemProp="name">{post.author.displayName}</span>
-                </a>
+              <Link
+                href={`/${post.author.name}`}
+                itemProp="url"
+                style={{
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  borderBottom: `1px dotted var(--grey-2)`,
+                }}>
+                <span itemProp="name">{post.author.displayName}</span>
               </Link>
             </span>{' '}
             / <time itemProp="datePublished" dateTime={seo.publishedTime}>{formattedDate}</time>

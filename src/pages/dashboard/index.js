@@ -3,9 +3,8 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { css } from '@emotion/react'
 import { useRouter } from 'next/router'
-import { htmlToText } from 'html-to-text'
-import { useAuthState } from 'react-firebase-hooks/auth'
-import { useCollectionData } from 'react-firebase-hooks/firestore'
+import { htmlToText } from '../../lib/html-to-text'
+import { useAuthState, useCollectionData } from '../../lib/firebase-hooks'
 
 import { createPostForUser } from '../../lib/db'
 import { firestore, auth } from '../../lib/firebase'
@@ -211,13 +210,11 @@ function PostsContent() {
                       <time css={dateStyle}>
                         {formatDate(toMillis(post.lastEdited) || Date.now())}
                       </time>
-                      <Link href={`/dashboard/${post.id}`}>
-                        <a css={linkStyle}>
-                          {!post.published && (
-                            <span css={draftBadgeStyle}>Draft</span>
-                          )}
-                          {post.title ? htmlToText(post.title) : 'Untitled'}
-                        </a>
+                      <Link href={`/dashboard/${post.id}`} css={linkStyle}>
+                        {!post.published && (
+                          <span css={draftBadgeStyle}>Draft</span>
+                        )}
+                        {post.title ? htmlToText(post.title) : 'Untitled'}
                       </Link>
                     </AnimatedListItem>
                   ))}

@@ -139,14 +139,12 @@ export default function NewsletterDocs() {
                 }
               `}
             >
-              <Link href="/">
-                <a css={css`text-decoration: none; font-size: 2rem;`}>
+              <Link href="/" css={css`text-decoration: none; font-size: 2rem;`}>
                   🍱
-                </a>
               </Link>
 
               <p css={css`color: var(--grey-3); margin-top: 32px; font-size: 12px;`}>
-                <Link href="/docs"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Docs</a></Link>
+                <Link href="/docs" css={css`border-bottom: 1px dotted var(--grey-3); text-decoration: none;`}>Docs</Link>
                 {' → Newsletter Templates'}
               </p>
 
@@ -177,7 +175,7 @@ export default function NewsletterDocs() {
               </p>
 
               <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
-                Access this feature from <Link href="/dashboard"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Profile Settings</a></Link> → Custom Domain section → Newsletter Email Template.
+                Access this feature from <Link href="/dashboard" css={css`border-bottom: 1px dotted var(--grey-3); text-decoration: none;`}>Profile Settings</Link> → Custom Domain section → Newsletter Email Template.
               </p>
 
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
@@ -301,7 +299,7 @@ export default function NewsletterDocs() {
                 How to Set Your Template
               </p>
               <ol css={css`color: var(--grey-3); margin-top: 16px; margin-left: 1.25rem; line-height: 1.9;`}>
-                <li>Go to your <Link href="/dashboard"><a css={css`border-bottom: 1px dotted var(--grey-3);`}>Dashboard</a></Link></li>
+                <li>Go to your <Link href="/dashboard" css={css`border-bottom: 1px dotted var(--grey-3); text-decoration: none;`}>Dashboard</Link></li>
                 <li>Click the settings icon (gear) to open Profile Settings</li>
                 <li>Scroll to the Custom Domain section</li>
                 <li>Expand &quot;Newsletter Email Template&quot;</li>

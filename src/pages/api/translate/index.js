@@ -1,5 +1,5 @@
 import Groq from 'groq-sdk'
-import { htmlToText } from 'html-to-text'
+import { htmlToText } from '../../../lib/html-to-text'
 import { firestore } from '../../../lib/firebase'
 
 // Created on first use, so a missing key answers 503 instead of crashing

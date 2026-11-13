@@ -1,4 +1,4 @@
-import { htmlToText } from 'html-to-text'
+import { htmlToText } from './html-to-text'
 
 /**
  * SEO & GEO (Generative Engine Optimization) utility functions

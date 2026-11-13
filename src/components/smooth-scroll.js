@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
-import Lenis from '@studio-freight/lenis'
+import Lenis from 'lenis'
 import { prefersReducedMotion } from '../lib/animation-config'
 
 const SmoothScrollContext = createContext(null)

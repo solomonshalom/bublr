@@ -6,8 +6,7 @@ import { useEffect } from 'react'
 import { css } from '@emotion/react'
 import { sanitizePostHtml } from '../../../lib/sanitize-post'
 import { toMillis } from '../../../lib/timestamps'
-import { useAuthState } from 'react-firebase-hooks/auth'
-import { useDocumentData } from 'react-firebase-hooks/firestore'
+import { useAuthState, useDocumentData } from '../../../lib/firebase-hooks'
 import { ArrowLeftIcon, EyeOpenIcon } from '@radix-ui/react-icons'
 
 import { auth, firestore } from '../../../lib/firebase'
@@ -195,17 +194,15 @@ export default function PostPreview() {
             )}
             <p>
               <span itemProp="author" itemScope itemType="https://schema.org/Person">
-                <Link href={`/${authorUser.name}`}>
-                  <a
-                    itemProp="url"
-                    style={{
-                      color: 'inherit',
-                      textDecoration: 'none',
-                      borderBottom: '1px dotted var(--grey-2)',
-                    }}
-                  >
-                    <span itemProp="name">{authorUser.displayName}</span>
-                  </a>
+                <Link
+                  href={`/${authorUser.name}`}
+                  itemProp="url"
+                  style={{
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    borderBottom: '1px dotted var(--grey-2)',
+                  }}>
+                  <span itemProp="name">{authorUser.displayName}</span>
                 </Link>
               </span>{' '}
               / <time>{formattedDate}</time>

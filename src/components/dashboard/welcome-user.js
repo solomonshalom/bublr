@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
-import { useDocumentData } from 'react-firebase-hooks/firestore'
+import { useDocumentData } from '../../lib/firebase-hooks'
 
 import { firestore } from '../../lib/firebase'
 

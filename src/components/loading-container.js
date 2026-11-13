@@ -15,18 +15,18 @@ export function LoadingContainer({
 }) {
   const MotionComponent = motion[as] || motion.div
 
-  // Skip animation if user prefers reduced motion
-  if (prefersReducedMotion()) {
-    return (
-      <MotionComponent className={className} style={style}>
-        {children}
-      </MotionComponent>
-    )
-  }
+  // Reduced motion: same element, with the fade made instant. (Rendering a
+  // plain element instead could leave the server's 30% opacity in place after
+  // hydration.)
+  const reduced = prefersReducedMotion()
 
   return (
     <MotionComponent
-      variants={loadingContainerVariants}
+      variants={
+        reduced
+          ? { ...loadingContainerVariants, loaded: { ...loadingContainerVariants.loaded, transition: { duration: 0 } } }
+          : loadingContainerVariants
+      }
       initial="loading"
       animate={isLoading ? 'loading' : 'loaded'}
       className={className}

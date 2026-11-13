@@ -27,7 +27,7 @@ export default function SiteFooter({ current }) {
         {links.map((link, index) => (
           <Fragment key={link.href}>
             {index > 0 && <>&nbsp;&middot;&nbsp;</>}
-            <Link href={link.href}><a>{link.label}</a></Link>
+            <Link href={link.href}>{link.label}</Link>
           </Fragment>
         ))}
       </p>

@@ -86,10 +86,8 @@ export default function About() {
                 }
               `}
             >
-              <Link href="/">
-                <a css={css`text-decoration: none; font-size: 2rem;`}>
+              <Link href="/" css={css`text-decoration: none; font-size: 2rem;`}>
                   🍱
-                </a>
               </Link>
 
               <h1
@@ -164,7 +162,7 @@ export default function About() {
                 <li><strong>Export</strong> — Download everything you&apos;ve written as Markdown, any time</li>
                 <li><strong>Leave whenever you like</strong> — Delete your account and everything in it yourself, no email needed</li>
                 <li><strong>Dark Mode</strong> — Easy on the eyes, day or night</li>
-                <li><strong>Custom Domains</strong> — Use your own domain for your Bublr page ($2/month, optional)</li>
+                <li><strong>Custom Domains</strong> — Use your own domain for your Bublr page ($2/month or $18/year, optional)</li>
               </ul>
 
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />

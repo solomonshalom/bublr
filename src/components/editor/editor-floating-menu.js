@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
-import { FloatingMenu } from '@tiptap/react'
+import { FloatingMenu } from '@tiptap/react/menus'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { PlusIcon } from '@radix-ui/react-icons'
 
@@ -201,6 +201,28 @@ const CATEGORY_LABELS = {
   media: 'Media',
 }
 
+// Tiptap 3's menus send the editor an update whenever `options` or `shouldShow`
+// is a new object, and the editor page re-renders on every editor update.
+// Written inline they'd be new on every render and the two would chase each
+// other forever, so they live out here where they're created once.
+const FLOATING_MENU_OPTIONS = { placement: 'left-start', offset: 8 }
+
+function shouldShowFloatingMenu({ editor, state }) {
+  // Don't show if editor doesn't have focus (e.g., popup editor is focused)
+  if (!editor.isFocused) return false
+
+  const { $from } = state.selection
+  const isEmptyTextBlock =
+    $from.parent.isTextblock &&
+    $from.parent.content.size === 0 &&
+    $from.depth <= 1
+
+  const isCodeBlock = editor.isActive('codeBlock')
+  const isImage = editor.isActive('image')
+
+  return isEmptyTextBlock && !isCodeBlock && !isImage
+}
+
 function EditorFloatingMenu({ editor }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const menuRef = useRef(null)
@@ -247,26 +269,10 @@ function EditorFloatingMenu({ editor }) {
   return (
     <FloatingMenu
       editor={editor}
-      tippyOptions={{
-        duration: 150,
-        placement: 'left-start',
-        offset: [0, 8],
-      }}
-      shouldShow={({ editor, view, state }) => {
-        // Don't show if editor doesn't have focus (e.g., popup editor is focused)
-        if (!editor.isFocused) return false
-
-        const { $from } = state.selection
-        const isEmptyTextBlock =
-          $from.parent.isTextblock &&
-          $from.parent.content.size === 0 &&
-          $from.depth <= 1
-
-        const isCodeBlock = editor.isActive('codeBlock')
-        const isImage = editor.isActive('image')
-
-        return isEmptyTextBlock && !isCodeBlock && !isImage
-      }}
+      options={FLOATING_MENU_OPTIONS}
+      shouldShow={shouldShowFloatingMenu}
+      // Stacks where the tooltip library under Tiptap 2 put it
+      css={css`z-index: 9999;`}
     >
       <div
         ref={menuRef}

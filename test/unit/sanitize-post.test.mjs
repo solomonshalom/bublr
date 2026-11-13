@@ -64,6 +64,27 @@ test('drops unsafe callout colours and dangerous styles', () => {
   assert.doesNotMatch(out, /data-dot-color/)
 })
 
+test('keeps the callout dot colour however the editor wrote it', () => {
+  const dot = style => `<span data-type="callout" data-dot-color="#cf52f2" class="tiptap-callout"><button class="callout-trigger"><span class="callout-dot" style="${style}"></span></button></span>`
+
+  // Tiptap 2 saved the hex it was given; Tiptap 3 saves the browser's version
+  assert.match(sanitizePostHtml(dot('background-color: #cf52f2')), /class="callout-dot" style="background-color:#cf52f2"/)
+  assert.match(sanitizePostHtml(dot('background-color: rgb(207, 82, 242);')), /class="callout-dot" style="background-color:rgb\(207, 82, 242\)"/)
+  assert.match(sanitizePostHtml(dot('background-color: rgba(207, 82, 242, 0.5);')), /style="background-color:rgba\(207, 82, 242, 0\.5\)"/)
+
+  // ...and still nothing that isn't a plain colour
+  for (const style of [
+    'background-color: rgb(1, 2, 3) url(javascript:alert(1))',
+    'background-color: rgb(1, 2, expression(alert(1)))',
+    'background-color: red',
+    'background: rgb(1, 2, 3)',
+    'background-color: rgb(1, 2, 3); position: fixed',
+  ]) {
+    const out = sanitizePostHtml(dot(style))
+    assert.doesNotMatch(out, /javascript|expression|position|red|background:/, style)
+  }
+})
+
 test('only checkbox inputs survive, and never as form controls', () => {
   const out = sanitizePostHtml('<input type="text" value="phish"><input type="password"><input type="checkbox" checked>')
   assert.doesNotMatch(out, /text|password|phish/)

@@ -3,11 +3,10 @@ import Head from 'next/head'
 import { createPortal } from 'react-dom'
 import { tinykeys } from 'tinykeys'
 import { css } from '@emotion/react'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import router, { useRouter } from 'next/router'
-import { useAuthState } from 'react-firebase-hooks/auth'
-import { useDocumentData } from 'react-firebase-hooks/firestore'
+import { useAuthState, useDocumentData } from '../../lib/firebase-hooks'
 import {
   ArrowLeftIcon,
   Cross2Icon,
@@ -24,7 +23,8 @@ import {
   QuoteIcon,
   ExternalLinkIcon,
 } from '@radix-ui/react-icons'
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
+import { useEditor, EditorContent } from '@tiptap/react'
+import { BubbleMenu } from '@tiptap/react/menus'
 
 import Text from '@tiptap/extension-text'
 import Link from '@tiptap/extension-link'
@@ -35,7 +35,10 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import CharacterCount from '@tiptap/extension-character-count'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import { lowlight } from 'lowlight'
+import { common, createLowlight } from 'lowlight'
+
+// Syntax highlighting for the common languages (what lowlight v2 shipped as `lowlight`)
+const lowlight = createLowlight(common)
 
 // New Notion-like extensions
 import TaskList from '@tiptap/extension-task-list'
@@ -118,34 +121,67 @@ import { DsInput, DsLabel, DsField } from '../../components/dashboard/ds-input'
 import { DsTray, DsTile } from '../../components/dashboard/ds-section'
 import ShareDraftTile from '../../components/dashboard/share-draft-tile'
 
+// Tiptap 3's menus send the editor an update whenever `options` or `shouldShow`
+// is a new object, and this page re-renders on every editor update. Written
+// inline they'd be new on every render and the two would chase each other
+// forever, so they live out here where they're created once.
+const SELECTION_MENU_OPTIONS = { placement: 'top', offset: 10 }
+
+function shouldShowSelectionMenu({ editor, state }) {
+  // Don't show if editor doesn't have focus (e.g., popup editor is focused)
+  if (!editor.isFocused) return false
+
+  // Check if there's actual text selected (not just a node selection)
+  const { selection } = state
+  const isTextSelection = selection && !selection.empty && selection.from !== selection.to
+
+  // Get the actual text content of selection
+  const selectedText = state.doc.textBetween(selection.from, selection.to, ' ')
+  const hasSelectedText = selectedText && selectedText.trim().length > 0
+
+  // Show if editing a link OR if there's actual text selected
+  return editor.isActive('link') || (isTextSelection && hasSelectedText)
+}
+
 function SelectionMenu({ editor }) {
   const [editingLink, setEditingLink] = useState(false)
   const [url, setUrl] = useState('')
 
+  // The link form is shorter than the toolbar. When the menu swaps between
+  // them, keep its bottom-left corner where it was so it stays just above the
+  // selection. (The tooltip under Tiptap 2 anchored it that way by itself;
+  // Tiptap 3 places it by its top edge.)
+  const menuRef = useRef(null)
+  const lastHeight = useRef(0)
+  const wasEditingLink = useRef(editingLink)
+  useLayoutEffect(() => {
+    const el = menuRef.current
+    if (!el) return
+    const height = el.offsetHeight
+    if (wasEditingLink.current !== editingLink && lastHeight.current && height) {
+      const top = parseFloat(el.style.top)
+      if (!Number.isNaN(top)) el.style.top = `${top + lastHeight.current - height}px`
+    }
+    wasEditingLink.current = editingLink
+    if (height) lastHeight.current = height
+  })
+
   return (
     <BubbleMenu
+      ref={menuRef}
       editor={editor}
-      tippyOptions={{ duration: 150 }}
-      shouldShow={({ editor, view, state, oldState, from, to }) => {
-        // Don't show if editor doesn't have focus (e.g., popup editor is focused)
-        if (!editor.isFocused) return false
-
-        // Check if there's actual text selected (not just a node selection)
-        const { selection } = state
-        const isTextSelection = selection && !selection.empty && selection.from !== selection.to
-
-        // Get the actual text content of selection
-        const selectedText = state.doc.textBetween(selection.from, selection.to, ' ')
-        const hasSelectedText = selectedText && selectedText.trim().length > 0
-
-        // Show if editing a link OR if there's actual text selected
-        return editor.isActive('link') || (isTextSelection && hasSelectedText)
-      }}
+      options={SELECTION_MENU_OPTIONS}
+      shouldShow={shouldShowSelectionMenu}
       css={css`
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        max-width: 500px;
+        /* 350px and the z-index are what the tooltip library under Tiptap 2
+           gave this menu. Kept, so it looks and stacks exactly as it did: at
+           350px the link button sits on a second row (the buttons need 350.2px;
+           widen this and they fit on one). */
+        max-width: 350px;
+        z-index: 9999;
 
         border-radius: 8px;
         border: 1px solid var(--border);
@@ -587,7 +623,6 @@ function Editor({ post, onBeforeDelete }) {
   ]
   const saveTimeoutRef = useRef(null)
   const slugSaveTimeoutRef = useRef(null)
-  const isInitialMount = useRef(true)
   // The server copy clientPost was last reconciled with (for a 3-way merge)
   const syncedPostRef = useRef(null)
 
@@ -717,11 +752,11 @@ function Editor({ post, onBeforeDelete }) {
 
   // Auto-save effect for non-slug changes
   useEffect(() => {
-    // Skip initial mount
-    if (isInitialMount.current) {
-      isInitialMount.current = false
-      return
-    }
+    // Nothing to save until clientPost is this post's copy. It starts as an
+    // empty placeholder and is filled in from the server by the effect above.
+    // (Checked by id rather than "is this the first run?": React runs effects
+    // twice in development, which made a just-opened post read "Unsaved".)
+    if (clientPost.id !== post.id) return
 
     // Check for non-slug changes only
     const hasNonSlugChanges =
@@ -769,6 +804,10 @@ function Editor({ post, onBeforeDelete }) {
       Escape: () => {
         if (settingsOpen) closeSettings()
       },
+    }, {
+      // tinykeys 4 skips keys pressed inside the editor by default, which
+      // would stop ⌘S from saving while you write. Hear everything as before.
+      ignore: () => false,
     })
 
     return () => {
@@ -844,11 +883,11 @@ function Editor({ post, onBeforeDelete }) {
       if (data.success) {
         // Update the editors with imported content
         if (titleEditor && selectedArticle.title) {
-          titleEditor.commands.setContent(selectedArticle.title)
+          titleEditor.commands.setContent(selectedArticle.title, { emitUpdate: false })
           setClientPost(prev => ({ ...prev, title: selectedArticle.title }))
         }
         if (contentEditor && data.content) {
-          contentEditor.commands.setContent(data.content)
+          contentEditor.commands.setContent(data.content, { emitUpdate: false })
           setClientPost(prev => ({ ...prev, content: data.content }))
         }
         // Go back to settings view and reset import state
@@ -879,7 +918,13 @@ function Editor({ post, onBeforeDelete }) {
 
   const ParagraphDocument = Document.extend({ content: 'paragraph' })
 
+  // Tiptap 3 wants both of these spelled out. They keep what the editor always
+  // did here: no editor instance on the very first render (Next.js hydration),
+  // and a re-render on every change so toolbar buttons show the right state.
+  const editorRendering = { immediatelyRender: false, shouldRerenderOnTransaction: true }
+
   const titleEditor = useEditor({
+    ...editorRendering,
     content: post.title,
     extensions: [
       ParagraphDocument,
@@ -898,6 +943,7 @@ function Editor({ post, onBeforeDelete }) {
   })
 
   const excerptEditor = useEditor({
+    ...editorRendering,
     content: post.excerpt,
     extensions: [
       ParagraphDocument,
@@ -919,6 +965,7 @@ function Editor({ post, onBeforeDelete }) {
   })
 
   const contentEditor = useEditor({
+    ...editorRendering,
     content: post.content,
     autofocus: 'end',
     extensions: [
@@ -928,6 +975,13 @@ function Editor({ post, onBeforeDelete }) {
         },
         codeBlock: false,
         horizontalRule: false, // Use our custom one
+        // StarterKit 3 bundles Link and Underline; ours are configured below
+        link: false,
+        underline: false,
+        // New in StarterKit 3. Off, so writing feels the same and saved posts
+        // don't gain an empty paragraph at the end.
+        trailingNode: false,
+        listKeymap: false,
       }),
       Link.configure({
         openOnClick: false,

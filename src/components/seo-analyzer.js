@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
 import { useState, useMemo } from 'react'
-import { htmlToText } from 'html-to-text'
+import { htmlToText } from '../lib/html-to-text'
 import {
   ChevronDownIcon,
   CheckCircledIcon,

@@ -15,13 +15,20 @@ module.exports = {
     ]
   },
   reactStrictMode: true,
-  // Enable features for improved SEO and performance
-  experimental: {
-    optimizeFonts: true
-  },
+  // `next dev` would otherwise write an AGENTS.md into the repo when it sees a
+  // coding agent. CLAUDE.md is this project's agent guide and points at the
+  // same Next.js docs.
+  agentRules: false,
+  // This folder is the project root. Says so outright, so a stray lockfile
+  // higher up (in a home folder, say) can't make Next.js guess otherwise.
+  turbopack: { root: __dirname },
   // Configure image optimization
   images: {
-    domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com', 'api.dicebear.com']
+    remotePatterns: [
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'api.dicebear.com' },
+    ],
   },
   // Enable compression for better performance
   compress: true,

@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuthState } from '../../../lib/firebase-hooks'
 
 import { auth } from '../../../lib/firebase'
 import { ProfileEditor } from '../../../components/profile-settings-modal'

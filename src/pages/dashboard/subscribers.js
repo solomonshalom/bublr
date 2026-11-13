@@ -1,7 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
-import { useAuthState } from 'react-firebase-hooks/auth'
-import { useDocumentData } from 'react-firebase-hooks/firestore'
+import { useAuthState, useDocumentData } from '../../lib/firebase-hooks'
 
 import { firestore, auth } from '../../lib/firebase'
 import { LoadingContainer } from '../../components/loading-container'

@@ -1,5 +1,6 @@
 import { firestore } from '../../../lib/firebase'
-import { checkSubscriptionAccess } from '../../../lib/subscription'
+import { checkSubscriptionAccess, gracePeriodExpired, serializeSubscription } from '../../../lib/subscription'
+import { availablePlanIntervals } from '../../../lib/polar'
 import { sendSubscriptionEmail } from '../../../lib/resend'
 import { requireSelf } from '../../../lib/server-auth'
 
@@ -22,11 +23,7 @@ export default async function handler(req, res) {
     const userData = userDoc.data()
 
     // Check if grace period just expired (for sending email)
-    const wasAccessible = userData.hasCustomDomainAccess
-    const hadGracePeriod = userData.subscription?.cancelAtPeriodEnd
-    const periodEnd = userData.subscription?.currentPeriodEnd
-    const gracePeriodJustExpired = wasAccessible && hadGracePeriod && periodEnd &&
-      new Date(periodEnd) < new Date()
+    const gracePeriodJustExpired = gracePeriodExpired(userData)
 
     // Check access with lazy update (will update DB if grace period expired)
     const hasAccess = await checkSubscriptionAccess(userData, userId, true)
@@ -43,7 +40,10 @@ export default async function handler(req, res) {
     return res.status(200).json({
       hasSubscription: !!userData.subscription,
       hasCustomDomainAccess: hasAccess,
-      subscription: userData.subscription || null,
+      subscription: serializeSubscription(userData.subscription),
+      // Billing intervals that can be bought here ('month', 'year'); the plan
+      // picker only offers these.
+      availablePlans: availablePlanIntervals(),
       customDomain: userData.customDomain || null,
       customBranding: userData.customBranding || null,
       newsletterTemplate: userData.newsletterTemplate || null,

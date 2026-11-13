@@ -18,14 +18,10 @@ export function FadeIn({
 }) {
   const MotionComponent = motion[as] || motion.div
 
-  // Skip animation if user prefers reduced motion
-  if (prefersReducedMotion()) {
-    return (
-      <MotionComponent className={className} style={style}>
-        {children}
-      </MotionComponent>
-    )
-  }
+  // Reduced motion: the same element as everyone else gets, with the animation
+  // made instant. (Rendering a plain element instead left the server's hidden
+  // starting style in place after hydration, so the content never appeared.)
+  const reduced = prefersReducedMotion()
 
   // Calculate initial position based on direction
   const getInitialPosition = () => {
@@ -50,7 +46,7 @@ export function FadeIn({
         x: 0,
         y: 0,
       }}
-      transition={{
+      transition={reduced ? { duration: 0 } : {
         duration,
         delay,
         ease: PREMIUM_EASING
@@ -75,14 +71,7 @@ export function FadeInGroup({
   as = 'div'
 }) {
   const MotionComponent = motion[as] || motion.div
-
-  if (prefersReducedMotion()) {
-    return (
-      <MotionComponent className={className} style={style}>
-        {children}
-      </MotionComponent>
-    )
-  }
+  const reduced = prefersReducedMotion() // see FadeIn
 
   return (
     <MotionComponent
@@ -92,7 +81,7 @@ export function FadeInGroup({
         hidden: { opacity: 0 },
         visible: {
           opacity: 1,
-          transition: {
+          transition: reduced ? { duration: 0 } : {
             staggerChildren: staggerDelay,
             delayChildren
           },
@@ -118,14 +107,7 @@ export function FadeInItem({
   as = 'div'
 }) {
   const MotionComponent = motion[as] || motion.div
-
-  if (prefersReducedMotion()) {
-    return (
-      <MotionComponent className={className} style={style}>
-        {children}
-      </MotionComponent>
-    )
-  }
+  const reduced = prefersReducedMotion() // see FadeIn
 
   const getInitialPosition = () => {
     switch (direction) {
@@ -146,7 +128,7 @@ export function FadeInItem({
           opacity: 1,
           x: 0,
           y: 0,
-          transition: { duration: 0.4, ease: PREMIUM_EASING }
+          transition: reduced ? { duration: 0 } : { duration: 0.4, ease: PREMIUM_EASING }
         },
       }}
       className={className}

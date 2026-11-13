@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuthState } from '../../lib/firebase-hooks'
 
 import { auth, firestore } from '../../lib/firebase'
 import DecorationItem from './DecorationItem'

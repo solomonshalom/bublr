@@ -152,15 +152,15 @@ export function ApiKeyManager({ userId }) {
         line-height: 1.6;
       `}>
         API keys let you access your Bublr data programmatically.{' '}
-        <Link href="/docs">
-          <a css={css`
+        <Link
+          href="/docs"
+          css={css`
             color: var(--grey-4);
             text-decoration: underline;
             text-underline-offset: 2px;
             &:hover { opacity: 0.8; }
           `}>
             View documentation
-          </a>
         </Link>
       </p>
 

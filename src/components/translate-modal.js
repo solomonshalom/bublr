@@ -220,7 +220,6 @@ export default function TranslateModal({ postId }) {
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Trigger
-        as="button"
         css={css`
           color: var(--grey-3);
           cursor: pointer;
@@ -240,6 +239,8 @@ export default function TranslateModal({ postId }) {
         <TranslateIcon />
       </Dialog.Trigger>
 
+      {/* Radix no longer portals dialogs by itself, or lifts them above the overlay */}
+      <Dialog.Portal>
       <ModalOverlay />
 
       <Dialog.Content
@@ -257,6 +258,7 @@ export default function TranslateModal({ postId }) {
           display: flex;
           flex-direction: column;
           animation: ${fadeIn} 0.2s ease-out;
+          z-index: 100;
         `}
       >
         {/* Header */}
@@ -389,6 +391,7 @@ export default function TranslateModal({ postId }) {
           </IconButton>
         </Dialog.Close>
       </Dialog.Content>
+      </Dialog.Portal>
     </Dialog.Root>
   )
 }

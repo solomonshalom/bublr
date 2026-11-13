@@ -86,10 +86,8 @@ export default function Privacy() {
                 }
               `}
             >
-              <Link href="/">
-                <a css={css`text-decoration: none; font-size: 2rem;`}>
+              <Link href="/" css={css`text-decoration: none; font-size: 2rem;`}>
                   🍱
-                </a>
               </Link>
 
               <h1

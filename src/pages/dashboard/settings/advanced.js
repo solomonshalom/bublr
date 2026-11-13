@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
-import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuthState } from '../../../lib/firebase-hooks'
 
 import { auth } from '../../../lib/firebase'
 import ThemeToggle from '../../../components/theme-toggle'

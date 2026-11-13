@@ -1,5 +1,7 @@
 import Document, { Html, Head, Main, NextScript } from 'next/document'
 
+import { INTER_FONT_FACES } from '../lib/inter-font-faces'
+
 /**
  * Custom Document for Bublr
  *
@@ -50,6 +52,9 @@ class MyDocument extends Document {
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           <link rel="preconnect" href="https://firestore.googleapis.com" crossOrigin="anonymous" />
+
+          {/* The app's typeface, on every page: see lib/inter-font-faces.js */}
+          <style dangerouslySetInnerHTML={{ __html: INTER_FONT_FACES }} />
 
           {/* GEO: AI/LLM Crawler Guidance */}
           {/* Allow AI crawlers to index and summarize content */}
@@ -167,7 +172,9 @@ class MyDocument extends Document {
                   try {
                     var theme = localStorage.getItem('theme');
                     var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    var isDark = theme === 'dark' || (!theme && systemDark);
+                    // next-themes stores 'system' when the reader hasn't picked a theme
+                    var followSystem = !theme || theme === 'system';
+                    var isDark = theme === 'dark' || (followSystem && systemDark);
 
                     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
                     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';

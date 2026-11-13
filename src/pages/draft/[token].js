@@ -139,16 +139,14 @@ export default function SharedDraft({ draft, fontSettings, customFonts }) {
             )}
             <p>
               {draft.author.name ? (
-                <Link href={`/${draft.author.name}`}>
-                  <a
-                    style={{
-                      color: 'inherit',
-                      textDecoration: 'none',
-                      borderBottom: '1px dotted var(--grey-2)',
-                    }}
-                  >
-                    {draft.author.displayName}
-                  </a>
+                <Link
+                  href={`/${draft.author.name}`}
+                  style={{
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    borderBottom: '1px dotted var(--grey-2)',
+                  }}>
+                  {draft.author.displayName}
                 </Link>
               ) : (
                 draft.author.displayName

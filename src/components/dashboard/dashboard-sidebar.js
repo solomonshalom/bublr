@@ -53,6 +53,7 @@ const logoStyle = css`
   width: 1.85rem;
   height: 1.85rem;
   text-decoration: none;
+  color: inherit;
   border-radius: 6px;
   transition: transform 150ms ease, box-shadow 150ms ease;
 
@@ -176,10 +177,8 @@ export default function DashboardSidebar({ open, mobileOpen, onCloseMobile, uid,
         aria-label="Dashboard navigation"
       >
         <div css={headerStyle}>
-          <Link href="/dashboard">
-            <a css={logoStyle} aria-label="Bublr">
-              <BentoLogo />
-            </a>
+          <Link href="/dashboard" css={logoStyle} aria-label="Bublr">
+            <BentoLogo />
           </Link>
         </div>
 

@@ -1,9 +1,9 @@
 /** @jsxImportSource @emotion/react */
 import Link from 'next/link'
 import { css } from '@emotion/react'
-import { htmlToText } from 'html-to-text'
+import { htmlToText } from '../../lib/html-to-text'
 import { useState, useEffect } from 'react'
-import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuthState } from '../../lib/firebase-hooks'
 
 import { formatDate } from '../../lib/utils'
 import { firestore, auth } from '../../lib/firebase'
@@ -263,29 +263,27 @@ function List({ uid }) {
       <AnimatedList css={listStyle}>
         {list.map(post => (
           <AnimatedListItem key={post.id} css={itemStyle}>
-            <Link href={`/${post.author.name}/${post.slug}`}>
-              <a css={linkStyle}>
-                <span css={dateStyle}>{safeFormatDate(post)}</span>
-                <span css={authorChipStyle}>
-                  {post.author.photo && (
-                    <img
-                      src={post.author.photo}
-                      alt=""
-                      data-pfp="true"
-                      css={avatarStyle}
-                    />
-                  )}
-                  <span css={authorNameStyle}>
-                    {post.author.displayName}
-                  </span>
+            <Link href={`/${post.author.name}/${post.slug}`} css={linkStyle}>
+              <span css={dateStyle}>{safeFormatDate(post)}</span>
+              <span css={authorChipStyle}>
+                {post.author.photo && (
+                  <img
+                    src={post.author.photo}
+                    alt=""
+                    data-pfp="true"
+                    css={avatarStyle}
+                  />
+                )}
+                <span css={authorNameStyle}>
+                  {post.author.displayName}
                 </span>
-                <span className="reading-title" css={titleStyle}>
-                  {post.title ? htmlToText(post.title) : 'Untitled'}
-                </span>
-                <span className="open-icon" css={openIconStyle}>
-                  <ExternalArrowIcon />
-                </span>
-              </a>
+              </span>
+              <span className="reading-title" css={titleStyle}>
+                {post.title ? htmlToText(post.title) : 'Untitled'}
+              </span>
+              <span className="open-icon" css={openIconStyle}>
+                <ExternalArrowIcon />
+              </span>
             </Link>
           </AnimatedListItem>
         ))}

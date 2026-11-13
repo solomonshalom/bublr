@@ -5,11 +5,11 @@ import { css, Global, keyframes } from '@emotion/react'
 import { safeJsonLd } from '../../lib/escape'
 import { toPublicUser } from '../../lib/public-user'
 import { toMillis } from '../../lib/timestamps'
-import { htmlToText } from 'html-to-text'
+import { htmlToText } from '../../lib/html-to-text'
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
 
-import { useAuthState } from 'react-firebase-hooks/auth'
+import { useAuthState } from '../../lib/firebase-hooks'
 import { auth, firestore } from '../../lib/firebase'
 import { getUserByName } from '../../lib/db'
 import { hasActiveAccess } from '../../lib/subscription'
@@ -1333,51 +1333,51 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                       </p>
                       <div css={css`display: flex; flex-direction: column; gap: 20px; margin-top: 16px;`}>
                         {user.posts.map((post) => (
-                          <Link key={post.id} href={user.isCustomDomain ? `/${post.slug}` : `/${user.name}/${post.slug}`}>
-                            <a
-                              css={css`
-                                cursor: pointer;
-                                text-decoration: none;
-                                display: block;
-                                transition: 0.3s ease-in-out;
+                          <Link
+                            key={post.id}
+                            href={user.isCustomDomain ? `/${post.slug}` : `/${user.name}/${post.slug}`}
+                            css={css`
+                              cursor: pointer;
+                              text-decoration: none;
+                              color: inherit;
+                              display: block;
+                              transition: 0.3s ease-in-out;
 
-                                &:hover {
-                                  opacity: 0.7;
-                                }
-                              `}
-                            >
-                              {/* Title with dot */}
-                              <p css={css`
-                                font-weight: 500;
-                                color: ${colors.text};
-                                margin-bottom: 4px;
-                                font-size: 14px;
-                                font-family: '${sanitizeFontFamily(user.fontSettings?.headingFont, 'Inter')}', -apple-system, BlinkMacSystemFont, sans-serif;
-                              `}>
-                                <ColorDot color={getPostColor(post)} />
-                                {post.title ? htmlToText(post.title) : 'Untitled'}
-                              </p>
-                              {/* Excerpt and date */}
-                              <p css={css`
-                                font-size: 13px;
-                                color: ${colors.muted};
-                                line-height: 1.5;
-                                font-family: '${sanitizeFontFamily(user.fontSettings?.bodyFont, 'Inter')}', Georgia, serif;
-                              `}>
-                                {(() => {
-                                  // Check if excerpt has actual content (not just whitespace/empty)
-                                  const excerptText = post.excerpt ? htmlToText(post.excerpt).trim() : ''
-                                  const text = excerptText || htmlToText(post.content).trim()
-                                  // Limit to reasonable length for preview
-                                  if (!text) return ''
-                                  return text.length > 150 ? text.substring(0, 150) + '...' : text
-                                })()}
-                                {' '}
-                                <span css={css`opacity: 0.7;`}>
-                                  // {formatShortDate(post.lastEdited)}
-                                </span>
-                              </p>
-                            </a>
+                              &:hover {
+                                opacity: 0.7;
+                              }
+                            `}>
+                            {/* Title with dot */}
+                            <p css={css`
+                              font-weight: 500;
+                              color: ${colors.text};
+                              margin-bottom: 4px;
+                              font-size: 14px;
+                              font-family: '${sanitizeFontFamily(user.fontSettings?.headingFont, 'Inter')}', -apple-system, BlinkMacSystemFont, sans-serif;
+                            `}>
+                              <ColorDot color={getPostColor(post)} />
+                              {post.title ? htmlToText(post.title) : 'Untitled'}
+                            </p>
+                            {/* Excerpt and date */}
+                            <p css={css`
+                              font-size: 13px;
+                              color: ${colors.muted};
+                              line-height: 1.5;
+                              font-family: '${sanitizeFontFamily(user.fontSettings?.bodyFont, 'Inter')}', Georgia, serif;
+                            `}>
+                              {(() => {
+                                // Check if excerpt has actual content (not just whitespace/empty)
+                                const excerptText = post.excerpt ? htmlToText(post.excerpt).trim() : ''
+                                const text = excerptText || htmlToText(post.content).trim()
+                                // Limit to reasonable length for preview
+                                if (!text) return ''
+                                return text.length > 150 ? text.substring(0, 150) + '...' : text
+                              })()}
+                              {' '}
+                              <span css={css`opacity: 0.7;`}>
+                                // {formatShortDate(post.lastEdited)}
+                              </span>
+                            </p>
                           </Link>
                         ))}
                       </div>

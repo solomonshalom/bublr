@@ -232,3 +232,42 @@ This week's check started from Bublr's own privacy page. It says you can "reques
 - If the last step (removing the sign-in) fails, you're signed out and your data is still gone. Signing in again with the same address starts an empty account.
 - The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
 - We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.
+
+# Pay Yearly - Update (13th November'26)
+A custom domain has always been $2 a month. Some writers would rather pay once and not think about it again, so there's now a yearly plan as well: $18 a year, which is $6 less than twelve monthly payments.
+
+## Added
+- **A yearly plan for custom domains.** $18 a year instead of $24, a saving of 25%. Monthly stays at $2. Choose either in *Settings → Advanced → Custom domain*.
+- **Your plan at a glance.** Once you subscribe, the same place shows which plan you're on and the date it renews, or the date it ends if you've cancelled. *Manage Billing* is where you change or cancel it.
+- **Tests.** `npm test` now runs 129 tests, including which plan a checkout starts, what a billing webhook is allowed to change, and how long access lasts after cancelling.
+
+## Changed
+- **The upgrade box looks like the rest of the dashboard.** The orange card is gone. The plans use the same tiles and buttons as everything else, in light and dark mode.
+- **One subscription at a time.** If you already have an active subscription, Bublr won't open a second checkout, so you can't be charged twice by accident.
+
+## Fixed
+- **Cancelling no longer cuts you off early.** After you cancel, your domain is meant to keep working until the end of the time you've paid for. A date bug ended it the next time you opened your settings instead. You now keep what you paid for, which matters even more on a yearly plan.
+- **Access starts when the payment goes through,** not a moment before.
+
+## Known issues
+- Changing between monthly and yearly happens on the billing page run by Polar, our payment provider, not inside Bublr.
+- The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
+
+# New Foundations - Update (13th November'26)
+Bublr was built on tools from 2021. They still worked, but they had stopped getting fixes, and the very first entry in this changelog is about the workaround it took to build the site at all. This release moves everything underneath to current versions. If it went right, you won't notice: every page was put next to the old one, in light and dark mode and at phone size, and the editor was checked keystroke by keystroke to make sure it saves exactly what it saved before.
+
+## Changed
+- **Everything underneath is current.** Next.js 11 → 16, React 17 → 19, Firebase 8 → 13, the editor's engine (Tiptap 2 → 3), dialogs, animations and the rest.
+- **The oldest known issue here is closed.** Bublr installs with a plain `npm install` and builds without special flags, on a current version of Node.js. The Node error from the 2023 entries is gone.
+- **Links are real links.** Several of them (the dashboard sidebar, your post list, the docs) worked when clicked but weren't proper links underneath, so you couldn't open one in a new tab or copy its address. Now you can.
+- **Tests.** `npm test` now runs 132 tests.
+
+## Fixed
+- **"Reduce motion" no longer hides the home page.** With that setting switched on in your device, the headline and the Get Started button never appeared.
+- **Enter works after you close the "/" menu with Escape.** It used to do nothing until you typed something else.
+- **The translate window lost a stray grey strip** along its bottom edge.
+
+## Known issues
+- Billing still uses the previous generation of Polar's toolkit. The new one is a rewrite, and it needs testing against Polar's sandbox before we move.
+- The code checker lists 39 warnings, most of them from React's newer rules. None of them is an error; they'll be worked through as those files are touched.
+- The Firestore rules and the Explore spam clean-up are still open (see the comeback release).

@@ -8,10 +8,12 @@ In aticipation of hacktoberfest, few goals have been written down on the [issues
 
 ## Installing
 
+You'll need Node.js 24.12 or newer.
+
 ```bash
 git clone https://github.com/solomonshalom/Bublr.git
 cd Bublr
-npm install --force
+npm install
 ```
 
 ## Building

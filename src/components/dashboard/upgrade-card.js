@@ -1,10 +1,11 @@
 /** @jsxImportSource @emotion/react */
 import Link from 'next/link'
 import { css } from '@emotion/react'
-import { useDocumentData } from 'react-firebase-hooks/firestore'
+import { useDocumentData } from '../../lib/firebase-hooks'
 
 import { firestore } from '../../lib/firebase'
 import { hasActiveAccess } from '../../lib/subscription'
+import { PLANS, formatUsd, planPriceLabel, yearlySavings } from '../../lib/plans'
 
 const cardStyle = css`
   background: var(--grey-1);
@@ -64,6 +65,13 @@ const buttonStyle = css`
   }
 `
 
+const yearlyNoteStyle = css`
+  margin-top: 0.45rem;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--grey-3);
+`
+
 const CheckIcon = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <polyline points="20 6 9 17 4 12" />
@@ -78,6 +86,11 @@ export default function UpgradeCard({ uid }) {
   if (!uid || !user) return null
   if (hasActiveAccess(user)) return null
 
+  return <UpgradeCardView />
+}
+
+// The card itself, without the "is this writer subscribed?" lookup
+export function UpgradeCardView() {
   return (
     <div css={cardStyle}>
       <p css={titleStyle}>Upgrade to Custom Domain</p>
@@ -89,9 +102,12 @@ export default function UpgradeCard({ uid }) {
         <li><CheckIcon /> Personalized Footer</li>
       </ul>
       {/* The domain settings live on the Advanced settings page */}
-      <Link href="/dashboard/settings/advanced">
-        <a css={buttonStyle}>Upgrade — $2/mo</a>
+      <Link href="/dashboard/settings/advanced" css={buttonStyle}>
+        Upgrade — {formatUsd(PLANS.month.price)}/mo
       </Link>
+      <p css={yearlyNoteStyle}>
+        or {planPriceLabel('year')} · save {yearlySavings().percent}%
+      </p>
     </div>
   )
 }

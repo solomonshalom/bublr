@@ -64,11 +64,11 @@ export default function ComebackBanner() {
 
   return (
     <div css={bannerStyle}>
-      <Link href="/comeback">
-        <a aria-label="We're making a comeback, relaunching by December 10th — read more">
-          <span>We&apos;re making a comeback ✨</span>
-          <span css={detailStyle}>Back by Dec 10th</span>
-        </a>
+      <Link
+        href="/comeback"
+        aria-label="We're making a comeback, relaunching by December 10th — read more">
+        <span>We&apos;re making a comeback ✨</span>
+        <span css={detailStyle}>Back by Dec 10th</span>
       </Link>
     </div>
   )

@@ -14,7 +14,7 @@
 Hit record and speak your thoughts. Bublr transcribes them for you—perfect for when typing feels like too much.
 
 ### Your own corner of the internet
-Use your own domain (like yourname.com) for just $2/month. Your profile, your brand, your space.
+Use your own domain (like yourname.com) for just $2/month, or $18/year if you'd rather pay once and save 25%. Your profile, your brand, your space.
 
 ### Built-in newsletters
 Readers can subscribe to you from your profile or the end of any post, and confirm by email. When you publish, they get an email. No extra tools needed.

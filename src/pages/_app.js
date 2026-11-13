@@ -2,7 +2,6 @@ import 'modern-normalize'
 import Head from 'next/head'
 import { ThemeProvider } from 'next-themes'
 import { Global, css } from '@emotion/react'
-import { IdProvider } from '@radix-ui/react-id'
 import { useRouter } from 'next/router'
 import { I18nProvider } from '../lib/i18n'
 import { SmoothScrollProvider } from '../components/smooth-scroll'
@@ -33,12 +32,7 @@ const App = ({ Component, pageProps }) => {
         <meta name="theme-color" content="#FCFCFC" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)" />
         <link rel="icon" href="/favicon.ico" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
-          rel="stylesheet"
-        />
+        {/* Inter's @font-face rules are written into the page by _document.js */}
         {/* SEO Meta Tags */}
         <meta name="author" content="Bublr" />
         <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -187,6 +181,18 @@ const App = ({ Component, pageProps }) => {
           html {
             font-size: 100%;
             color: var(--grey-4);
+          }
+
+          /* modern-normalize 3 dropped these two resets; kept here so rules
+             and tables look exactly as they did */
+          hr {
+            height: 0;
+            color: inherit;
+          }
+
+          table {
+            text-indent: 0;
+            border-color: inherit;
           }
 
           /* App-wide: images (including avatars) never carry a background fill */
@@ -338,24 +344,22 @@ const App = ({ Component, pageProps }) => {
           }
         `}
       />
-      <IdProvider>
-        <I18nProvider>
-          <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme" disableTransitionOnChange>
-            <SmoothScrollProvider>
-              {/* Sits outside PageTransition so it doesn't fade on every navigation */}
-              {showComebackBanner && <ComebackBanner />}
-              {/* Dashboard owns its own scoped fade (only animates main area, not sidebar) */}
-              {router.pathname.startsWith('/dashboard') ? (
-                getLayout(<Component {...pageProps} />, pageProps)
-              ) : (
-                <PageTransition>
-                  {getLayout(<Component {...pageProps} />, pageProps)}
-                </PageTransition>
-              )}
-            </SmoothScrollProvider>
-          </ThemeProvider>
-        </I18nProvider>
-      </IdProvider>
+      <I18nProvider>
+        <ThemeProvider defaultTheme="system" attribute="data-theme" enableSystem={true} storageKey="theme" disableTransitionOnChange>
+          <SmoothScrollProvider>
+            {/* Sits outside PageTransition so it doesn't fade on every navigation */}
+            {showComebackBanner && <ComebackBanner />}
+            {/* Dashboard owns its own scoped fade (only animates main area, not sidebar) */}
+            {router.pathname.startsWith('/dashboard') ? (
+              getLayout(<Component {...pageProps} />, pageProps)
+            ) : (
+              <PageTransition>
+                {getLayout(<Component {...pageProps} />, pageProps)}
+              </PageTransition>
+            )}
+          </SmoothScrollProvider>
+        </ThemeProvider>
+      </I18nProvider>
     </>
   )
 }

@@ -1,5 +1,5 @@
 import Groq from 'groq-sdk'
-import { htmlToText } from 'html-to-text'
+import { htmlToText } from './html-to-text'
 import { firestore } from './firebase'
 import { notifySubscribersOfPost } from './newsletter-notify'
 

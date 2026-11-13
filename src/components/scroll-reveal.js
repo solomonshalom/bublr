@@ -20,14 +20,10 @@ export function ScrollReveal({
 }) {
   const MotionComponent = motion[as] || motion.div
 
-  // Skip animation if user prefers reduced motion
-  if (prefersReducedMotion()) {
-    return (
-      <MotionComponent className={className} style={style}>
-        {children}
-      </MotionComponent>
-    )
-  }
+  // Reduced motion: the same element as everyone else gets, with the animation
+  // made instant. (Rendering a plain element instead left the server's hidden
+  // starting style in place after hydration, so the content never appeared.)
+  const reduced = prefersReducedMotion()
 
   // Calculate initial position based on direction
   const getInitialPosition = () => {
@@ -49,7 +45,7 @@ export function ScrollReveal({
       opacity: 1,
       x: 0,
       y: 0,
-      transition: {
+      transition: reduced ? { duration: 0 } : {
         duration,
         delay,
         ease: PREMIUM_EASING
@@ -85,20 +81,13 @@ export function ScrollRevealGroup({
   as = 'div'
 }) {
   const MotionComponent = motion[as] || motion.div
-
-  if (prefersReducedMotion()) {
-    return (
-      <MotionComponent className={className} style={style}>
-        {children}
-      </MotionComponent>
-    )
-  }
+  const reduced = prefersReducedMotion() // see ScrollReveal
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
+      transition: reduced ? { duration: 0 } : {
         staggerChildren: staggerDelay,
         delayChildren
       },
@@ -129,18 +118,15 @@ export function ScrollRevealItem({
   as = 'div'
 }) {
   const MotionComponent = motion[as] || motion.div
-
-  if (prefersReducedMotion()) {
-    return (
-      <MotionComponent className={className} style={style}>
-        {children}
-      </MotionComponent>
-    )
-  }
+  const reduced = prefersReducedMotion() // see ScrollReveal
 
   return (
     <MotionComponent
-      variants={scrollRevealVariants}
+      variants={
+        reduced
+          ? { ...scrollRevealVariants, visible: { ...scrollRevealVariants.visible, transition: { duration: 0 } } }
+          : scrollRevealVariants
+      }
       className={className}
       style={style}
     >
