@@ -1,258 +1,228 @@
 /** @jsxImportSource @emotion/react */
 import { useEffect, useRef } from 'react';
 import { css } from '@emotion/react';
+import gsap from 'gsap';
+
+// 105 characters on one sheet, 15 across and 7 down.
+const SPRITES = {
+  src: '/images/characters.png',
+  columns: 15,
+  rows: 7,
+};
+
+// The crowd was drawn for a 350px-tall band. A shorter band scales the whole
+// scene down (peeps, spacing, bounce, pace) instead of cropping it.
+const DESIGN_HEIGHT = 350;
+// How many peeps overlap across one peep-width of stage: all 105 on a 1440px
+// screen at full size. Narrower stages get fewer, so phones see a crowd rather
+// than a wall.
+const DENSITY = 17.5;
+const MIN_CROWD = 12;
+// Walking pace in px/s at full size: a 1440px stage in 10 seconds.
+const PACE = 168;
+const BOUNCE_HEIGHT = 10;
+const BOUNCE_DURATION = 0.25;
+// Phones report 3x; drawing 9x the pixels buys nothing for line art.
+const MAX_PIXEL_RATIO = 2;
+
+const randomRange = (min, max) => min + Math.random() * (max - min);
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const takeRandom = (array) => array.splice((Math.random() * array.length) | 0, 1)[0];
+
+const prefersReducedMotion = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const PeepWalk = ({ height = '100%', width = '100%' }) => {
   const canvasRef = useRef(null);
-  
+
   useEffect(() => {
-    // Dynamically import GSAP to avoid SSR issues
-    import('gsap').then((gsap) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      
-      const ctx = canvas.getContext('2d');
-      
-      const config = {
-        src: '/images/characters.png',
-        rows: 15,
-        cols: 7
-      };
-      
-      // UTILS
-      const randomRange = (min, max) => min + Math.random() * (max - min);
-      const randomIndex = (array) => randomRange(0, array.length) | 0;
-      const removeFromArray = (array, i) => array.splice(i, 1)[0];
-      const removeItemFromArray = (array, item) => removeFromArray(array, array.indexOf(item));
-      const removeRandomFromArray = (array) => removeFromArray(array, randomIndex(array));
-      const getRandomFromArray = (array) => array[randomIndex(array) | 0];
-      
-      // CLASSES
-      class Peep {
-        constructor({
-          image,
-          rect,
-        }) {
-          this.image = image;
-          this.setRect(rect);
-          
-          this.x = 0;
-          this.y = 0;
-          this.anchorY = 0;
-          this.scaleX = 1;
-          this.walk = null;
-        }
-        
-        setRect(rect) {
-          this.rect = rect;
-          this.width = rect[2];
-          this.height = rect[3];
-          
-          this.drawArgs = [
-            this.image,
-            ...rect,
-            0, 0, this.width, this.height
-          ];  
-        }
-        
-        render(ctx) {
-          ctx.save();
-          ctx.translate(this.x, this.y);
-          ctx.scale(this.scaleX, 1);
-          ctx.drawImage(...this.drawArgs);
-          ctx.restore();
-        }
-      }
-      
-      const stage = {
-        width: 0,
-        height: 0,
-      };
-      
-      const allPeeps = [];
-      const availablePeeps = [];
-      const crowd = [];
-      
-      // TWEEN FACTORIES
-      const resetPeep = ({ stage, peep }) => {
-        const direction = Math.random() > 0.5 ? 1 : -1;
-        // using an ease function to skew random to lower values to help hide that peeps have no legs
-        const offsetY = 100 - 250 * gsap.default.parseEase('power2.in')(Math.random());
-        // Ensure characters are never cut off at the top (min 10 to account for walk bounce animation)
-        const startY = Math.max(10, stage.height - peep.height + offsetY);
-        let startX;
-        let endX;
-        
-        if (direction === 1) {
-          startX = -peep.width;
-          endX = stage.width;
-          peep.scaleX = 1;
-        } else {
-          startX = stage.width + peep.width;
-          endX = 0;
-          peep.scaleX = -1;
-        }
-        
-        peep.x = startX;
-        peep.y = startY;
-        peep.anchorY = startY;
-        
-        return {
-          startX,
-          startY,
-          endX
-        };
-      };
-      
-      const normalWalk = ({ peep, props }) => {
-        const {
-          startX,
-          startY,
-          endX
-        } = props;
-      
-        const xDuration = 10;
-        const yDuration = 0.25;
-        
-        const tl = gsap.default.timeline();
-        tl.timeScale(randomRange(0.5, 1.5));
-        tl.to(peep, {
-          duration: xDuration,
-          x: endX,
-          ease: 'none'
-        }, 0);
-        tl.to(peep, {
-          duration: yDuration,
-          repeat: xDuration / yDuration,
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const still = prefersReducedMotion();
+    // skews random towards low values, which keeps most peeps low in the band
+    // and hides that they have no legs
+    const skewLow = gsap.parseEase('power2.in');
+
+    const stage = { width: 0, height: 0, scale: 1, pixelRatio: 1 };
+    const available = [];
+    const crowd = [];
+
+    let peepWidth = 0;
+    let ready = false;
+    let onScreen = true;
+
+    // Where a peep is depends only on how far through its walk it is, so a
+    // resize re-flows the crowd in place instead of restarting it.
+    function drawPeep(peep) {
+      const scale = stage.scale;
+      const drawnWidth = peep.rect[2] * scale;
+      const drawnHeight = peep.rect[3] * scale;
+
+      // Flipped peeps are drawn leftwards from x, so both directions start and
+      // end fully off stage.
+      const fromX = peep.direction === 1 ? -drawnWidth : stage.width + drawnWidth;
+      const toX = peep.direction === 1 ? stage.width : 0;
+      const x = fromX + (toX - fromX) * peep.progress;
+
+      // Never cut a head off at the top (leaves room for the bounce).
+      const restY = Math.max(
+        BOUNCE_HEIGHT * scale,
+        stage.height - drawnHeight + (100 - 250 * peep.depth) * scale
+      );
+      const y = restY - BOUNCE_HEIGHT * scale * peep.bounce;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(peep.direction * scale, scale);
+      ctx.drawImage(image, ...peep.rect, 0, 0, peep.rect[2], peep.rect[3]);
+      ctx.restore();
+    }
+
+    function render() {
+      if (!ready || !onScreen) return;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(stage.pixelRatio, stage.pixelRatio);
+      crowd.forEach(drawPeep);
+    }
+
+    function crowdSize() {
+      const fits = stage.width / (peepWidth * stage.scale);
+      return clamp(Math.round(fits * DENSITY), MIN_CROWD, crowd.length + available.length);
+    }
+
+    function startWalk(peep) {
+      const distance = stage.width + peep.rect[2] * stage.scale;
+      const duration = distance / (PACE * stage.scale);
+
+      const walk = gsap.timeline({
+        onComplete: () => {
+          crowd.splice(crowd.indexOf(peep), 1);
+          available.push(peep);
+          // after the stage shrinks, the extra peeps simply walk off
+          if (crowd.length < crowdSize()) addPeep();
+        },
+      });
+      walk.timeScale(randomRange(0.5, 1.5));
+      walk.to(peep, { progress: 1, duration, ease: 'none' }, 0);
+      walk.to(
+        peep,
+        {
+          bounce: 1,
+          duration: BOUNCE_DURATION,
+          repeat: Math.max(1, Math.round(duration / BOUNCE_DURATION) - 1),
           yoyo: true,
-          y: startY - 10
-        }, 0);
-          
-        return tl;
-      };
-      
-      const walks = [normalWalk];
-      
-      function createPeeps() {
-        const {
-          rows,
-          cols
-        } = config;
-        const {
-          naturalWidth: width,
-          naturalHeight: height
-        } = img;
-        const total = rows * cols;
-        const rectWidth = width / rows;
-        const rectHeight = height / cols;
-        
-        for (let i = 0; i < total; i++) {
-          allPeeps.push(new Peep({
-            image: img,
-            rect: [
-              (i % rows) * rectWidth,
-              (i / rows | 0) * rectHeight,
-              rectWidth,
-              rectHeight,
-            ]
-          }));
-        }
+        },
+        0
+      );
+
+      return walk;
+    }
+
+    function addPeep() {
+      const peep = takeRandom(available);
+      peep.direction = Math.random() > 0.5 ? 1 : -1;
+      peep.depth = skewLow(Math.random());
+      peep.progress = 0;
+      peep.bounce = 0;
+      peep.walk = still ? null : startWalk(peep);
+
+      crowd.push(peep);
+      // peeps standing lower in the band are drawn last, in front
+      crowd.sort((a, b) => b.depth - a.depth);
+
+      return peep;
+    }
+
+    function fillCrowd() {
+      const size = crowdSize();
+      while (crowd.length < size && available.length) {
+        // a random point along the walk spreads the peeps across the stage
+        const peep = addPeep();
+        if (peep.walk) peep.walk.progress(Math.random());
+        else peep.progress = Math.random();
       }
-      
-      function resize() {
-        stage.width = canvas.clientWidth;
-        stage.height = canvas.clientHeight;
-        canvas.width = stage.width * devicePixelRatio;
-        canvas.height = stage.height * devicePixelRatio;
-        
-        crowd.forEach((peep) => {
-          peep.walk.kill();
+    }
+
+    function resize() {
+      const { clientWidth, clientHeight } = canvas;
+      if (!clientWidth || !clientHeight) return;
+
+      stage.width = clientWidth;
+      stage.height = clientHeight;
+      // taller than designed: stay full size along the bottom, as before
+      stage.scale = Math.min(1, clientHeight / DESIGN_HEIGHT);
+      stage.pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
+      canvas.width = Math.round(clientWidth * stage.pixelRatio);
+      canvas.height = Math.round(clientHeight * stage.pixelRatio);
+
+      if (!ready) return;
+      fillCrowd();
+      render();
+    }
+
+    const image = new Image();
+    image.onload = () => {
+      const rectWidth = image.naturalWidth / SPRITES.columns;
+      const rectHeight = image.naturalHeight / SPRITES.rows;
+      peepWidth = rectWidth;
+
+      for (let i = 0; i < SPRITES.columns * SPRITES.rows; i++) {
+        available.push({
+          rect: [
+            (i % SPRITES.columns) * rectWidth,
+            ((i / SPRITES.columns) | 0) * rectHeight,
+            rectWidth,
+            rectHeight,
+          ],
+          direction: 1,
+          depth: 0,
+          progress: 0,
+          bounce: 0,
+          walk: null,
         });
-        
-        crowd.length = 0;
-        availablePeeps.length = 0;
-        availablePeeps.push(...allPeeps);
-        
-        initCrowd();
       }
-      
-      function initCrowd() {
-        while (availablePeeps.length) {
-          // setting random tween progress spreads the peeps out
-          addPeepToCrowd().walk.progress(Math.random());
-        }
-      }
-      
-      function addPeepToCrowd() {
-        const peep = removeRandomFromArray(availablePeeps);
-        const walk = getRandomFromArray(walks)({
-          peep,
-          props: resetPeep({
-            peep,
-            stage,
-          })
-        }).eventCallback('onComplete', () => {
-          removePeepFromCrowd(peep);
-          addPeepToCrowd();
-        });
-        
-        peep.walk = walk;
-        
-        crowd.push(peep);
-        crowd.sort((a, b) => a.anchorY - b.anchorY);
-        
-        return peep;
-      }
-      
-      function removePeepFromCrowd(peep) {
-        removeItemFromArray(crowd, peep);
-        availablePeeps.push(peep);
-      }
-      
-      function render() {
-        canvas.width = canvas.width;
-        ctx.save();
-        ctx.scale(devicePixelRatio, devicePixelRatio);
-        
-        crowd.forEach((peep) => {
-          peep.render(ctx);
-        });
-        
-        ctx.restore();
-      }
-      
-      // MAIN
-      const img = new Image();
-      img.onload = init;
-      img.src = config.src;
-      
-      function init() {
-        createPeeps();
-        resize();
-        gsap.default.ticker.add(render);
-      }
-      
-      const resizeObserver = new ResizeObserver(resize);
-      resizeObserver.observe(canvas);
-      
-      return () => {
-        gsap.default.ticker.remove(render);
-        resizeObserver.disconnect();
-        if (crowd.length) {
-          crowd.forEach((peep) => {
-            if (peep.walk) peep.walk.kill();
-          });
-        }
-      };
+
+      ready = true;
+      resize();
+      // reduced motion: the crowd stands still, drawn once per resize
+      if (!still) gsap.ticker.add(render);
+      canvas.style.opacity = 1;
+    };
+    image.src = SPRITES.src;
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
+
+    // No point drawing 60 frames a second into a canvas scrolled out of view.
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
     });
+    visibilityObserver.observe(canvas);
+
+    return () => {
+      image.onload = null;
+      gsap.ticker.remove(render);
+      resizeObserver.disconnect();
+      visibilityObserver.disconnect();
+      crowd.forEach((peep) => peep.walk && peep.walk.kill());
+    };
   }, []);
-  
+
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       css={css`
+        display: block;
         width: ${width};
         height: ${height};
+        /* the sprite sheet arrives after the page; let the crowd fade in */
+        opacity: 0;
+        transition: opacity 600ms ease;
       `}
     />
   );
