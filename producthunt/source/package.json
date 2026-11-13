@@ -1,0 +1,11 @@
+{
+  "name": "bublr-producthunt-gallery",
+  "private": true,
+  "description": "Builds the Product Hunt gallery images. Kept separate so installing its one dependency never touches the app's node_modules.",
+  "scripts": {
+    "build": "node build.mjs .."
+  },
+  "devDependencies": {
+    "playwright-core": "^1.59.1"
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "panel": {
+    "w": 352,
+    "h": 407.5625,
+    "link": "https://bublr.life/draft/9f2c41e07ab35d86c0e4b7a1d2f3905c6e8a4b17d0c3f2e9"
+  },
+  "dots": {
+    "w": 319,
+    "h": 79
+  },
+  "voice": {
+    "button": {
+      "x": 106.109375,
+      "y": 71.984375,
+      "w": 111.71875,
+      "h": 30.234375
+    }
+  },
+  "profileEdit": {
+    "sticker": {
+      "x": 231.90325927734375,
+      "y": 7.887639999389648,
+      "w": 144.5684814453125,
+      "h": 144.5684757232666
+    }
+  },
+  "toolbar": {
+    "w": 590.828125,
+    "h": 54
+  },
+  "slash": {
+    "menu": {
+      "x": 14.5,
+      "y": 443.5,
+      "w": 260,
+      "h": 262
+    },
+    "caret": {
+      "x": 0,
+      "y": 0,
+      "h": 0
+    }
+  },
+  "export": {
+    "filename": "bublr-juniper-2026-11-13.zip"
+  },
+  "advanced": {
+    "exportButton": {
+      "x": 253.15625,
+      "y": 329.796875,
+      "w": 105.625,
+      "h": 25.1875
+    },
+    "scrollHeight": 1268
+  },
+  "profile-dark": {
+    "scrollHeight": 955
+  },
+  "profile-light": {
+    "scrollHeight": 955
+  },
+  "post": {
+    "scrollHeight": 844,
+    "subscribe": {
+      "x": 29.25,
+      "y": 390.921875,
+      "w": 331.5,
+      "h": 42.09375
+    }
+  },
+  "explore": {
+    "scrollHeight": 1357
+  },
+  "advancedLight": {
+    "exportButton": {
+      "x": 229.953125,
+      "y": 329.796875,
+      "w": 128.828125,
+      "h": 25.1875
+    }
+  },
+  "exportFiles": [
+    "bublr-juniper-2026-11-13/README.md",
+    "bublr-juniper-2026-11-13/posts/the-case-for-boring-notebooks.md",
+    "bublr-juniper-2026-11-13/posts/notes-from-a-slow-sunday.md",
+    "bublr-juniper-2026-11-13/posts/things-i-noticed-on-the-walk-home.md",
+    "bublr-juniper-2026-11-13/posts/writing-300-words-a-day-for-a-year.md",
+    "bublr-juniper-2026-11-13/posts/leaving-the-group-chat.md",
+    "bublr-juniper-2026-11-13/posts/my-grandmothers-recipe-cards.md",
+    "bublr-juniper-2026-11-13/posts/a-bench-by-the-river.md",
+    "bublr-juniper-2026-11-13/posts/learning-to-like-mornings.md",
+    "bublr-juniper-2026-11-13/posts/small-towns-long-walks.md",
+    "bublr-juniper-2026-11-13/bublr-export.json"
+  ],
+  "exportCounts": {
+    "posts": 9,
+    "published": 6
+  },
+  "email": {
+    "w": 520,
+    "h": 504.53125
+  },
+  "editorWide": {
+    "w": 740,
+    "h": 580
+  },
+  "dashboardWide": {
+    "w": 1120,
+    "h": 720
+  }
+}
