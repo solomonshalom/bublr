@@ -10,6 +10,8 @@ Memory for the nightly product run. Read this first, then `CLAUDE.md` and the ne
 
 **Last full round: 13th November 2026.** Next one is due on or after the 20th. On other nights, check only issues and whether main is healthy.
 
+Last nightly check: 14th November 2026. No new or updated issues, main's Vercel deploy is green, and the relaunch branch hasn't changed, so nothing shipped.
+
 What users said:
 
 - **GitHub issues.** One open issue, [#7](https://github.com/solomonshalom/bublr/issues/7) (Feb 2026): a paying writer set the A record, pressed verify and got an error. The owner replied in May asking them to email. No reply since. The two-part-ending bug (`example.co.uk`) was fixed on 5th November, but nobody has confirmed that it was this writer's problem.
