@@ -10,7 +10,7 @@ Memory for the nightly product run. Read this first, then `CLAUDE.md` and the ne
 
 **Last full round: 13th November 2026.** Next one is due on or after the 20th. On other nights, check only issues and whether main is healthy.
 
-Last nightly check: 17th November 2026. No new or updated issues or pull requests, bublr.life is up and its changelog shows the latest release, and the relaunch branch hasn't changed since the 13th, so nothing shipped (same result on the 14th, 15th and 16th).
+Last nightly check: 18th November 2026. No new or updated issues or pull requests, bublr.life is up and its changelog shows the latest release, and the relaunch branch hasn't changed since the 13th, so nothing shipped (same result every night since the 14th).
 
 What users said:
 
