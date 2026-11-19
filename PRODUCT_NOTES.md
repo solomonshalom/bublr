@@ -39,7 +39,7 @@ Not building. Reopen only with new evidence.
 - **Analytics dashboards.** Writers praised not feeling tracked.
 - **Paid subscriptions / paywalls.** Against the mission.
 - **Upvoting (PR #2).** Stale since May, built on old code. Likes already exist.
-- **PR #1 (ImgBot) and PR #3 (Dodo Payments domains).** Stale. Billing moved to Polar. The owner may want to close them.
+- **PR #1 (ImgBot) and PR #3 (Dodo Payments domains).** Stale. Billing moved to Polar, then to Creem on 19th November. The owner may want to close them.
 
 ## Backlog
 
@@ -54,7 +54,7 @@ Nothing may be built on main while the relaunch branch is open (see Waiting on t
 ## Waiting on the owner
 
 - **The relaunch branch.** `relaunch/next-16-yearly-plan-launch-assets` was pushed on 13th November. It moves the app to Next 16, React 19, Firebase 13 and Tiptap 3, adds the yearly plan, and changes 139 files, including two new entries at the bottom of `changelog.md`. Anything built on main now would be built underneath it, so the nightly run ships no code and doesn't touch the changelog until it is merged, or until you say otherwise in "From the owner". The owner was notified once, on 13th November. Don't notify again for this.
-  - Before merging: it needs Node 24.12 or newer, so check the Node version in the Vercel project settings. The yearly plan stays hidden until `POLAR_CUSTOM_DOMAIN_YEARLY_PRODUCT_ID` is set.
+  - Before merging: it needs Node 24.12 or newer, so check the Node version in the Vercel project settings. Main's billing moved from Polar to Creem on 19th November (`src/lib/creem.js`, `src/lib/creem-webhook.js`); the branch still has the Polar code, so it needs the same move before it merges. Its yearly plan will then read `CREEM_CUSTOM_DOMAIN_YEARLY_PRODUCT_ID`, which is already set in Vercel.
 - **Issue #7.** Needs Vercel access, or the writer's domain, to find out what the verify step actually returned.
 - **Firestore rules.** Not in this repo. Needs the Firebase console.
 - **Explore spam clean-up.** Deletes existing posts, so it's the owner's call. Needs database access.

@@ -39,7 +39,7 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `readingList`: array of saved post IDs
 - `about`: user bio
 - `subscribers`: array of newsletter subscriber objects (`{ email, subscribedAt }`)
-- `subscription`: object containing Polar subscription data (`{ id, status, customerId, productId, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd }`)
+- `subscription`: object containing Creem subscription data (`{ id, status, customerId, productId, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, lastEventAt }`). Records written before the move to Creem have Polar IDs (UUIDs, not `sub_`/`cust_`)
 - `hasCustomDomainAccess`: boolean flag for active custom domain subscription
 - `customDomain`: object for custom domain config (`{ domain, status, verification, addedAt, verifiedAt }`)
 - `customBranding`: object for custom branding (`{ footerText, updatedAt }`)
@@ -93,7 +93,7 @@ PageComponent.getLayout = function PageLayout(page) {
 
 **Account deletion**: `POST /api/account/delete` (`{ confirm: "delete my account" }`) needs a sign-in from the last 10 minutes (`auth_time`), refuses while a subscription would renew, then runs `deleteAccountData` in `src/lib/delete-account.js`. Anything new that stores a writer's data (a collection, or their uid in someone else's document) must be removed there too. The browser deletes the Firebase sign-in record afterwards.
 
-**Polar webhooks**: `/api/subscription/webhook` checks and reads deliveries with `validateEvent` from `src/lib/polar-webhook.js`, not the SDK's: the 0.x SDK can't verify secrets Polar made after 8 September 2026 and throws on event types newer than itself. In Polar, the endpoint URL must be `https://www.bublr.life/api/subscription/webhook` (the bare domain redirects, and Polar counts a redirect as a failed delivery). Events about products other than the custom domain plans are acknowledged and ignored, so the Polar organization can be shared with other apps.
+**Creem billing**: `src/lib/creem.js` calls Creem's REST API with `fetch` (start a checkout, open the billing portal); there is no SDK. `/api/subscription/webhook` checks and reads deliveries with `validateEvent` from `src/lib/creem-webhook.js` (hex HMAC-SHA256 of the raw body in the `creem-signature` header) and answers 200 to everything it has no use for, because Creem retries anything else. Creem has no cancel-at-period-end flag: status `scheduled_cancel` or `canceled` sets `cancelAtPeriodEnd`, and access lasts until `currentPeriodEnd`. The record is written in a transaction, and an event older than `lastEventAt` is skipped (Creem retries for up to a day, so deliveries arrive out of order). In Creem, the endpoint URL must be `https://www.bublr.life/api/subscription/webhook` (the bare domain redirects). Events about products other than the custom domain plans are acknowledged and ignored, so the Creem store can be shared with other apps.
 
 **Timestamps**: Read `lastEdited` with `toMillis` (`src/lib/timestamps.js`). Older API-created posts stored `{ _seconds }` maps; write `firebase.firestore.Timestamp` values.
 
@@ -113,10 +113,11 @@ Required in `.env.local`:
 - `RESEND_FROM_EMAIL` - (Optional) Sender email for newsletters (default: `Bublr <notifications@bublr.life>`)
 - `NEXT_PUBLIC_BASE_URL` - (Optional) Base URL for the app (default: `https://bublr.life`)
 
-**Custom Domain Feature (Polar + Vercel):**
-- `POLAR_ACCESS_TOKEN` - Polar API access token (from polar.sh dashboard)
-- `POLAR_CUSTOM_DOMAIN_PRODUCT_ID` - Product ID for the $2/month custom domain subscription
-- `POLAR_WEBHOOK_SECRET` - Secret for verifying Polar webhook signatures
+**Custom Domain Feature (Creem + Vercel):**
+- `CREEM_API_KEY` - Creem API key (Settings → API keys; needs Checkouts and Customers read/write). A `creem_test_` key uses the test API
+- `CREEM_CUSTOM_DOMAIN_PRODUCT_ID` - Product ID for the $2/month custom domain subscription
+- `CREEM_CUSTOM_DOMAIN_YEARLY_PRODUCT_ID` - (Optional) Product ID for the yearly plan, so its webhook events are recognised
+- `CREEM_WEBHOOK_SECRET` - Signing secret of the Creem webhook endpoint
 - `VERCEL_TOKEN` - Vercel API token for domain management
 - `VERCEL_PROJECT_ID` - Your Vercel project ID
 - `VERCEL_TEAM_ID` - (Optional) Vercel team ID if using team account

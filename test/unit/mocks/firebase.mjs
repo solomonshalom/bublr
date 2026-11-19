@@ -3,7 +3,12 @@
 // The test loader (../loader.mjs) swaps it in for every import of lib/firebase.
 
 const store = new Map() // collectionPath -> Map(id -> data)
+const versions = new Map() // document path -> number of writes, for transactions
 let autoId = 0
+
+function touch(path) {
+  versions.set(path, (versions.get(path) || 0) + 1)
+}
 
 // Deep copy that keeps Timestamps and Dates as real instances (like Firestore)
 function clone(value) {
@@ -119,6 +124,7 @@ class DocRef {
     const base = options.merge ? clone(map.get(this.id)) || {} : {}
     for (const [key, value] of Object.entries(data)) setPath(base, key, value)
     map.set(this.id, base)
+    touch(this.path)
   }
   async update(data) {
     const map = collectionMap(this.collectionPath)
@@ -133,9 +139,11 @@ class DocRef {
       setPath(doc, key, value)
     }
     map.set(this.id, doc)
+    touch(this.path)
   }
   async delete() {
     collectionMap(this.collectionPath).delete(this.id)
+    touch(this.path)
   }
   collection(name) {
     return new Query(`${this.path}/${name}`)
@@ -221,6 +229,39 @@ class Batch {
   }
 }
 
+// Like Firestore: the callback's reads are checked when it commits, and it runs
+// again from the start if another write got to one of those documents first.
+async function runTransaction(fn, attempts = 5) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const seen = new Map()
+    const writes = []
+    const transaction = {
+      async get(ref) {
+        seen.set(ref.path, versions.get(ref.path) || 0)
+        return ref.get()
+      },
+      set(ref, data, options) {
+        writes.push(() => ref.set(data, options))
+        return transaction
+      },
+      update(ref, data) {
+        writes.push(() => ref.update(data))
+        return transaction
+      },
+      delete(ref) {
+        writes.push(() => ref.delete())
+        return transaction
+      },
+    }
+    const result = await fn(transaction)
+    if ([...seen].some(([path, version]) => (versions.get(path) || 0) !== version)) continue
+    // Started together, so nothing else can write between the check and these.
+    await Promise.all(writes.map(write => write()))
+    return result
+  }
+  throw new Error('mock firestore: transaction kept conflicting')
+}
+
 export const firestore = {
   collection: name => new Query(name),
   doc: path => {
@@ -228,6 +269,7 @@ export const firestore = {
     return new DocRef(parts.slice(0, -1).join('/'), parts[parts.length - 1])
   },
   batch: () => new Batch(),
+  runTransaction,
   settings: () => {},
 }
 
@@ -244,6 +286,7 @@ export default firebase
 // ---- test helpers ----
 export function resetStore() {
   store.clear()
+  versions.clear()
   autoId = 0
 }
 

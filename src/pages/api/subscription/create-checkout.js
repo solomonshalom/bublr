@@ -1,5 +1,4 @@
-import polar, { CUSTOM_DOMAIN_PRODUCT_ID } from '../../../lib/polar'
-import { firestore } from '../../../lib/firebase'
+import { createCheckout, customDomainProductId } from '../../../lib/creem'
 import { requireSelf } from '../../../lib/server-auth'
 
 export default async function handler(req, res) {
@@ -17,14 +16,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing userId or userEmail' })
     }
 
-    if (!CUSTOM_DOMAIN_PRODUCT_ID) {
-      return res.status(500).json({ error: 'POLAR_CUSTOM_DOMAIN_PRODUCT_ID not configured' })
+    const productId = customDomainProductId()
+    if (!productId) {
+      return res.status(500).json({ error: 'CREEM_CUSTOM_DOMAIN_PRODUCT_ID not configured' })
     }
 
-    // Create checkout session with Polar
-    const checkout = await polar.checkouts.create({
-      products: [CUSTOM_DOMAIN_PRODUCT_ID],
-      customerEmail: userEmail,
+    // Create checkout session with Creem. The metadata comes back on the
+    // subscription in every webhook: it's how the payment finds this writer.
+    const checkout = await createCheckout({
+      productId,
+      email: userEmail,
       successUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'}/dashboard?subscription=success`,
       metadata: {
         userId: userId,

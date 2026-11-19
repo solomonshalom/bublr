@@ -60,7 +60,7 @@ module.exports = {
               "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net",
               // api.cloudinary.com: direct image uploads from the editor/profile
               // *.umami.is: the analytics script reports to gateway.umami.is
-              "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://*.firebaseio.com https://api.dicebear.com https://cloud.umami.is https://*.umami.is https://api.cloudinary.com https://api.imgbb.com https://api.groq.com https://api.resend.com https://api.polar.sh https://api.vercel.com",
+              "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://*.firebaseio.com https://api.dicebear.com https://cloud.umami.is https://*.umami.is https://api.cloudinary.com https://api.imgbb.com https://api.groq.com https://api.resend.com https://api.vercel.com",
               "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com",
               "media-src 'self' https:",
               "object-src 'none'",

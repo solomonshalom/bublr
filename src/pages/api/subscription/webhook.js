@@ -1,6 +1,6 @@
-import { validateEvent, WebhookVerificationError, customDomainProductIds } from '../../../lib/polar-webhook'
+import { validateEvent, WebhookVerificationError } from '../../../lib/creem-webhook'
+import { customDomainProductIds } from '../../../lib/creem'
 import { firestore } from '../../../lib/firebase'
-import { WEBHOOK_SECRET } from '../../../lib/polar'
 import { sendSubscriptionEmail } from '../../../lib/resend'
 
 // Disable body parsing, we need the raw body for webhook verification
@@ -28,15 +28,16 @@ export default async function handler(req, res) {
     const rawBody = await getRawBody(req)
     const bodyString = rawBody.toString('utf8')
 
-    if (!WEBHOOK_SECRET) {
-      console.error('POLAR_WEBHOOK_SECRET not configured')
+    const secret = process.env.CREEM_WEBHOOK_SECRET
+    if (!secret) {
+      console.error('CREEM_WEBHOOK_SECRET not configured')
       return res.status(500).json({ error: 'Webhook secret not configured' })
     }
 
     // Verify webhook signature
     let event
     try {
-      event = validateEvent(bodyString, req.headers, WEBHOOK_SECRET)
+      event = validateEvent(bodyString, req.headers, secret)
     } catch (error) {
       if (error instanceof WebhookVerificationError) {
         console.error('Webhook verification failed:', error.message)
@@ -45,248 +46,172 @@ export default async function handler(req, res) {
       throw error
     }
 
-    // The Polar organization may sell other products as well, and this
-    // endpoint is sent their events too. Acknowledge those and leave them be.
-    if (event.type.startsWith('subscription.') && !(await isCustomDomainSubscription(event.data))) {
-      console.log('Ignoring', event.type, 'for another product:', event.data.productId)
-      return res.status(202).json({ received: true })
+    // Creem retries anything that isn't a 2xx, so everything we have no use
+    // for is acknowledged: refunds, disputes, one-time purchases, new event types.
+    const subscription = event.subscription
+    if (!subscription?.id) {
+      console.log('Nothing to do for event type:', event.type)
+      return res.status(200).json({ received: true })
     }
 
-    // Handle different event types
-    switch (event.type) {
-      case 'subscription.created':
-      case 'subscription.active':
-        await handleSubscriptionActive(event.data)
-        break
-
-      case 'subscription.updated':
-        await handleSubscriptionUpdated(event.data)
-        break
-
-      case 'subscription.canceled':
-        await handleSubscriptionCanceled(event.data)
-        break
-
-      case 'subscription.revoked':
-        await handleSubscriptionRevoked(event.data)
-        break
-
-      case 'order.paid':
-        // Order has been paid - subscription should be active
-        console.log('Order paid:', event.data.id)
-        break
-
-      default:
-        console.log('Unhandled event type:', event.type)
+    // The Creem store may sell other products as well, and this endpoint is
+    // sent their events too. Acknowledge those and leave them be.
+    if (!(await isCustomDomainSubscription(subscription))) {
+      console.log('Ignoring', event.type, 'for another product:', subscription.productId)
+      return res.status(200).json({ received: true })
     }
 
-    return res.status(202).json({ received: true })
+    const userId = await findUserId(subscription)
+    if (!userId) {
+      console.error('No user found for subscription:', subscription.id)
+      return res.status(200).json({ received: true })
+    }
+
+    const outcome = await applyEvent(userId, event)
+    if (outcome?.email && outcome.sendTo) {
+      await sendSubscriptionEmail({ userEmail: outcome.sendTo, userName: outcome.userName, ...outcome.email })
+    }
+    console.log('Subscription', subscription.id, event.type, 'for user', userId, '->', outcome ? outcome.summary : 'no change')
+
+    return res.status(200).json({ received: true })
   } catch (error) {
     console.error('Webhook error:', error)
     return res.status(500).json({ error: 'Webhook processing failed' })
   }
 }
 
-async function handleSubscriptionActive(subscription) {
-  const userId = subscription.metadata?.userId
-  if (!userId) {
-    console.error('No userId in subscription metadata')
-    return
-  }
-
-  // Get user email for notification
-  const userDoc = await firestore.collection('users').doc(userId).get()
-  const userData = userDoc.exists ? userDoc.data() : null
-
-  // Update user's subscription status in Firestore
-  await firestore.collection('users').doc(userId).update({
-    subscription: {
-      id: subscription.id,
-      status: subscription.status,
-      customerId: subscription.customerId,
-      productId: subscription.productId,
-      currentPeriodStart: subscription.currentPeriodStart,
-      currentPeriodEnd: subscription.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
-      updatedAt: new Date().toISOString(),
-    },
-    hasCustomDomainAccess: true,
-  })
-
-  // Send welcome email, once: Polar sends both "created" and "active" for a
-  // new subscription, and each lands here.
-  const alreadyWelcomed =
-    userData?.hasCustomDomainAccess === true && userData?.subscription?.id === subscription.id
-  if (userData?.email && !alreadyWelcomed) {
-    await sendSubscriptionEmail({
-      userEmail: userData.email,
-      userName: userData.displayName || userData.name,
-      type: 'activated',
-    })
-  }
-
-  console.log('Subscription activated for user:', userId)
-}
-
-async function handleSubscriptionUpdated(subscription) {
-  const userId = subscription.metadata?.userId
-  if (!userId) {
-    // Try to find user by subscription ID
-    const usersSnapshot = await firestore
-      .collection('users')
-      .where('subscription.id', '==', subscription.id)
-      .limit(1)
-      .get()
-
-    if (usersSnapshot.empty) {
-      console.error('No user found for subscription:', subscription.id)
-      return
-    }
-
-    const userDoc = usersSnapshot.docs[0]
-    await updateUserSubscription(userDoc.id, subscription)
-    return
-  }
-
-  await updateUserSubscription(userId, subscription)
-}
-
-async function updateUserSubscription(userId, subscription) {
-  const isActive = ['active', 'trialing'].includes(subscription.status)
-
-  await firestore.collection('users').doc(userId).update({
-    subscription: {
-      id: subscription.id,
-      status: subscription.status,
-      customerId: subscription.customerId,
-      productId: subscription.productId,
-      currentPeriodStart: subscription.currentPeriodStart,
-      currentPeriodEnd: subscription.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
-      updatedAt: new Date().toISOString(),
-    },
-    hasCustomDomainAccess: isActive,
-  })
-
-  console.log('Subscription updated for user:', userId, 'Status:', subscription.status)
-}
-
-async function handleSubscriptionCanceled(subscription) {
-  const userId = subscription.metadata?.userId
-
-  // Try to find user by subscription ID if not in metadata
-  let targetUserId = userId
-  if (!targetUserId) {
-    const usersSnapshot = await firestore
-      .collection('users')
-      .where('subscription.id', '==', subscription.id)
-      .limit(1)
-      .get()
-
-    if (!usersSnapshot.empty) {
-      targetUserId = usersSnapshot.docs[0].id
-    }
-  }
-
-  if (!targetUserId) {
-    console.error('No user found for canceled subscription:', subscription.id)
-    return
-  }
-
-  // Get user for email
-  const userDoc = await firestore.collection('users').doc(targetUserId).get()
-  const userData = userDoc.exists ? userDoc.data() : null
-
-  // Check if user should retain access until period end
-  const periodEnd = subscription.currentPeriodEnd
-  const shouldRetainAccess =
-    subscription.cancelAtPeriodEnd === true &&
-    periodEnd &&
-    new Date(periodEnd) > new Date()
-
-  // Update subscription status but keep the custom domain data
-  // User retains access until period ends if cancelAtPeriodEnd is true
-  await firestore.collection('users').doc(targetUserId).update({
-    'subscription.status': subscription.status,
-    'subscription.cancelAtPeriodEnd': subscription.cancelAtPeriodEnd || false,
-    'subscription.currentPeriodEnd': subscription.currentPeriodEnd,
-    'subscription.updatedAt': new Date().toISOString(),
-    hasCustomDomainAccess: shouldRetainAccess,
-  })
-
-  // Send cancellation email
-  if (userData?.email) {
-    await sendSubscriptionEmail({
-      userEmail: userData.email,
-      userName: userData.displayName || userData.name,
-      type: 'canceled',
-      periodEndDate: shouldRetainAccess ? periodEnd : null,
-    })
-  }
-
-  console.log('Subscription canceled for user:', targetUserId,
-    shouldRetainAccess ? '(access retained until period end)' : '(access revoked)')
-}
-
-async function handleSubscriptionRevoked(subscription) {
-  const userId = subscription.metadata?.userId
-
-  // Try to find user by subscription ID if not in metadata
-  let targetUserId = userId
-  if (!targetUserId) {
-    const usersSnapshot = await firestore
-      .collection('users')
-      .where('subscription.id', '==', subscription.id)
-      .limit(1)
-      .get()
-
-    if (!usersSnapshot.empty) {
-      targetUserId = usersSnapshot.docs[0].id
-    }
-  }
-
-  if (!targetUserId) {
-    console.error('No user found for revoked subscription:', subscription.id)
-    return
-  }
-
-  // Get user for email
-  const userDoc = await firestore.collection('users').doc(targetUserId).get()
-  const userData = userDoc.exists ? userDoc.data() : null
-
-  // Revoked means immediate loss of access (payment failure, etc.)
-  await firestore.collection('users').doc(targetUserId).update({
-    'subscription.status': 'revoked',
-    'subscription.cancelAtPeriodEnd': false,
-    'subscription.currentPeriodEnd': subscription.currentPeriodEnd,
-    'subscription.updatedAt': new Date().toISOString(),
-    hasCustomDomainAccess: false,
-  })
-
-  // Send expired email (immediate revocation)
-  if (userData?.email) {
-    await sendSubscriptionEmail({
-      userEmail: userData.email,
-      userName: userData.displayName || userData.name,
-      type: 'expired',
-    })
-  }
-
-  console.log('Subscription revoked for user:', targetUserId)
-}
-
 // Whether a subscription event is about a custom domain plan.
 async function isCustomDomainSubscription(subscription) {
   if (customDomainProductIds().includes(subscription.productId)) return true
-  if (!subscription.id) return false
 
   // A subscription already on a writer's record stays ours, even if the
   // product IDs in the environment have changed since they bought it.
-  const usersSnapshot = await firestore
-    .collection('users')
-    .where('subscription.id', '==', subscription.id)
-    .limit(1)
-    .get()
+  return (await findUserBy('subscription.id', subscription.id)) !== null
+}
 
-  return !usersSnapshot.empty
+async function findUserBy(field, value) {
+  if (!value) return null
+  const snapshot = await firestore.collection('users').where(field, '==', value).limit(1).get()
+  return snapshot.empty ? null : snapshot.docs[0].id
+}
+
+// The writer a subscription belongs to. The checkout carries their ID in its
+// metadata; Creem copies that onto the subscription, but not onto every event.
+async function findUserId(subscription) {
+  const fromMetadata = subscription.metadata?.userId
+  if (typeof fromMetadata === 'string' && fromMetadata && !fromMetadata.includes('/')) {
+    const doc = await firestore.collection('users').doc(fromMetadata).get()
+    if (doc.exists) return fromMetadata
+  }
+  return (
+    (await findUserBy('subscription.id', subscription.id)) ||
+    (await findUserBy('subscription.customerId', subscription.customerId))
+  )
+}
+
+/**
+ * Whether this event leaves the writer with the paid features.
+ *
+ * Cancelling doesn't take away what was paid for: a cancelled subscription
+ * keeps access until the end of its period (checkSubscriptionAccess in
+ * lib/subscription.js ends it then). A failed renewal does take it away, and
+ * the next successful payment brings it back.
+ */
+function grantsAccess(type, subscription, now) {
+  const periodOpen = subscription.currentPeriodEnd ? subscription.currentPeriodEnd > now : false
+
+  // Sent up to a day after a period ran out unpaid. The status in it is
+  // whatever it was, often still "active", so go by the dates.
+  if (type === 'subscription.expired' && !periodOpen) return false
+
+  switch (subscription.status) {
+    case 'active':
+    case 'trialing':
+      return true
+    case 'scheduled_cancel':
+    case 'canceled':
+      return periodOpen
+    default:
+      // past_due, unpaid, paused, incomplete, and anything new
+      return false
+  }
+}
+
+/**
+ * Work out what an event changes on a writer's record: the fields to write and
+ * the email to send, or null when the event should be left alone.
+ */
+function planChange(user, event, now = new Date()) {
+  const subscription = event.subscription
+  const before = user.subscription || null
+  const sameSubscription = before?.id === subscription.id
+  const access = grantsAccess(event.type, subscription, now)
+
+  // An event about a subscription other than the one on record only counts if
+  // it gives access (a new purchase). An old subscription winding down must
+  // not take away what a newer one pays for.
+  if (before?.id && !sameSubscription && !access) return null
+
+  // Creem retries failed deliveries for up to a day, so an old event can
+  // arrive after a newer one. Applying it would undo the newer state.
+  if (sameSubscription && before.lastEventAt && event.createdAt && event.createdAt < before.lastEventAt) {
+    return null
+  }
+
+  const hadAccess = sameSubscription && user.hasCustomDomainAccess === true
+  const wasEnding = sameSubscription && before.cancelAtPeriodEnd === true
+
+  let email = null
+  if (access && !hadAccess) {
+    // Creem sends several events for one new subscription. Only the first to
+    // arrive finds no access yet, so there is one welcome.
+    email = { type: 'activated' }
+  } else if (hadAccess && subscription.cancelAtPeriodEnd && !wasEnding) {
+    email = { type: 'canceled', periodEndDate: access ? subscription.currentPeriodEnd : null }
+  } else if (hadAccess && !access) {
+    email = { type: 'expired' }
+  }
+
+  return {
+    update: {
+      subscription: {
+        id: subscription.id,
+        status: subscription.status,
+        customerId: subscription.customerId ?? (sameSubscription ? before.customerId ?? null : null),
+        productId: subscription.productId ?? (sameSubscription ? before.productId ?? null : null),
+        currentPeriodStart: subscription.currentPeriodStart,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        lastEventAt: event.createdAt,
+        updatedAt: now.toISOString(),
+      },
+      hasCustomDomainAccess: access,
+    },
+    email,
+    summary: `${subscription.status}, access ${access ? 'on' : 'off'}${email ? `, ${email.type} email` : ''}`,
+  }
+}
+
+// Read the writer's record and write the change in one transaction, so two
+// deliveries arriving together can't both act on the same old state.
+async function applyEvent(userId, event) {
+  const userRef = firestore.collection('users').doc(userId)
+
+  return firestore.runTransaction(async transaction => {
+    const snapshot = await transaction.get(userRef)
+    if (!snapshot.exists) return null
+
+    const user = snapshot.data()
+    const change = planChange(user, event)
+    if (!change) return null
+
+    transaction.update(userRef, change.update)
+    return {
+      email: change.email,
+      summary: change.summary,
+      // Writers who signed up without an email on their profile still gave one at checkout.
+      sendTo: user.email || event.subscription.customerEmail || null,
+      userName: user.displayName || user.name,
+    }
+  })
 }

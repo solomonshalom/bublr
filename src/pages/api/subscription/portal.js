@@ -1,4 +1,4 @@
-import polar from '../../../lib/polar'
+import { createPortalLink } from '../../../lib/creem'
 import { firestore } from '../../../lib/firebase'
 import { requireSelf } from '../../../lib/server-auth'
 
@@ -26,13 +26,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No active subscription found' })
     }
 
-    // Create customer portal session with Polar
-    const session = await polar.customerSessions.create({
-      customerId: customerId,
-    })
+    // Create customer portal link with Creem
+    const portalUrl = await createPortalLink(customerId)
 
     return res.status(200).json({
-      portalUrl: session.customerPortalUrl,
+      portalUrl,
     })
   } catch (error) {
     console.error('Error creating portal session:', error)
