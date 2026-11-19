@@ -1,4 +1,4 @@
-import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
+import { validateEvent, WebhookVerificationError, customDomainProductIds } from '../../../lib/polar-webhook'
 import { firestore } from '../../../lib/firebase'
 import { WEBHOOK_SECRET } from '../../../lib/polar'
 import { sendSubscriptionEmail } from '../../../lib/resend'
@@ -43,6 +43,13 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Invalid webhook signature' })
       }
       throw error
+    }
+
+    // The Polar organization may sell other products as well, and this
+    // endpoint is sent their events too. Acknowledge those and leave them be.
+    if (event.type.startsWith('subscription.') && !(await isCustomDomainSubscription(event.data))) {
+      console.log('Ignoring', event.type, 'for another product:', event.data.productId)
+      return res.status(202).json({ received: true })
     }
 
     // Handle different event types
@@ -106,8 +113,11 @@ async function handleSubscriptionActive(subscription) {
     hasCustomDomainAccess: true,
   })
 
-  // Send welcome email
-  if (userData?.email) {
+  // Send welcome email, once: Polar sends both "created" and "active" for a
+  // new subscription, and each lands here.
+  const alreadyWelcomed =
+    userData?.hasCustomDomainAccess === true && userData?.subscription?.id === subscription.id
+  if (userData?.email && !alreadyWelcomed) {
     await sendSubscriptionEmail({
       userEmail: userData.email,
       userName: userData.displayName || userData.name,
@@ -263,4 +273,20 @@ async function handleSubscriptionRevoked(subscription) {
   }
 
   console.log('Subscription revoked for user:', targetUserId)
+}
+
+// Whether a subscription event is about a custom domain plan.
+async function isCustomDomainSubscription(subscription) {
+  if (customDomainProductIds().includes(subscription.productId)) return true
+  if (!subscription.id) return false
+
+  // A subscription already on a writer's record stays ours, even if the
+  // product IDs in the environment have changed since they bought it.
+  const usersSnapshot = await firestore
+    .collection('users')
+    .where('subscription.id', '==', subscription.id)
+    .limit(1)
+    .get()
+
+  return !usersSnapshot.empty
 }

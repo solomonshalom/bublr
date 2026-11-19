@@ -93,6 +93,8 @@ PageComponent.getLayout = function PageLayout(page) {
 
 **Account deletion**: `POST /api/account/delete` (`{ confirm: "delete my account" }`) needs a sign-in from the last 10 minutes (`auth_time`), refuses while a subscription would renew, then runs `deleteAccountData` in `src/lib/delete-account.js`. Anything new that stores a writer's data (a collection, or their uid in someone else's document) must be removed there too. The browser deletes the Firebase sign-in record afterwards.
 
+**Polar webhooks**: `/api/subscription/webhook` checks and reads deliveries with `validateEvent` from `src/lib/polar-webhook.js`, not the SDK's: the 0.x SDK can't verify secrets Polar made after 8 September 2026 and throws on event types newer than itself. In Polar, the endpoint URL must be `https://www.bublr.life/api/subscription/webhook` (the bare domain redirects, and Polar counts a redirect as a failed delivery). Events about products other than the custom domain plans are acknowledged and ignored, so the Polar organization can be shared with other apps.
+
 **Timestamps**: Read `lastEdited` with `toMillis` (`src/lib/timestamps.js`). Older API-created posts stored `{ _seconds }` maps; write `firebase.firestore.Timestamp` values.
 
 **Reserved usernames**: Any new top-level page must be added to `src/lib/reserved-usernames.js` (a test enforces this).
