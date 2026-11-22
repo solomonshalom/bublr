@@ -29,9 +29,28 @@ module.exports = {
   poweredByHeader: false,
   // Configure headers for better SEO and security
   async headers() {
+    // Shared by every response, including the Profile HTML frame
+    const baseSecurity = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
+    ]
     return [
+      // Writers' Profile HTML (/api/profile-frame/*) and its editor preview
+      // (/api/profile-preview) are framed by the profile page and carry their
+      // own sandboxing CSP (lib/profile-code.js). The site-wide policy below
+      // would forbid framing them, and two CSP headers both apply, so those
+      // two paths are left out of it.
       {
-        source: '/(.*)',
+        source: '/api/profile-frame/:path*',
+        headers: [...baseSecurity, { key: 'X-Frame-Options', value: 'SAMEORIGIN' }],
+      },
+      {
+        source: '/api/profile-preview',
+        headers: [...baseSecurity, { key: 'X-Frame-Options', value: 'SAMEORIGIN' }],
+      },
+      {
+        source: '/((?!api/profile-frame/|api/profile-preview$).*)',
         headers: [
           {
             key: 'X-Frame-Options',

@@ -1,3 +1,5 @@
+import { summarizeProfileCode } from './profile-code'
+
 /**
  * What of a user's record is safe to put in a public page's props.
  *
@@ -66,6 +68,12 @@ export function toPublicUser(user) {
 
   if (Array.isArray(user.posts)) {
     out.posts = user.posts.map(p => (p && typeof p === 'object' ? toPublicPost(p) : p))
+  }
+
+  // Profile HTML: the page only needs to know how to show it. The code itself
+  // is served by /api/profile-frame, and can be 200 KB.
+  if ('profileCode' in user) {
+    out.profileCode = summarizeProfileCode(user.profileCode)
   }
 
   return out

@@ -43,6 +43,7 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `hasCustomDomainAccess`: boolean flag for active custom domain subscription
 - `customDomain`: object for custom domain config (`{ domain, status, verification, addedAt, verifiedAt }`)
 - `customBranding`: object for custom branding (`{ footerText, updatedAt }`)
+- `profileCode`: the writer's Profile HTML (`{ html, css, js, mode: 'off'|'block'|'page', placement: 'top'|'bottom', version, updatedAt }`). Saved snapshots live in the `profileCodeRevisions` subcollection (newest 20 kept)
 
 **posts**
 - `title`, `content`, `excerpt`: post content (HTML from TipTap)
@@ -61,6 +62,7 @@ Bublr is a minimal writing platform built with Next.js 11, Firebase (Firestore +
 - `/dashboard/[pid]` - Post editor with TipTap
 - `/dashboard/list` - Reading list
 - `/dashboard/settings/advanced` - Theme, export (Markdown + JSON .zip), language, custom domain, delete account
+- `/dashboard/settings/html` - Profile HTML editor (code, live preview, templates, tag reference, AI helper, history)
 - `/explore` - Global post discovery with search (public; no account needed)
 - `/draft/[token]` - A draft shared by private link (SSR, noindex; redirects to the live post once published)
 - `/[username]` - User profile page
@@ -97,6 +99,8 @@ PageComponent.getLayout = function PageLayout(page) {
 
 **Timestamps**: Read `lastEdited` with `toMillis` (`src/lib/timestamps.js`). Older API-created posts stored `{ _seconds }` maps; write `firebase.firestore.Timestamp` values.
 
+**Profile HTML** (MySpace-style custom profiles): writers write HTML/CSS/JS that replaces their profile (`mode: 'page'`) or sits in it as a section (`'block'`). Their code must never run on the bublr.life origin. It is served by `/api/profile-frame/[username]` and previewed through `/api/profile-preview`, both with a `Content-Security-Policy: sandbox` header (no `allow-same-origin`), and shown in an `<iframe sandbox>` (`ProfileCodeFrame`). That way scripts can't read the visitor's Firebase sign-in, cookies or storage, submit forms, open dialogs or touch the page around them. Those two paths are deliberately left out of the site-wide CSP in `next.config.js` (two CSPs would both apply and forbid framing); a test checks the routing. Everything about rendering is in `src/lib/profile-code.js` so the preview and the live page build the same document: `{{tags}}` (a small, budgeted Mustache subset), `<bublr-*>` widgets expanded server-side, `window.bublr` data, and the theme/height messages. `toPublicUser` reduces `profileCode` to `{ mode, placement, version }` so page props never carry the code. Saves go through `POST /api/profile/code` (validation, moderation when shown, version check, history), which signs the code (`src/lib/profile-code-signature.js`, HMAC with a server secret). The database rules can't stop someone writing a user document directly, so only signed code is shown: every page that renders a profile must run `trustedProfileCode` and `profileCodeHeaders` (COOP, so pop-ups from the frame can't reach back to the tab) in its `getServerSideProps`, and the frame route checks the signature too. The frame only answers at its canonical `?embed=…&v=<version>` URL (anything else redirects), so the CDN copy serves everyone. Templates render on the server for every frame request, so keep all parsing in that file single-pass: no regex with two quantifiers over the same characters (a test feeds it hostile input with time limits). The AI helper is `POST /api/profile/code-ai` (Groq; nothing saved). Visitors can always reach the normal profile with `?classic=1`.
+
 **Reserved usernames**: Any new top-level page must be added to `src/lib/reserved-usernames.js` (a test enforces this).
 
 ### Environment Variables
@@ -106,7 +110,9 @@ Required in `.env.local`:
 - `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for image/video uploads
 - `CLOUDINARY_API_KEY` - Cloudinary API key
 - `CLOUDINARY_API_SECRET` - Cloudinary API secret (server-side only; used by `/api/cloudinary-sign` to sign direct uploads)
-- `GROQ_API_KEY` - Groq API key for AI content moderation
+- `GROQ_API_KEY` - Groq API key for AI content moderation and the Profile HTML AI helper
+- `PROFILE_CODE_SECRET` - (Optional) Signs saved Profile HTML (falls back to `UNSUBSCRIBE_SECRET`, `RESEND_API_KEY`, then `MODERATION_SECRET_KEY`). Changing it hides every custom profile until its writer saves again
+- `GROQ_CODE_MODEL` - (Optional) Groq model the Profile HTML AI helper tries first (falls back to `openai/gpt-oss-120b`, then `llama-3.3-70b-versatile`)
 - `MODERATION_SECRET_KEY` - Secret key for moderation API endpoints
 - `RESEND_API_KEY` - Resend API key for newsletter email notifications
 - `UNSUBSCRIBE_SECRET` - (Optional) Signs newsletter unsubscribe links (falls back to `RESEND_API_KEY`)

@@ -20,6 +20,10 @@ import { SubscribeOrSign, GuestBookEntries } from '../../components/guestbook'
 import FollowButton from '../../components/follow-button'
 import { ProfileCanvas } from '../../components/profile-canvas'
 import { sanitizeFontFamily } from '../../lib/fonts'
+import ProfileCodeFrame from '../../components/profile-code/ProfileCodeFrame'
+import ProfileCodePage from '../../components/profile-code/ProfileCodePage'
+import { frameUrl } from '../../lib/profile-code'
+import { profileCodeHeaders, trustedProfileCode } from '../../lib/profile-code-signature'
 
 // Color palette for dots (same as berrysauce)
 const COLOR_PALETTE = ['#cf52f2', '#6BCB77', '#4D96FF', '#A66CFF', '#E23E57', '#ff3e00']
@@ -629,7 +633,7 @@ const AvatarWithFrame = ({ user, size = 48 }) => {
   )
 }
 
-export default function Profile({ user, organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts, guestbookEntries }) {
+export default function Profile({ user, organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts, guestbookEntries, classicView = false }) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [currentUser] = useAuthState(auth)
@@ -700,6 +704,21 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
   // Green rail color for the experience timeline (Peerlist-style connectors)
   const experienceLineColor = isDark ? '#22c55e' : '#16a34a'
 
+  // Profile HTML: the writer's own page, as the whole profile or as a block
+  const profileCodeMode = user.profileCode?.mode || 'off'
+  const showProfileCodePage = profileCodeMode === 'page' && !classicView
+  const frameTheme = mounted ? (resolvedTheme === 'dark' ? 'dark' : 'light') : undefined
+  const profileCodeBlock = profileCodeMode === 'block' ? (
+    <div key="profile-code" css={css`margin-top: 32px;`}>
+      <ProfileCodeFrame
+        src={frameUrl(user.name, { embed: 'block', version: user.profileCode?.version || 0 })}
+        embed="block"
+        theme={frameTheme}
+        title={`${user.displayName}’s custom section`}
+      />
+    </div>
+  ) : null
+
   return (
     <>
       <Global styles={globalStyles} />
@@ -731,7 +750,15 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
         )}
       </Head>
 
-      {/* Main body - isolated styles that don't affect other pages */}
+      {showProfileCodePage ? (
+        <ProfileCodePage
+          user={user}
+          theme={frameTheme}
+          mounted={mounted}
+          onToggleTheme={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+        />
+      ) : (
+      /* Main body - isolated styles that don't affect other pages */
       <ProfileCanvas
         userId={currentUser?.uid}
         profileOwnerId={user.id}
@@ -880,6 +907,14 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                 }
               `}
             >
+              {classicView && profileCodeMode === 'page' && (
+                <div css={css`font-size: 12px; margin-bottom: 24px;`}>
+                  <a href="?" css={css`color: ${colors.muted}; text-decoration: none; &:hover { color: ${colors.text}; }`}>
+                    ← {user.displayName}’s page
+                  </a>
+                </div>
+              )}
+
               {/* Avatar with optional frame */}
               <AvatarWithFrame user={user} size={48} />
 
@@ -1225,6 +1260,8 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                 )
               })()}
 
+              {user.profileCode?.placement === 'top' && profileCodeBlock}
+
               {/* Render sections based on sectionOrder */}
               {sectionRenderOrder.map((sectionType) => {
                 // Skills/Tags Section
@@ -1456,6 +1493,8 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                 return null
               })}
 
+              {user.profileCode?.placement !== 'top' && profileCodeBlock}
+
               {/* Footer - exactly like berrysauce */}
               <div css={css`font-size: 12px; margin-top: 64px;`}>
                 <p css={css`color: ${colors.muted}; a { color: inherit; }`}>
@@ -1513,6 +1552,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
         </section>
       </div>
       </ProfileCanvas>
+      )}
 
       {/* Organization schema - critical for E-E-A-T */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{
@@ -1539,8 +1579,9 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
   )
 }
 
-export async function getServerSideProps({ params, req }) {
+export async function getServerSideProps({ params, req, res, query }) {
   const { username } = params
+  const classicView = query?.classic === '1'
   const host = req.headers.host || ''
   const hostWithoutPort = host.split(':')[0]
 
@@ -1582,6 +1623,10 @@ export async function getServerSideProps({ params, req }) {
 
   try {
     const user = await getUserByName(username)
+
+    // Profile HTML: only code saved through Bublr is shown (see profile-code-signature.js)
+    user.profileCode = trustedProfileCode(user.id, user.profileCode)
+    profileCodeHeaders(res, user.profileCode)
 
     // Check if this is being accessed via a custom domain (with grace period support)
     const isCustomDomain = user.customDomain?.domain === hostWithoutPort &&
@@ -1893,7 +1938,7 @@ export async function getServerSideProps({ params, req }) {
     return {
       // Strip private fields (subscriber emails, API keys, billing) last, after
       // the schemas above have used the follower/subscriber counts
-      props: { user: toPublicUser(user), organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts, guestbookEntries },
+      props: { user: toPublicUser(user), organizationSchema, profilePageSchema, breadcrumbSchema, newsletterSchema, customFonts, guestbookEntries, classicView },
     }
   } catch (err) {
     console.log(err)

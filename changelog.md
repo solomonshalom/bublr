@@ -232,3 +232,31 @@ This week's check started from Bublr's own privacy page. It says you can "reques
 - If the last step (removing the sign-in) fails, you're signed out and your data is still gone. Signing in again with the same address starts an empty account.
 - The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
 - We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.
+
+# Your Space - Update (22nd November'26)
+In 2006 a MySpace page was a bit of HTML and CSS pasted into a box, and it was the most personal page most people ever owned. Bublr profiles are tidy, but they all look alike. Writers asked for more room to make the page theirs. This update gives them the whole page, with things MySpace never had: your posts and guest book filling in by themselves, a live preview, a full history and an AI helper. Your code runs in a sealed-off frame, so a profile can never touch a visitor's account.
+
+## Added
+- **Profile HTML.** *Settings → Profile HTML* has an editor for your own HTML, CSS and JavaScript. Show it as your whole profile (*Full page*) or as a section above or below your usual sections (*Section*). *Off* keeps it saved but hidden.
+- **Your real data, filled in.** Tags such as `{{displayName}}`, `{{about}}` and `{{#posts}}…{{/posts}}` are swapped for your own details. Widgets do the bigger jobs: `<bublr-posts>`, `<bublr-latest-post>`, `<bublr-guestbook>` (signatures drawn), `<bublr-friends users="…">` (your Top 8), `<bublr-music>` (a profile song), `<bublr-counter>` (an old-school counter of your reads), stats, socials, skills, work and education. Scripts get the same data as `window.bublr`.
+- **Templates.** Classic, Space ’06 (blue boxes, Top 8, profile song, counter), Terminal, Zine, Neon and Brutalist pages, two small sections and a blank page. Each one shows your own content the moment you pick it.
+- **Describe it and Bublr writes it.** The AI tab builds a page from a sentence or changes the one you have. The result only appears in the preview, and Undo brings your old code back.
+- **Live preview** in desktop and phone sizes, light and dark, with a switch to pause JavaScript while you type.
+- **History.** Your last 20 saves, one click to load. Two open tabs can't silently overwrite each other.
+- **Light and dark.** Your page knows which theme each visitor uses (`<html data-theme>`) and switches with them.
+- **The classic profile is always there.** Visitors can open it from the small Bublr bar at the bottom of a full-page profile (or with `?classic=1`) to follow, subscribe or sign the guest book.
+- **Tests.** `npm test` now runs 196 tests. They cover the sandbox headers on every route, that private data never reaches the frame, hostile input against the template engine (each case must finish in well under a second), signatures and the whole save flow.
+
+## Safety
+- Your code runs on its own sandboxed origin, inside the frame and also if someone opens its address directly. It can't read a visitor's Bublr sign-in, cookies or storage, can't submit forms, can't pop up dialogs, and can't send the visitor elsewhere unless they click a link.
+- Pages shown on a profile go through the same moderation as posts, including text a page only draws with JavaScript. Password fields aren't allowed, saves and AI requests are rate limited, and code is capped at 200 KB.
+- Only code saved through the editor is ever shown. Bublr signs every save, so a page written straight into the database (the rules are still open) never appears on anyone's profile.
+- A link opened from a custom page can't reach back and swap your Bublr tab for a look-alike.
+- Bublr's "comeback" banner stays off full-page profiles. The whole window is the writer's.
+
+## Known issues
+- Embeds that need their own storage, like some video and music players, may not work inside the sandbox. `<bublr-music>` plays any .mp3 link.
+- On a full-page profile, search engines see your name and bio, not your custom page.
+- `{{ }}` in code samples gets filled in. Write `&#123;&#123;` instead, or put `<!-- bublr:no-tags -->` anywhere in your HTML.
+- In Safari, a script stuck in an endless loop can freeze the tab. The preview's JS switch helps while you're writing one.
+- The Firestore rules and the Explore spam clean-up are still open (see the comeback release).

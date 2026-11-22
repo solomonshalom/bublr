@@ -119,6 +119,15 @@ const CustomizationIcon = () => (
   </svg>
 )
 
+const ProfileHtmlIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="2.5" y="4" width="19" height="16" rx="2" />
+    <path d="M2.5 8h19" />
+    <polyline points="9.5 12 7.5 14 9.5 16" />
+    <polyline points="14.5 12 16.5 14 14.5 16" />
+  </svg>
+)
+
 const AdvancedIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="m12 3-1.91 5.86a2 2 0 0 1-1.27 1.27L3 12l5.82 1.87a2 2 0 0 1 1.27 1.27L12 21l1.87-5.82a2 2 0 0 1 1.27-1.27L21 12l-5.82-1.87a2 2 0 0 1-1.27-1.27L12 3z" />
@@ -152,6 +161,7 @@ const mainLinks = [
 const settingsLinks = [
   { href: '/dashboard/settings/personal', label: 'Personal', icon: <PersonalIcon /> },
   { href: '/dashboard/settings/customization', label: 'Customization', icon: <CustomizationIcon /> },
+  { href: '/dashboard/settings/html', label: 'Profile HTML', icon: <ProfileHtmlIcon /> },
   { href: '/dashboard/settings/advanced', label: 'Advanced', icon: <AdvancedIcon /> },
   { href: '/dashboard/settings/developer', label: 'Developer', icon: <DeveloperIcon /> },
 ]

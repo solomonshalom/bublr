@@ -28,6 +28,9 @@ Add your skills, social links, bio, and custom sections. Choose what to show and
 ### Color your posts
 Pick a dot color for each post—make your profile page uniquely yours.
 
+### Profile HTML: your page, your code
+Remember customizing your MySpace page? Write your own HTML, CSS and JavaScript and make it your whole profile or a section of it. Tags like `{{displayName}}` and widgets like `<bublr-posts>`, `<bublr-guestbook>` and a Top 8 fill in your real posts and friends. Start from a template (there's a 2006 one) or describe the page and let the AI write it. A live preview shows light, dark and phone views, and every save is kept so you can go back. Your code runs sealed off from Bublr, so it can never touch your visitors' accounts.
+
 ### Import from anywhere
 Leaving Medium, Substack, WordPress, Ghost, Blogger, Hashnode or DEV? Bring your articles with you in one click.
 

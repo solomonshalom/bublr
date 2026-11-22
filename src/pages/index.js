@@ -3,6 +3,7 @@ import Head from 'next/head'
 import { css } from '@emotion/react'
 import { safeJsonLd } from '../lib/escape'
 import { toPublicUser } from '../lib/public-user'
+import { profileCodeHeaders, trustedProfileCode } from '../lib/profile-code-signature'
 import { toMillis } from '../lib/timestamps'
 import { useAuthState } from 'react-firebase-hooks/auth'
 
@@ -87,13 +88,13 @@ import CTAButton from '../components/cta-button'
 import CTAButtonDashboard from '../components/cta-button-dashboard'
 import CTAButtonSignOut from '../components/cta-button-signout'
 
-export default function Home({ customDomainUser, organizationSchema: orgSchema, profilePageSchema }) {
+export default function Home({ customDomainUser, organizationSchema: orgSchema, profilePageSchema, classicView }) {
   const [user, loading, error] = useAuthState(auth)
   const router = useRouter()
 
   // If this is a custom domain request, render the Profile component directly
   if (customDomainUser) {
-    return <Profile user={customDomainUser} organizationSchema={orgSchema} profilePageSchema={profilePageSchema} />
+    return <Profile user={customDomainUser} organizationSchema={orgSchema} profilePageSchema={profilePageSchema} classicView={classicView} />
   }
 
   if (error) {
@@ -251,7 +252,7 @@ Home.getLayout = function HomeLayout(page, pageProps) {
 }
 
 // Check for custom domain and render profile directly (no redirect)
-export async function getServerSideProps({ req }) {
+export async function getServerSideProps({ req, res, query }) {
   const host = req.headers.host || ''
 
   // List of main domains that should show the home page
@@ -280,6 +281,10 @@ export async function getServerSideProps({ req }) {
 
       // Fetch full user data (same logic as [username]/index.js getServerSideProps)
       const user = await getUserByName(data.userName)
+
+      // Profile HTML: only code saved through Bublr is shown (see profile-code-signature.js)
+      user.profileCode = trustedProfileCode(user.id, user.profileCode)
+      profileCodeHeaders(res, user.profileCode)
 
       // Mark as custom domain access
       user.isCustomDomain = true
@@ -371,6 +376,7 @@ export async function getServerSideProps({ req }) {
           customDomainUser: toPublicUser(user),
           organizationSchema,
           profilePageSchema,
+          classicView: query?.classic === '1',
         },
       }
     }

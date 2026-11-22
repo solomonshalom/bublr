@@ -19,10 +19,14 @@ const App = ({ Component, pageProps }) => {
   const onCustomDomain = Boolean(
     pageProps?.customDomainUser || pageProps?.user?.isCustomDomain
   )
+  // Same for a writer's own full-page Profile HTML: the whole window is theirs
+  const onWritersOwnPage =
+    (pageProps?.user || pageProps?.customDomainUser)?.profileCode?.mode === 'page' && !pageProps?.classicView
   const showComebackBanner =
     !router.pathname.startsWith('/dashboard') &&
     router.pathname !== '/comeback' &&
-    !onCustomDomain
+    !onCustomDomain &&
+    !onWritersOwnPage
 
   return (
     <>

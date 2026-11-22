@@ -10,7 +10,7 @@ import { authedFetch } from '../lib/authed-fetch'
 import { isReservedUsername } from '../lib/reserved-usernames'
 
 // Fields other parts of Bublr own (subscribe/follow/billing/API-key routes,
-// the reading-list button, the sticker canvas). The profile editor never
+// the reading-list button, the sticker canvas, the Profile HTML editor). The profile editor never
 // writes them, so saving settings can't overwrite a subscriber, follower or
 // billing change that landed while the settings page was open. It used to
 // .set() the whole user document.
@@ -28,6 +28,7 @@ const SERVER_MANAGED_USER_FIELDS = [
   'customBranding',
   'newsletterTemplate',
   'profileDecorations',
+  'profileCode',
 ]
 
 function profileFieldsToSave(clientUser) {

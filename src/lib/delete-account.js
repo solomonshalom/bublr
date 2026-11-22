@@ -4,7 +4,8 @@ import firebase, { firestore } from './firebase'
  * Deleting an account: everything a writer made on Bublr goes with them.
  *
  * `deleteAccountData(uid)` removes the user's posts and drafts, profile,
- * subscriber list, API keys, guest book, notifications, follows and likes.
+ * subscriber list, API keys, guest book, Profile HTML and its history,
+ * notifications, follows and likes.
  * Every step can be run again safely, and the profile document goes last, so
  * a request that died halfway can simply be repeated.
  *
@@ -79,8 +80,10 @@ export async function deleteAccountData(uid) {
   // 3. The custom domain goes back to its owner.
   await bestEffort('custom domain', () => removeDomainFromVercel(user.customDomain?.domain))
 
-  // 4. Guest book entries left on this profile.
+  // 4. Guest book entries left on this profile, and the saved history of
+  //    the writer's Profile HTML (the live code is on the profile itself).
   await bestEffort('guest book', () => deleteQuery(userRef.collection('guestbook')))
+  await bestEffort('profile HTML history', () => deleteQuery(userRef.collection('profileCodeRevisions')))
 
   // 5. Notifications: the ones this writer received, and the ones carrying
   //    their name and picture in other people's lists.
