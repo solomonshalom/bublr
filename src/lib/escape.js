@@ -21,7 +21,9 @@ export function escapeHtml(value) {
  * keeps the JSON identical for parsers while making it inert in HTML.
  */
 export function safeJsonLd(data) {
-  return JSON.stringify(data)
+  // JSON.stringify(undefined) is undefined, not a string: a page passing a
+  // missing schema (custom-domain profiles have no breadcrumb) crashed here
+  return JSON.stringify(data === undefined ? null : data)
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
     .replace(/&/g, '\\u0026')

@@ -2,6 +2,7 @@
 // sandboxed frame serves.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import vm from 'node:vm'
 
 import {
   moderationText,
@@ -28,6 +29,7 @@ import {
 } from '../../src/lib/profile-code.js'
 import { toPublicUser } from '../../src/lib/public-user.js'
 import { PROFILE_CODE_TEMPLATES } from '../../src/lib/profile-code-templates.js'
+import { heightFollower, MAX_HEIGHT } from '../../src/components/profile-code/height.js'
 
 const USER = {
   id: 'alice-uid',
@@ -318,7 +320,12 @@ test('widgets: guest book draws only real signatures', () => {
 })
 
 test('widgets: Top 8 friends', () => {
-  assert.deepEqual(extractFriendNames('<bublr-friends users="Hatter, @cat  queen,bad!name,hatter"><bublr-friends users="rabbit">'), ['hatter', 'cat', 'queen', 'rabbit'])
+  // Usernames match exactly, like profile URLs (new accounts get mixed-case uids as usernames)
+  assert.deepEqual(extractFriendNames('<bublr-friends users="hatter, @cat  queen,bad!name,hatter"><bublr-friends users="rabbit kQ3xT9aB7mN2pL5vR8wY1zC4dE6f">'), ['hatter', 'cat', 'queen', 'rabbit', 'kQ3xT9aB7mN2pL5vR8wY1zC4dE6f'])
+  assert.deepEqual(extractFriendNames('<bublr-friends users="Hatter hatter __proto__">'), ['Hatter', 'hatter'])
+  const mixed = buildTemplateData(USER, { friends: { kQ3xT9: { name: 'kQ3xT9', displayName: 'Mixed Case' } } })
+  assert.match(renderProfileHtml('<bublr-friends users="kQ3xT9 toString constructor">', mixed).output, /Mixed Case[\s\S]*href="\/kQ3xT9"|href="\/kQ3xT9"[\s\S]*Mixed Case/)
+  assert.equal((renderProfileHtml('<bublr-friends users="kQ3xT9 toString constructor">', mixed).output.match(/bublr-friend"/g) || []).length, 1, 'object built-ins are not friends')
   assert.equal(extractFriendNames(`<bublr-friends users="${Array.from({ length: 20 }, (_, i) => `u${i}`).join(',')}">`).length, 12)
   const out = html('<bublr-friends users="hatter, ghost, evil" title="Top 8">')
   assert.match(out, /<h2 class="bublr-friends__title">Top 8<\/h2>/)
@@ -354,7 +361,10 @@ test('document: a fragment is wrapped with the runtime, data and styles', () => 
   const { html: doc, warnings } = buildProfileDocument({ code: { html: '<h1>{{name}}</h1>', css: 'h1{color:red}', js: 'console.log(1)' }, data })
   assert.deepEqual(warnings, [])
   assert.match(doc, /^<!doctype html><html lang="en" class="bublr-page"><head>/)
-  assert.match(doc, /<base target="_top">/)
+  // Links are handled by the runtime, not <base target> (which also sent #anchors to the top window)
+  assert.doesNotMatch(doc, /<base\b/)
+  assert.match(doc, /PREVIEW=false/)
+  assert.match(buildProfileDocument({ code: { html: 'x' }, data, preview: true }).html, /PREVIEW=true/)
   assert.match(doc, /window\.bublr=\{/)
   assert.match(doc, /bublr:height/)
   assert.match(doc, /<style id="bublr-base">/)
@@ -362,6 +372,220 @@ test('document: a fragment is wrapped with the runtime, data and styles', () => 
   assert.match(doc, /<style id="bublr-css">h1\{color:red\}<\/style><\/head><body><h1>alice<\/h1><script id="bublr-js">console\.log\(1\)<\/script><\/body><\/html>$/)
   assert.match(buildProfileDocument({ code: { html: 'x' }, data, embed: 'block' }).html, /class="bublr-block"/)
   assert.doesNotMatch(buildProfileDocument({ code: { html: 'x' }, data }).html, /bublr-css|bublr-js/)
+})
+
+// Runs the frame's runtime script against a stubbed browser and clicks a link.
+function runFrame({ preview = false, embed = 'page', frameUrl: at = 'https://www.bublr.life/api/profile-frame/alice?embed=page&v=3' } = {}) {
+  const { html: doc } = buildProfileDocument({ code: { html: 'x' }, data, preview, embed })
+  const runtime = [...doc.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).find(s => s.includes('PREVIEW='))
+  const listeners = {}
+  const opened = []
+  const posted = []
+  const top = { location: { href: 'https://www.bublr.life/alice' } }
+  const win = {
+    addEventListener: (type, fn) => (listeners[type] = listeners[type] || []).push(fn),
+    dispatchEvent() {},
+    open: (url, name) => opened.push([url, name]),
+    parent: { postMessage: m => posted.push(m) },
+    top,
+    scrollY: 0,
+  }
+  const context = {
+    window: win,
+    document: {
+      documentElement: {
+        setAttribute() {},
+        style: {},
+        getBoundingClientRect: () => ({ height: 100 }),
+        classList: { contains: c => c === (embed === 'block' ? 'bublr-block' : 'bublr-page') },
+      },
+      readyState: 'complete',
+      body: null,
+      addEventListener() {},
+      getElementById: id => (id === 'guestbook' ? { getBoundingClientRect: () => ({ top: 300 }) } : null),
+      getElementsByName: () => [],
+    },
+    location: { href: at },
+    URL,
+    CustomEvent: class {
+      constructor(type, init) {
+        this.type = type
+        this.detail = init && init.detail
+      }
+    },
+    matchMedia: () => ({ matches: false }),
+    getComputedStyle: () => ({}),
+    setInterval: () => 0,
+    clearInterval() {},
+  }
+  win.matchMedia = context.matchMedia
+  vm.runInNewContext(runtime, context)
+  const fire = (type, event) => {
+    for (const fn of listeners[type] || []) fn(event)
+    return event
+  }
+  const click = (href, { target = '', button = 0, metaKey = false, already = false, type = 'click' } = {}) => {
+    const a = {
+      nodeType: 1,
+      closest: () => a,
+      hasAttribute: () => false,
+      getAttribute: name => (name === 'href' ? href : name === 'target' ? target : null),
+    }
+    const event = {
+      target: a,
+      button,
+      metaKey,
+      ctrlKey: false,
+      shiftKey: false,
+      defaultPrevented: already,
+      preventDefault() {
+        this.defaultPrevented = true
+      },
+    }
+    return fire(type, event)
+  }
+  const hello = path => fire('message', { source: win.parent, data: { type: 'bublr:hello', path } })
+  return { click, fire, hello, opened, posted, top }
+}
+
+test('frame links: relative links go to the profile, in the visitor’s tab', () => {
+  const f = runFrame()
+  const e = f.click('?classic=1')
+  assert.equal(e.defaultPrevented, true)
+  assert.equal(f.top.location.href, 'https://www.bublr.life/alice?classic=1')
+  f.click('/alice/tea-party')
+  assert.equal(f.top.location.href, 'https://www.bublr.life/alice/tea-party')
+  assert.deepEqual(f.opened, [])
+})
+
+test('frame links: #anchors scroll the page itself; new-tab links open a new tab', () => {
+  const f = runFrame()
+  assert.equal(f.click('#guestbook').defaultPrevented, false, 'the browser scrolls inside the frame')
+  assert.equal(f.click('javascript:void(0)').defaultPrevented, false)
+  assert.equal(f.click('https://example.com', { already: true }).defaultPrevented, true)
+  assert.deepEqual(f.opened, [], 'a link the page handled itself is left alone')
+  f.click('https://example.com/x', { target: '_blank' })
+  f.click('?classic=1', { metaKey: true })
+  f.click('/explore', { type: 'auxclick', button: 1 })
+  assert.deepEqual(f.opened, [
+    ['https://example.com/x', '_blank'],
+    ['https://www.bublr.life/alice?classic=1', '_blank'],
+    ['https://www.bublr.life/explore', '_blank'],
+  ])
+  assert.equal(f.top.location.href, 'https://www.bublr.life/alice', 'the visitor’s tab didn’t move')
+})
+
+test('frame links: in the editor preview every link opens a new tab, and ⌘S saves', () => {
+  const f = runFrame({ preview: true, frameUrl: 'https://www.bublr.life/api/profile-preview' })
+  f.click('?classic=1')
+  f.click('/alice/tea-party')
+  assert.deepEqual(f.opened, [
+    ['https://www.bublr.life/alice?classic=1', '_blank'],
+    ['https://www.bublr.life/alice/tea-party', '_blank'],
+  ])
+  assert.equal(f.top.location.href, 'https://www.bublr.life/alice', 'the editor is never navigated away')
+  const key = f.fire('keydown', {
+    metaKey: true,
+    key: 's',
+    preventDefault() {
+      this.saved = true
+    },
+  })
+  assert.equal(key.saved, true)
+  assert.ok(f.posted.some(m => m.type === 'bublr:save'))
+
+  const live = runFrame()
+  live.fire('keydown', { metaKey: true, key: 's', preventDefault() {} })
+  assert.equal(live.posted.some(m => m.type === 'bublr:save'), false, 'only the preview listens for ⌘S')
+})
+
+test('frame links: only web, mail and phone links are followed; the page says where the profile lives', () => {
+  const f = runFrame()
+  for (const href of ['java\tscript:alert(1)', ' JAVASCRIPT:alert(1)', 'data:text/html,hi', 'vbscript:x']) {
+    assert.equal(f.click(href).defaultPrevented, false, href)
+  }
+  assert.equal(f.top.location.href, 'https://www.bublr.life/alice', 'nothing reached the visitor’s tab')
+  f.click('mailto:alice@example.com')
+  assert.equal(f.top.location.href, 'mailto:alice@example.com')
+  // On a custom domain the profile lives at "/": the page tells the frame
+  const custom = runFrame({ frameUrl: 'https://alice.example/api/profile-frame/alice?embed=page&v=3' })
+  custom.hello('//evil.example/x')
+  custom.click('?classic=1')
+  assert.equal(custom.top.location.href, 'https://alice.example/alice?classic=1', 'a protocol-relative path is ignored')
+  custom.hello('/')
+  custom.click('?classic=1')
+  assert.equal(custom.top.location.href, 'https://alice.example/?classic=1')
+})
+
+test('frame links: in a section, #anchors scroll the profile (the frame can’t scroll)', () => {
+  const f = runFrame({ embed: 'block' })
+  assert.equal(f.click('#guestbook').defaultPrevented, true)
+  // (messages come from the script's own realm, so compare them as JSON)
+  assert.equal(JSON.stringify(f.posted.filter(m => m.type === 'bublr:scroll')), JSON.stringify([{ type: 'bublr:scroll', top: 300 }]))
+  assert.equal(f.click('#nowhere').defaultPrevented, false, 'an anchor with no target is left to the browser')
+  const page = runFrame()
+  assert.equal(page.click('#guestbook').defaultPrevented, false, 'a whole page scrolls itself')
+})
+
+test('section heights: a page that grows with its frame is stopped, not followed forever', () => {
+  let t = 0
+  const follow = heightFollower({ now: () => t })
+  assert.equal(follow(10), 40, 'never smaller than 40px')
+  assert.equal(follow(1e9), MAX_HEIGHT)
+  const fresh = heightFollower({ now: () => t })
+  let h = 200
+  let last = null
+  for (let i = 0; i < 100; i++) {
+    const next = fresh(h + 20) // "100vh plus a margin": always 20px taller than the frame
+    if (next === null) break
+    last = next
+    h = next
+  }
+  assert.ok(last < 200 + 26 * 20, `stopped at ${last}`)
+  assert.equal(fresh(h + 20), null, 'still stopped')
+  assert.equal(fresh(300), 300, 'shrinking is always followed, and resets the guard')
+  t += 5000
+  assert.equal(fresh(320), 320, 'normal growth works again')
+})
+
+test('document: “JS off” pauses scripts in the HTML too', () => {
+  const code = { html: '<p>hi</p><script>bad()</script><SCRIPT src="https://x.example/a.js"></SCRIPT><scripted>', js: 'alsoBad()' }
+  const on = buildProfileDocument({ code, data, preview: true }).html
+  assert.match(on, /<script>bad\(\)<\/script>/)
+  assert.match(on, /alsoBad\(\)/)
+  const off = buildProfileDocument({ code, data, preview: true, scripts: false }).html
+  assert.doesNotMatch(off, /alsoBad/)
+  assert.match(off, /<script type="text\/x-bublr-paused">bad\(\)<\/script>/)
+  assert.match(off, /<script type="text\/x-bublr-paused" src="https:\/\/x\.example\/a\.js">/)
+  assert.match(off, /<scripted>/, 'other tags are untouched')
+  assert.match(off, /PREVIEW=true/, 'Bublr’s own runtime still runs')
+  // Inline handlers and javascript: links: a policy that only allows Bublr's two scripts
+  const nonce = off.match(/<meta http-equiv="Content-Security-Policy" content="script-src 'nonce-([a-z0-9]+)'">/)[1]
+  assert.equal((off.match(new RegExp(`<script nonce="${nonce}">`, 'g')) || []).length, 2)
+  assert.ok(off.indexOf('Content-Security-Policy') < off.indexOf('<script'), 'the policy comes before any script')
+  assert.doesNotMatch(on, /Content-Security-Policy|nonce=/)
+})
+
+test('template data: counts cover every post, lists show the newest 50', () => {
+  const many = Array.from({ length: 120 }, (_, i) => ({ title: `P${i}`, slug: `p${i}`, published: true, views: 10, lastEdited: { seconds: 1700000000 + i } }))
+  const d = buildTemplateData({ name: 'busy', posts: [...many, { title: 'draft', published: false, views: 99 }] })
+  assert.equal(d.posts.length, 50)
+  assert.equal(d.posts[0].title, 'P119')
+  assert.equal(d.postCount, 120)
+  assert.equal(d.totalReads, 1200)
+})
+
+test('widgets: empty="" hides a list’s empty message', () => {
+  const none = buildTemplateData({ name: 'new', posts: [] })
+  assert.match(renderProfileHtml('<bublr-posts></bublr-posts>', none).output, /No posts yet/)
+  assert.equal(renderProfileHtml('<bublr-posts empty=""></bublr-posts>', none).output, '')
+  assert.match(renderProfileHtml('<bublr-posts empty="Soon!"></bublr-posts>', none).output, /Soon!/)
+  assert.equal(renderProfileHtml('<bublr-guestbook empty=""></bublr-guestbook>', none).output, '')
+  assert.equal(renderProfileHtml('<bublr-latest-post empty=""></bublr-latest-post>', none).output, '')
+  const terminal = PROFILE_CODE_TEMPLATES.find(t => t.id === 'terminal')
+  const out = renderProfileHtml(terminal.html, none).output
+  assert.doesNotMatch(out, /No posts yet/)
+  assert.match(out, /total 0/)
 })
 
 test('document: the writer’s CSS and JS can’t close their own elements early', () => {

@@ -274,10 +274,11 @@ export async function getServerSideProps({ req, res, query }) {
   // This might be a custom domain - look up the user and render profile directly
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
-    const res = await fetch(`${baseUrl}/api/domain/lookup?domain=${encodeURIComponent(host)}`)
+    // Not `res`: that's the page response, which profileCodeHeaders writes to below
+    const lookupRes = await fetch(`${baseUrl}/api/domain/lookup?domain=${encodeURIComponent(host)}`)
 
-    if (res.ok) {
-      const data = await res.json()
+    if (lookupRes.ok) {
+      const data = await lookupRes.json()
 
       // Fetch full user data (same logic as [username]/index.js getServerSideProps)
       const user = await getUserByName(data.userName)

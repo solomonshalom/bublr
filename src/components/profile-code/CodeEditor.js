@@ -12,6 +12,12 @@ const wrapStyle = css`
   height: 100%;
   font-size: 13px;
 
+  /* @uiw/react-codemirror wraps the editor in its own div: without a height
+     the editor grows to fit all the code and can't scroll */
+  > div {
+    height: 100%;
+  }
+
   .cm-editor {
     height: 100%;
     background: var(--grey-1);

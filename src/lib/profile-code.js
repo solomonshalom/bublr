@@ -269,6 +269,25 @@ const SVG_PATH = /^[MLHVCSQTAZmlhvcsqtaz0-9eE.,\s+-]{1,20000}$/
 const VIEW_BOX = /^-?[\d.]+(?:[ ,]+-?[\d.]+){3}$/
 
 /**
+ * Friends for <bublr-friends>, keyed by username exactly as written (usernames
+ * are case-sensitive, like profile URLs). Used for the server's lookups and
+ * the editor's, so the preview and the live page agree.
+ */
+export function normalizeFriends(friends) {
+  const out = {}
+  for (const [key, f] of Object.entries(friends && typeof friends === 'object' ? friends : {})) {
+    if (!f || typeof f !== 'object') continue
+    out[key] = {
+      name: String(f.name || key),
+      displayName: String(f.displayName || f.name || key),
+      photo: safeUrl(f.photo) || '',
+      url: `/${encodeURIComponent(String(f.name || key))}`,
+    }
+  }
+  return out
+}
+
+/**
  * The public data a profile page may use. `user` is a profile with posts
  * already loaded (getUserByName); only published posts are used. Everything
  * here is already public on the classic profile.
@@ -277,11 +296,12 @@ export function buildTemplateData(user, { guestbook = [], friends = {}, now = Da
   const u = user || {}
   const name = String(u.name || '')
   const allPosts = Array.isArray(u.posts) ? u.posts : []
-  const published = allPosts
+  const allPublished = allPosts
     .filter(p => p && typeof p === 'object' && p.published)
     .map(p => ({ post: p, ms: toMs(p.lastEdited) }))
     .sort((a, b) => b.ms - a.ms)
-    .slice(0, 50)
+  // Pages list the newest 50; the counts cover every post
+  const published = allPublished.slice(0, 50)
 
   const posts = published.map(({ post, ms }, i) => ({
     title: truncate(stripTags(post.title) || 'Untitled', 200),
@@ -332,16 +352,7 @@ export function buildTemplateData(user, { guestbook = [], friends = {}, now = Da
   const work = experienceList(u.workExperience)
   const education = experienceList(u.education)
 
-  const friendMap = {}
-  for (const [key, f] of Object.entries(friends && typeof friends === 'object' ? friends : {})) {
-    if (!f || typeof f !== 'object') continue
-    friendMap[key.toLowerCase()] = {
-      name: String(f.name || key),
-      displayName: String(f.displayName || f.name || key),
-      photo: safeUrl(f.photo) || '',
-      url: `/${encodeURIComponent(String(f.name || key))}`,
-    }
-  }
+  const friendMap = normalizeFriends(friends)
 
   return scrub({
     name,
@@ -355,8 +366,8 @@ export function buildTemplateData(user, { guestbook = [], friends = {}, now = Da
     followerCount: count(u.followerCount, u.followers),
     followingCount: count(u.followingCount, u.following),
     subscriberCount: count(u.subscriberCount, null),
-    postCount: posts.length,
-    totalReads: posts.reduce((sum, p) => sum + p.reads, 0),
+    postCount: allPublished.length,
+    totalReads: allPublished.reduce((sum, { post }) => sum + (Number.isFinite(post.views) ? post.views : 0), 0),
     hasPosts: posts.length > 0,
     hasSkills: skills.length > 0,
     hasSocials: socials.length > 0,
@@ -652,12 +663,18 @@ function itemTemplate(component, items, data, state, fallback) {
 
 const e = escapeHtml
 
+// What a list widget shows when it has nothing: its empty="" text (empty="" shows nothing)
+function emptyMessage(attrs, fallback) {
+  const text = attrs && Object.prototype.hasOwnProperty.call(attrs, 'empty') ? attrs.empty : fallback
+  return text ? `<p class="bublr-empty">${e(text)}</p>` : ''
+}
+
 function renderPosts(component, data, state) {
   const a = component.attrs
   const limit = intAttr(a.limit, 10, 1, 50)
   const layout = ['list', 'cards', 'grid', 'compact'].includes(a.layout) ? a.layout : 'list'
   const posts = data.posts.slice(0, limit)
-  if (!posts.length) return `<p class="bublr-empty">${e(a.empty || 'No posts yet.')}</p>`
+  if (!posts.length) return emptyMessage(a, 'No posts yet.')
   const showExcerpt = a.excerpt !== 'false' && layout !== 'compact'
   const showDate = a.date !== 'false'
   return itemTemplate(component, posts, data, state, () =>
@@ -676,7 +693,7 @@ function renderPosts(component, data, state) {
 function renderGuestbook(component, data, state) {
   const limit = intAttr(component.attrs.limit, 8, 1, 50)
   const entries = data.guestbook.slice(0, limit)
-  if (!entries.length) return `<p class="bublr-empty">${e(component.attrs.empty || 'No guest book signatures yet.')}</p>`
+  if (!entries.length) return emptyMessage(component.attrs, 'No guest book signatures yet.')
   return itemTemplate(component, entries, data, state, () =>
     ul(
       'bublr-guestbook',
@@ -697,8 +714,8 @@ function renderGuestbook(component, data, state) {
 export function friendNamesFrom(value) {
   return String(value || '')
     .split(/[\s,]+/)
-    .map(s => s.trim().replace(/^@/, '').toLowerCase())
-    .filter(s => /^[a-z0-9_.-]{1,40}$/.test(s))
+    .map(s => s.trim().replace(/^@/, ''))
+    .filter(s => /^[A-Za-z0-9_.-]{1,64}$/.test(s) && s !== '__proto__')
 }
 
 /** Usernames mentioned by <bublr-friends users="…"> anywhere in the page. */
@@ -713,7 +730,8 @@ export function extractFriendNames(html) {
 
 function renderFriends(component, data, state) {
   const names = friendNamesFrom(component.attrs.users).slice(0, MAX_FRIENDS)
-  const friends = names.map(n => data.friends[n]).filter(Boolean)
+  const known = data.friends || {}
+  const friends = names.map(n => (Object.prototype.hasOwnProperty.call(known, n) ? known[n] : null)).filter(Boolean)
   const title = component.attrs.title
   if (!friends.length) return component.attrs.empty ? `<p class="bublr-empty">${e(component.attrs.empty)}</p>` : ''
   const body = itemTemplate(component, friends, data, state, () =>
@@ -781,7 +799,7 @@ export function renderComponent(component, data, state = newState()) {
       return renderPosts(component, data, state)
     case 'latest-post': {
       const p = data.latestPost
-      if (!p) return `<p class="bublr-empty">${e(a.empty || 'No posts yet.')}</p>`
+      if (!p) return emptyMessage(a, 'No posts yet.')
       return itemTemplate(component, [p], data, state, () =>
         `<article class="bublr-latest"><span class="bublr-latest__label">${e(a.label || 'Latest post')}</span>` +
         `<a class="bublr-latest__title" href="${e(p.url)}">${e(p.title)}</a>` +
@@ -928,17 +946,34 @@ export function renderProfileHtml(html, data) {
 // The document
 
 // Runs inside the sandboxed frame. Follows the visitor's theme, reports the
-// page height (so a block on the classic profile can size itself) and
-// exposes window.bublr.
-const RUNTIME = `(function(){
+// page height (so a block on the classic profile can size itself), exposes
+// window.bublr and sends link clicks to the right place.
+//
+// Links: the frame's own address is /api/profile-frame/... (or the preview
+// shell), so a relative link like "?classic=1" would point there. Clicks are
+// resolved against the profile's address instead and open in the visitor's
+// tab (or a new tab for target=_blank and modifier clicks). "#section" links
+// scroll the page itself. In the editor's preview every link opens a new tab,
+// so clicking around never navigates away from unsaved work.
+const runtime = ({ preview, profilePath }) => `(function(){
+var PREVIEW=${preview ? 'true' : 'false'},BASE=location.href;
+function setBase(p){try{BASE=new URL(p,location.href).href}catch(e){}}
+setBase(${JSON.stringify(String(profilePath || '/')).replace(/</g, '\\u003c')});
+function linkEl(e){var p=e.composedPath?e.composedPath():[];for(var i=0;i<p.length;i++){var n=p[i];if(n&&n.nodeType===1&&(n.localName==='a'||n.localName==='area')&&n.hasAttribute('href'))return n}var t=e.target;while(t&&t.nodeType!==1)t=t.parentNode;return t&&t.closest?t.closest('a[href],area[href]'):null}
+function linkFor(a){if(!a||a.hasAttribute('download'))return null;var raw=(a.getAttribute('href')||'').trim();if(!raw||raw.charAt(0)==='#')return null;var u;try{u=new URL(raw,BASE)}catch(x){return null}if(!/^(https?|mailto|tel):$/.test(u.protocol))return null;return{url:u.href,target:(a.getAttribute('target')||'').toLowerCase()}}
+function openNew(u){try{window.open(u,'_blank','noopener')}catch(x){}}
+function anchorFor(a){var raw=a?(a.getAttribute('href')||'').trim():'';if(raw.length<2||raw.charAt(0)!=='#')return null;var id=raw.slice(1);try{id=decodeURIComponent(id)}catch(x){}return document.getElementById(id)||document.getElementsByName(id)[0]||null}
+window.addEventListener('click',function(e){if(e.defaultPrevented||e.button!==0)return;var a=linkEl(e);if(!a)return;if(d.classList&&d.classList.contains('bublr-block')){var t=anchorFor(a);if(t){e.preventDefault();post({type:'bublr:scroll',top:Math.max(0,Math.round(t.getBoundingClientRect().top+(window.scrollY||0)))});return}}var l=linkFor(a);if(!l)return;e.preventDefault();if(PREVIEW||l.target==='_blank'||e.metaKey||e.ctrlKey||e.shiftKey){openNew(l.url);return}try{window.top.location.href=l.url}catch(x){openNew(l.url)}});
+window.addEventListener('auxclick',function(e){if(e.defaultPrevented||e.button!==1)return;var l=linkFor(linkEl(e));if(!l)return;e.preventDefault();openNew(l.url)});
+if(PREVIEW)window.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&!e.altKey&&(e.key==='s'||e.key==='S')){e.preventDefault();post({type:'bublr:save'})}});
 var d=document.documentElement,P=window.parent;
 function post(m){try{if(P&&P!==window)P.postMessage(m,'*')}catch(e){}}
 function apply(t){if(t!=='dark'&&t!=='light')return;d.setAttribute('data-theme',t);d.style.colorScheme=t;if(window.bublr)window.bublr.theme=t;try{window.dispatchEvent(new CustomEvent('bublr:theme',{detail:t}))}catch(e){}}
 try{apply(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch(e){apply('light')}
 var last=-1;
-function height(){var b=document.body,h=d.getBoundingClientRect().height;if(b){var r=b.getBoundingClientRect(),s=getComputedStyle(b);h=Math.max(h,r.bottom+parseFloat(s.marginBottom||0)+(window.scrollY||0))}return Math.ceil(h)}
+function height(){var b=document.body,y=window.scrollY||0,h=d.getBoundingClientRect().height;if(b){var r=b.getBoundingClientRect(),s=getComputedStyle(b);h=Math.max(h,r.bottom+parseFloat(s.marginBottom||0)+y);var c=b.children;for(var i=0;i<c.length&&i<400;i++){var k=c[i].getBoundingClientRect();if(k.width||k.height)h=Math.max(h,k.bottom+y)}}return Math.ceil(h)}
 function report(force){var h=height();if(force||Math.abs(h-last)>1){last=h;post({type:'bublr:height',height:h})}}
-window.addEventListener('message',function(e){if(e.source!==P)return;var m=e.data||{};if(m.type==='bublr:theme')apply(m.theme);else if(m.type==='bublr:hello'){report(true);post({type:'bublr:ready'})}});
+window.addEventListener('message',function(e){if(e.source!==P)return;var m=e.data||{};if(m.type==='bublr:theme')apply(m.theme);else if(m.type==='bublr:hello'){if(typeof m.path==='string'&&m.path.charAt(0)==='/'&&m.path.charAt(1)!=='/')setBase(m.path);report(true);post({type:'bublr:ready'})}});
 function start(){report(true);post({type:'bublr:ready'});if(window.ResizeObserver){var ro=new ResizeObserver(function(){report()});ro.observe(d);if(document.body)ro.observe(document.body)}var n=0,t=setInterval(function(){report();if(++n>20)clearInterval(t)},500);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){report()})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 window.addEventListener('load',function(){report()});
@@ -1044,26 +1079,33 @@ export function scriptData(data) {
  *   code:  { html, css, js }
  *   data:  buildTemplateData(...)
  *   embed: 'page' (the whole profile) or 'block' (a section of the classic profile)
+ *   preview: true in the editor (links open in a new tab, ⌘S saves)
+ *   scripts: false pauses the writer's JavaScript (the editor's "JS off")
  */
-export function buildProfileDocument({ code, data, embed = 'page' }) {
+export function buildProfileDocument({ code, data, embed = 'page', preview = false, scripts = true }) {
   const c = code || {}
   const html = renderProfileHtml(c.html, data)
+  if (!scripts) html.output = html.output.replace(/<script(?=[\s>/])/gi, '<script type="text/x-bublr-paused"')
   const css = renderTemplate(normalizeCode(c.css), data, { escape: escapeCss })
   const js = normalizeCode(c.js)
   const warnings = [...new Set([...html.warnings, ...css.warnings.map(w => `CSS: ${w}`)])]
 
   const embedClass = embed === 'block' ? 'bublr-block' : 'bublr-page'
   const title = `<title>${escapeHtml(data.displayName)} (@${escapeHtml(data.name)})</title>`
+  // "JS off" in the editor: a policy that only lets Bublr's own two scripts run,
+  // so inline handlers (onerror=…) and javascript: links are paused too
+  const nonce = scripts ? '' : Math.random().toString(36).slice(2) + Date.now().toString(36)
+  const ours = nonce ? `<script nonce="${nonce}">` : '<script>'
   const head =
     '<meta charset="utf-8">' +
+    (nonce ? `<meta http-equiv="Content-Security-Policy" content="script-src 'nonce-${nonce}'">` : '') +
     '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-    '<base target="_top">' +
     FONT_LINKS +
-    `<script>window.bublr=${safeJsonLd(scriptData(data))};</script>` +
-    `<script>${RUNTIME}</script>` +
+    `${ours}window.bublr=${safeJsonLd(scriptData(data))};</script>` +
+    `${ours}${runtime({ preview, profilePath: data.profileUrl })}</script>` +
     `<style id="bublr-base">${BASE_CSS}</style>`
   const userStyle = css.output.trim() ? `<style id="bublr-css">${inStyle(css.output)}</style>` : ''
-  const userScript = js.trim() ? `<script id="bublr-js">${inScript(js)}</script>` : ''
+  const userScript = scripts && js.trim() ? `<script id="bublr-js">${inScript(js)}</script>` : ''
 
   let doc
   if (isFullDocument(html.output)) {

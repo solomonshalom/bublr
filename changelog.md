@@ -260,3 +260,29 @@ In 2006 a MySpace page was a bit of HTML and CSS pasted into a box, and it was t
 - `{{ }}` in code samples gets filled in. Write `&#123;&#123;` instead, or put `<!-- bublr:no-tags -->` anywhere in your HTML.
 - In Safari, a script stuck in an endless loop can freeze the tab. The preview's JS switch helps while you're writing one.
 - The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
+
+# Your Space, Fixed - Update (22nd November'26)
+Profile HTML shipped with bugs that only showed up once real pages went in: long code couldn't be scrolled, links inside a page went to the wrong place, and custom domains broke. The editor was also hard to find your way around. This update fixes every bug we found and rebuilds the editor around how people start: pick a look, change it, save.
+
+## Changed
+- **A start screen.** A new Profile HTML page opens on a gallery of templates, each a live picture of your own profile in that style, with a "describe it" box for the AI beside them. Picking one is instant and Undo takes it back. *Templates* in the editor brings the gallery back.
+- **Clearer choices.** *On your profile* is now *Not shown*, *Section* or *Whole page*, with a line saying what each one does and that it takes effect when you save. Code tabs (HTML, CSS, JavaScript) are separate from the tools (Templates, Insert, AI, History), which open over the code with a *Back to code* button.
+- **Messages no longer push the editor around.** They appear at the bottom of the screen. *Discard* sits next to *Save* whenever you have unsaved changes.
+- **Insert** lists widgets first and adds a snippet where your cursor is, or at the end if you haven't clicked into the code yet (it used to land on the very first line).
+- The preview has a reload button, separate *Light* and *Dark* buttons, and shows a section at the real width of your profile column.
+
+## Fixed
+- The code editor couldn't scroll: anything below the first screenful was out of reach. Mouse-wheel scrolling also did nothing in the editor's panels.
+- Links inside a page: "Classic view" (`?classic=1`) reloaded the custom page instead of opening the classic profile, `#section` links reloaded the whole tab, and clicking any link in the preview navigated away from the editor. Relative links now resolve against your profile, `#links` scroll the page (or the profile, in a section), and preview links open in a new tab.
+- A custom domain showed Bublr's home page instead of the writer's profile once Profile HTML was turned on.
+- Code saved before a signing-secret change couldn't be saved again: the Save button stayed disabled.
+- A section whose CSS set `html, body { height: 100% }` stayed 160px tall. In the preview, a section with `min-height: 100vh` grew to 20,000px. Both follow their content now, and the editor warns about `vh` heights in a section.
+- Top 8 friends whose usernames have capital letters never appeared.
+- `{{postCount}}`, `{{totalReads}}`, `<bublr-stats>` and `<bublr-counter>` stopped counting at your newest 50 posts.
+- *JS off* in the preview didn't pause `<script>` tags written in the HTML, or inline handlers like `onerror`.
+- ⌘S with the preview focused opened the browser's "Save page" dialog. It saves now.
+- After a save conflict, *Load theirs* threw your edits away. Undo brings them back now.
+- Unsaved changes kept in your browser were silently dropped if you had saved from another device since. The editor now offers them back.
+- The Terminal template said "No posts yet" and "total 0" at once. `empty=""` now hides a list widget's empty message.
+- A custom domain's profile failed to load at all (a server error since 2nd November, unrelated to Profile HTML): the page wrote a breadcrumb schema that custom domains don't have.
+- `npm test` runs 206 tests.

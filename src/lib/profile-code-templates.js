@@ -267,7 +267,7 @@ const terminal = {
     <p>{{about}}</p>
 
     <p class="line"><span class="prompt">{{name}}@bublr:~$</span> ls -lt posts/</p>
-    <bublr-posts limit="12" excerpt="false">
+    <bublr-posts limit="12" excerpt="false" empty="">
       <p class="ls">-rw-r--r--  {{reads}} reads  {{date}}  <a href="{{url}}">{{title}}</a></p>
     </bublr-posts>
     {{^posts}}<p class="dim">total 0</p>{{/posts}}
@@ -564,8 +564,8 @@ footer a { color: inherit; }`,
 
 const nowPlaying = {
   id: 'now-playing',
-  name: 'Now playing (block)',
-  description: 'A small music card for the classic profile.',
+  name: 'Now playing',
+  description: 'A small music card for your profile song.',
   mode: 'block',
   html: `<div class="np">
   <div class="disc" aria-hidden="true"></div>
@@ -592,8 +592,8 @@ const nowPlaying = {
 
 const spotlight = {
   id: 'spotlight',
-  name: 'Latest post spotlight (block)',
-  description: 'Your newest post as a big card on the classic profile.',
+  name: 'Latest post spotlight',
+  description: 'Your newest post as a big card.',
   mode: 'block',
   html: `<bublr-latest-post label="Fresh off the press">
   <a class="spot" href="{{url}}">
@@ -622,8 +622,8 @@ const spotlight = {
 
 const blank = {
   id: 'blank',
-  name: 'Blank page',
-  description: 'Start from nothing. Your page, your rules.',
+  name: 'Start from scratch',
+  description: 'An empty page. Your code, your rules.',
   mode: 'page',
   html: `<h1>Hi, I’m {{displayName}}</h1>
 <p>{{about}}</p>

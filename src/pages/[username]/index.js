@@ -1564,10 +1564,12 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
         __html: safeJsonLd(profilePageSchema)
       }} />
 
-      {/* Breadcrumb schema for navigation SEO */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{
-        __html: safeJsonLd(breadcrumbSchema)
-      }} />
+      {/* Breadcrumb schema for navigation SEO (not on custom domains) */}
+      {breadcrumbSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: safeJsonLd(breadcrumbSchema)
+        }} />
+      )}
 
       {/* Newsletter subscription schema for AI discoverability */}
       {newsletterSchema && (

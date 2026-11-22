@@ -50,7 +50,8 @@ export async function loadApprovedGuestbook(uid, limit = 24) {
 /** Public name and picture for each username that exists (for <bublr-friends>). */
 export async function loadFriends(names) {
   const out = {}
-  const unique = [...new Set((names || []).map(n => String(n).toLowerCase()))].slice(0, MAX_FRIENDS)
+  // Usernames match exactly, as in profile URLs
+  const unique = [...new Set((names || []).map(n => String(n)))].slice(0, MAX_FRIENDS)
   await Promise.all(
     unique.map(async name => {
       try {

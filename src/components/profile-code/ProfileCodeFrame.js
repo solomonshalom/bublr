@@ -2,9 +2,7 @@
 import { css } from '@emotion/react'
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { FRAME_SANDBOX } from '../../lib/profile-code'
-
-const MIN_HEIGHT = 40
-const MAX_HEIGHT = 20000
+import { heightFollower } from './height'
 
 /**
  * A writer's Profile HTML in a sandboxed iframe (see lib/profile-code.js for
@@ -12,7 +10,8 @@ const MAX_HEIGHT = 20000
  * a block on the classic profile, grows to the height the page reports.
  *
  * Only messages from this frame's own window are read, and the only things a
- * page can say are "ready" and "my height is N".
+ * page can say are "ready", "my height is N" and (as a section, right after a
+ * click on a #link) "scroll to N px from my top".
  */
 const ProfileCodeFrame = forwardRef(function ProfileCodeFrame(
   { src, embed = 'page', theme, title, onReady, css: extraCss, ...rest },
@@ -20,8 +19,7 @@ const ProfileCodeFrame = forwardRef(function ProfileCodeFrame(
 ) {
   const ref = useRef(null)
   const [height, setHeight] = useState(160)
-  const heightRef = useRef(160)
-  const growth = useRef({ count: 0, since: 0, frozen: false })
+  const follow = useRef(heightFollower({ start: 160 }))
   const themeRef = useRef(theme)
   themeRef.current = theme
   const onReadyRef = useRef(onReady)
@@ -40,27 +38,23 @@ const ProfileCodeFrame = forwardRef(function ProfileCodeFrame(
   }, [])
 
   const acceptHeight = useCallback(value => {
-    let next = Math.round(Number(value) || 0)
-    if (!Number.isFinite(next)) return
-    next = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, next))
-    const g = growth.current
-    const now = Date.now()
-    if (next > heightRef.current) {
-      // A page sized to "100% of the frame plus a margin" grows every time we
-      // resize it. Stop following after a burst of growth.
-      if (now - g.since > 2000) {
-        g.since = now
-        g.count = 0
-      }
-      g.count += 1
-      if (g.count > 25) g.frozen = true
-      if (g.frozen) return
-    } else {
-      g.frozen = false
-      g.count = 0
-    }
-    heightRef.current = next
-    setHeight(next)
+    const next = follow.current(value)
+    if (next !== null) setHeight(next)
+  }, [])
+
+  // A "#section" link inside a section: scroll the profile to it
+  const scrollToOffset = useCallback(top => {
+    const frame = ref.current
+    const y = Math.round(Number(top))
+    if (!frame || !Number.isFinite(y)) return
+    // Only right after a click inside this frame (it has focus, and the click's
+    // activation reaches this page), so a section can't keep pulling the
+    // visitor back to itself
+    if (document.activeElement !== frame) return
+    if (typeof navigator !== 'undefined' && navigator.userActivation && !navigator.userActivation.isActive) return
+    const rect = frame.getBoundingClientRect()
+    const within = Math.max(0, Math.min(y, rect.height))
+    window.scrollTo({ top: window.scrollY + rect.top + within - 24, behavior: 'smooth' })
   }, [])
 
   useEffect(() => {
@@ -74,20 +68,22 @@ const ProfileCodeFrame = forwardRef(function ProfileCodeFrame(
         if (onReadyRef.current) onReadyRef.current()
       } else if (message.type === 'bublr:height' && embed === 'block') {
         acceptHeight(message.height)
+      } else if (message.type === 'bublr:scroll' && embed === 'block') {
+        scrollToOffset(message.top)
       }
     }
     window.addEventListener('message', onMessage)
     // The frame may have finished loading before this listener existed
-    post({ type: 'bublr:hello' })
+    post({ type: 'bublr:hello', path: window.location.pathname })
     return () => window.removeEventListener('message', onMessage)
-  }, [embed, post, acceptHeight])
+  }, [embed, post, acceptHeight, scrollToOffset])
 
   useEffect(() => {
     if (theme) post({ type: 'bublr:theme', theme })
   }, [theme, post])
 
   useEffect(() => {
-    growth.current = { count: 0, since: 0, frozen: false }
+    follow.current = heightFollower({ start: 160 })
   }, [src])
 
   return (
@@ -97,7 +93,7 @@ const ProfileCodeFrame = forwardRef(function ProfileCodeFrame(
       title={title}
       sandbox={FRAME_SANDBOX}
       referrerPolicy="strict-origin-when-cross-origin"
-      onLoad={() => post({ type: 'bublr:hello' })}
+      onLoad={() => post({ type: 'bublr:hello', path: window.location.pathname })}
       css={[
         css`
           display: block;

@@ -16,6 +16,12 @@ test('safeJsonLd cannot close the surrounding <script> tag', () => {
   assert.deepEqual(JSON.parse(out), data)
 })
 
+test('safeJsonLd turns a missing schema into null instead of throwing', () => {
+  // Custom-domain profiles render without a breadcrumb schema; this used to throw and 500 the page
+  assert.equal(safeJsonLd(undefined), 'null')
+  assert.equal(safeJsonLd(null), 'null')
+})
+
 test('escapeHtml escapes markup and quotes', () => {
   assert.equal(escapeHtml(`<img src=x onerror="a">&'`), '&lt;img src=x onerror=&quot;a&quot;&gt;&amp;&#39;')
   assert.equal(escapeHtml(null), '')

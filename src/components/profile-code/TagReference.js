@@ -4,6 +4,25 @@ import DsButton from '../dashboard/ds-button'
 
 const GROUPS = [
   {
+    title: 'Widgets',
+    hint: 'Ready-made pieces with sensible styles you can override. Put your own HTML inside a list widget to choose how each item looks.',
+    items: [
+      { code: '<bublr-posts limit="5" layout="list"></bublr-posts>', about: 'Your posts. layout: list, cards, grid or compact' },
+      { code: '<bublr-posts limit="3">\n  <h3><a href="{{url}}">{{title}}</a></h3>\n</bublr-posts>', about: 'Posts with your own markup per item' },
+      { code: '<bublr-latest-post></bublr-latest-post>', about: 'A card for your newest post' },
+      { code: '<bublr-avatar size="96" shape="circle"></bublr-avatar>', about: 'Profile picture. shape: circle, square or rounded' },
+      { code: '<bublr-friends users="alice, bob" title="Top 8"></bublr-friends>', about: 'Your Top 8: up to 12 Bublr usernames' },
+      { code: '<bublr-music src="https://example.com/song.mp3" title="Song — Artist"></bublr-music>', about: 'A profile song (any .mp3 link)' },
+      { code: '<bublr-guestbook limit="6"></bublr-guestbook>', about: 'Guest book signatures, drawn' },
+      { code: '<bublr-counter digits="6"></bublr-counter>', about: 'An old-school counter of your total reads' },
+      { code: '<bublr-stats></bublr-stats>', about: 'Posts, reads, followers, following' },
+      { code: '<bublr-socials></bublr-socials>', about: 'Links to your socials and website' },
+      { code: '<bublr-skills></bublr-skills>', about: 'Your skills with coloured dots' },
+      { code: '<bublr-work></bublr-work>\n<bublr-education></bublr-education>', about: 'Your work and education timelines' },
+      { code: '<bublr-bio></bublr-bio> <bublr-name></bublr-name> <bublr-username></bublr-username> <bublr-banner></bublr-banner>', about: 'Small pieces' },
+    ],
+  },
+  {
     title: 'Your details',
     hint: 'Swapped for your own text. Safe to use anywhere in HTML or CSS.',
     items: [
@@ -26,25 +45,6 @@ const GROUPS = [
       { code: '{{#socials}}<a href="{{url}}">{{label}}</a> {{/socials}}', about: 'Social links and website: label, url, handle, network' },
       { code: '{{#guestbook}}<p><b>{{name}}</b>: {{message}}</p>{{/guestbook}}', about: 'Guest book: name, message, date' },
       { code: '{{#work}}<p>{{title}} at {{organization}} ({{dates}})</p>{{/work}}', about: 'Work (and {{#education}})' },
-    ],
-  },
-  {
-    title: 'Widgets',
-    hint: 'Ready-made pieces with sensible styles you can override. Put your own HTML inside a list widget to choose how each item looks.',
-    items: [
-      { code: '<bublr-posts limit="5" layout="list"></bublr-posts>', about: 'Your posts. layout: list, cards, grid or compact' },
-      { code: '<bublr-posts limit="3">\n  <h3><a href="{{url}}">{{title}}</a></h3>\n</bublr-posts>', about: 'Posts with your own markup per item' },
-      { code: '<bublr-latest-post></bublr-latest-post>', about: 'A card for your newest post' },
-      { code: '<bublr-avatar size="96" shape="circle"></bublr-avatar>', about: 'Profile picture. shape: circle, square or rounded' },
-      { code: '<bublr-friends users="alice, bob" title="Top 8"></bublr-friends>', about: 'Your Top 8: up to 12 Bublr usernames' },
-      { code: '<bublr-music src="https://example.com/song.mp3" title="Song — Artist"></bublr-music>', about: 'A profile song (any .mp3 link)' },
-      { code: '<bublr-guestbook limit="6"></bublr-guestbook>', about: 'Guest book signatures, drawn' },
-      { code: '<bublr-counter digits="6"></bublr-counter>', about: 'An old-school counter of your total reads' },
-      { code: '<bublr-stats></bublr-stats>', about: 'Posts, reads, followers, following' },
-      { code: '<bublr-socials></bublr-socials>', about: 'Links to your socials and website' },
-      { code: '<bublr-skills></bublr-skills>', about: 'Your skills with coloured dots' },
-      { code: '<bublr-work></bublr-work>\n<bublr-education></bublr-education>', about: 'Your work and education timelines' },
-      { code: '<bublr-bio></bublr-bio> <bublr-name></bublr-name> <bublr-username></bublr-username> <bublr-banner></bublr-banner>', about: 'Small pieces' },
     ],
   },
   {

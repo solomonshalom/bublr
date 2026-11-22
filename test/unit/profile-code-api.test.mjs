@@ -138,6 +138,10 @@ test('profile pages check signatures and cut pop-up links (COOP) when showing co
     const source = readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8')
     assert.match(source, /user\.profileCode = trustedProfileCode\(user\.id, user\.profileCode\)/, file)
     assert.match(source, /profileCodeHeaders\(res, user\.profileCode\)/, file)
+    // `res` must stay the page response: a fetch result named res once made
+    // profileCodeHeaders throw, and custom domains fell back to the home page
+    const gssp = source.slice(source.indexOf('export async function getServerSideProps'))
+    assert.doesNotMatch(gssp, /\b(?:const|let|var)\s+res\b/, `${file}: something shadows res`)
   }
 })
 
