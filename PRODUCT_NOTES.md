@@ -10,7 +10,7 @@ Memory for the nightly product run. Read this first, then `CLAUDE.md` and the ne
 
 **Last full round: 20th November 2026.** Next one is due on or after the 27th. On other nights, check only issues and whether main is healthy.
 
-Last nightly check: 21st November 2026. No new or updated issues or pull requests. The relaunch branch hasn't changed since the 13th, so nothing shipped (same result every night since the 14th). bublr.life and /changelog answer normally.
+Last nightly check: 22nd November 2026. No new or updated issues or pull requests. The owner shipped Profile HTML on main today (`52602de`, `eba5704`); Vercel shows success, bublr.life and /changelog answer, and `npm test` passes (206). The relaunch branch hasn't changed since the 13th, so the nightly run still ships no code.
 
 20th November round: nothing new from users. Product Hunt still has the same 2 reviews; a search found only launch listings ([innolope](https://innolope.com/pulse/startups/691569a5f915b3ab4c718fdc) adds no comments). Peers: no new features found for November. Write.as [lets writers download their subscriber list](https://write.as/updates/); Bublr already does (Subscribers → export CSV). Bear Blog went [source-available in Sept 2025](https://alternativeto.net/news/2025/9/blogging-platform-bear-is-no-longer-open-source-moves-to-source-available-elastic-license), which makes Bublr's open source a clearer difference, not a gap.
 
@@ -56,7 +56,7 @@ Nothing may be built on main while the relaunch branch is open (see Waiting on t
 ## Waiting on the owner
 
 - **The relaunch branch.** `relaunch/next-16-yearly-plan-launch-assets` was pushed on 13th November. It moves the app to Next 16, React 19, Firebase 13 and Tiptap 3, adds the yearly plan, and changes 139 files, including two new entries at the bottom of `changelog.md`. Anything built on main now would be built underneath it, so the nightly run ships no code and doesn't touch the changelog until it is merged, or until you say otherwise in "From the owner". The owner was notified once, on 13th November. Don't notify again for this.
-  - Before merging: it needs Node 24.12 or newer, so check the Node version in the Vercel project settings. Main's billing moved from Polar to Creem on 19th November (`src/lib/creem.js`, `src/lib/creem-webhook.js`); the branch still has the Polar code, so it needs the same move before it merges. Its yearly plan will then read `CREEM_CUSTOM_DOMAIN_YEARLY_PRODUCT_ID`, which is already set in Vercel.
+  - Before merging: it needs Node 24.12 or newer, so check the Node version in the Vercel project settings. Main's billing moved from Polar to Creem on 19th November (`src/lib/creem.js`, `src/lib/creem-webhook.js`); the branch still has the Polar code, so it needs the same move before it merges. Its yearly plan will then read `CREEM_CUSTOM_DOMAIN_YEARLY_PRODUCT_ID`, which is already set in Vercel. Since 22nd November main also has Profile HTML (new API routes, `src/lib/profile-code.js`, a CSP carve-out in `next.config.js`, two changelog releases), which the branch lacks, so the merge now has to carry that over too.
 - **Issue #7.** Needs Vercel access, or the writer's domain, to find out what the verify step actually returned.
 - **Firestore rules.** Not in this repo. Needs the Firebase console.
 - **Explore spam clean-up.** Deletes existing posts, so it's the owner's call. Needs database access.
