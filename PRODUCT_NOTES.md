@@ -10,7 +10,7 @@ Memory for the nightly product run. Read this first, then `CLAUDE.md` and the ne
 
 **Last full round: 20th November 2026.** Next one is due on or after the 27th. On other nights, check only issues and whether main is healthy.
 
-Last nightly check: 22nd November 2026. No new or updated issues or pull requests. The owner shipped Profile HTML on main today (`52602de`, `eba5704`); Vercel shows success, bublr.life and /changelog answer, and `npm test` passes (206). The relaunch branch hasn't changed since the 13th, so the nightly run still ships no code.
+Last nightly check: 23rd November 2026. No new or updated issues or pull requests, and no new commits on main since the 22nd. bublr.life, /explore and /changelog answer (the newest release, "Your Space, Fixed", is showing), `npm test` passes (206) and lint is clean. The relaunch branch hasn't changed since the 13th. It is now more than a week old, but it still rewrites almost every file, so the nightly run keeps to fixes for anything broken and ships no new features until the owner merges it or says otherwise.
 
 20th November round: nothing new from users. Product Hunt still has the same 2 reviews; a search found only launch listings ([innolope](https://innolope.com/pulse/startups/691569a5f915b3ab4c718fdc) adds no comments). Peers: no new features found for November. Write.as [lets writers download their subscriber list](https://write.as/updates/); Bublr already does (Subscribers → export CSV). Bear Blog went [source-available in Sept 2025](https://alternativeto.net/news/2025/9/blogging-platform-bear-is-no-longer-open-source-moves-to-source-available-elastic-license), which makes Bublr's open source a clearer difference, not a gap.
 
