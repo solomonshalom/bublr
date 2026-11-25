@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
   { href: '/explore', label: 'Explore' },
+  { href: '/compare', label: 'Compare' },
   { href: '/changelog', label: 'Changelog' },
   { href: '/docs', label: 'API Docs' },
   { href: '/terms', label: 'Terms' },

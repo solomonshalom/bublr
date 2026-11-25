@@ -1,4 +1,5 @@
 import { getAllUsersWithPublishedPosts } from '../lib/db'
+import { COMPARE_UPDATED, PLATFORMS } from '../lib/comparisons'
 import { extractFirstImage } from '../lib/seo-utils'
 import { firestore } from '../lib/firebase'
 import { toMillis } from '../lib/timestamps'
@@ -47,6 +48,20 @@ function generateSiteMap(users, postsWithContent) {
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+
+  <!-- Comparisons with other platforms -->
+  <url>
+    <loc>${SITE_URL}/compare</loc>
+    <lastmod>${COMPARE_UPDATED}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+${PLATFORMS.map(p => `  <url>
+    <loc>${SITE_URL}/compare/${p.slug}</loc>
+    <lastmod>${COMPARE_UPDATED}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>`).join('\n')}
 
   <!-- Changelog -->
   <url>

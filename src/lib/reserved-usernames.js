@@ -9,6 +9,7 @@ export const RESERVED_USERNAMES = new Set([
   'atom',
   'changelog',
   'comeback',
+  'compare',
   'dashboard',
   'docs',
   'draft',
