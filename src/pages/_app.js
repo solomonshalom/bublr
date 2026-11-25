@@ -17,7 +17,7 @@ const App = ({ Component, pageProps }) => {
   // the dashboard has its own fixed chrome, /comeback is where the banner points,
   // and writer-owned custom domains aren't ours to announce on.
   const onCustomDomain = Boolean(
-    pageProps?.customDomainUser || pageProps?.user?.isCustomDomain
+    pageProps?.customDomainUser || pageProps?.user?.isCustomDomain || pageProps?.onCustomDomain
   )
   const showComebackBanner =
     !router.pathname.startsWith('/dashboard') &&

@@ -16,6 +16,7 @@ export const RESERVED_USERNAMES = new Set([
   'feed',
   'for-sale',
   'privacy',
+  'shop',
   'signup',
   'sitemap',
   'terms',

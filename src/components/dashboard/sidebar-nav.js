@@ -136,6 +136,30 @@ const DeveloperIcon = () => (
   </svg>
 )
 
+const GalleryIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="9" cy="9" r="2" />
+    <path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21" />
+  </svg>
+)
+
+const MusicIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+)
+
+const ShopIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+    <path d="M3 6h18" />
+    <path d="M16 10a4 4 0 0 1-8 0" />
+  </svg>
+)
+
 const ChevronLeftIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <polyline points="15 18 9 12 15 6" />
@@ -152,6 +176,9 @@ const mainLinks = [
 const settingsLinks = [
   { href: '/dashboard/settings/personal', label: 'Personal', icon: <PersonalIcon /> },
   { href: '/dashboard/settings/customization', label: 'Customization', icon: <CustomizationIcon /> },
+  { href: '/dashboard/settings/gallery', label: 'Gallery', icon: <GalleryIcon /> },
+  { href: '/dashboard/settings/music', label: 'Music', icon: <MusicIcon /> },
+  { href: '/dashboard/settings/shop', label: 'Shop', icon: <ShopIcon /> },
   { href: '/dashboard/settings/advanced', label: 'Advanced', icon: <AdvancedIcon /> },
   { href: '/dashboard/settings/developer', label: 'Developer', icon: <DeveloperIcon /> },
 ]

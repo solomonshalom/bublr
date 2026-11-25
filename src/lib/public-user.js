@@ -9,6 +9,11 @@
  * every visitor.
  */
 
+import { normalizeGallery } from './gallery'
+import { normalizeMusic } from './music'
+import { toPublicProduct } from './shop'
+import { hasVerifiedShopAccess, trustedProducts } from './shop-trust'
+
 // Never leave the server
 const PRIVATE_USER_FIELDS = [
   'email',
@@ -19,6 +24,12 @@ const PRIVATE_USER_FIELDS = [
   'subscribers',
   'followers',
   'following',
+  // Sealed payment key and Spotify tokens; paid orders with buyer details;
+  // the raw catalogue (it holds sealed download links). Products go out
+  // through `shopProducts` instead.
+  'integrations',
+  'shopOrders',
+  'shop',
 ]
 
 // Post fields readers don't need (who liked it, moderation bookkeeping, the
@@ -67,6 +78,15 @@ export function toPublicUser(user) {
   if (Array.isArray(user.posts)) {
     out.posts = user.posts.map(p => (p && typeof p === 'object' ? toPublicPost(p) : p))
   }
+
+  // Profile blocks. The shop shows only while the Pro + Shop plan is active.
+  out.gallery = normalizeGallery(user.gallery)
+  out.music = normalizeMusic(user.music)
+  out.musicLive = out.music.mode === 'spotify' && user.integrations?.spotify?.status === 'connected'
+  out.shopProducts = hasVerifiedShopAccess(user)
+    ? trustedProducts(user).filter(p => p && p.active !== false && p.title).map(toPublicProduct)
+    : []
+  delete out.shopGrant
 
   return out
 }

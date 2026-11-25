@@ -384,3 +384,35 @@ test('creem webhook: a retried delivery that arrives late does not undo newer st
   assert.equal(read('users', 'alice').subscription.status, 'active')
   assert.equal(sent.length, 0)
 })
+
+// ---------------------------------------------------------------- Pro + Shop
+
+test('creem webhook: the Pro + Shop plan opens the shop; moving back to Pro closes it', async () => {
+  process.env.CREEM_SHOP_PRODUCT_ID = 'prod_shop'
+  process.env.INTEGRATIONS_SECRET = 'test-integrations-secret-that-is-long-enough-123'
+  const { hasVerifiedShopAccess } = await import('../../src/lib/shop-trust.js')
+  try {
+    const shopPlan = { id: 'prod_shop', object: 'product', name: 'Bublr Pro + Shop' }
+    await deliver('subscription.active', subscription({ product: shopPlan }))
+    let user = read('users', 'alice')
+    assert.equal(user.hasCustomDomainAccess, true, 'Pro + Shop includes the custom domain')
+    assert.equal(user.hasShopAccess, true)
+    assert.equal(user.subscription.productId, 'prod_shop')
+    assert.equal(hasVerifiedShopAccess({ id: 'alice', ...user }), true, 'the webhook signs the grant')
+    assert.equal(hasVerifiedShopAccess({ id: 'mallory', ...user }), false, 'a grant copied to another writer opens nothing')
+
+    await deliver('subscription.update', subscription())
+    user = read('users', 'alice')
+    assert.equal(user.hasCustomDomainAccess, true)
+    assert.equal(user.hasShopAccess, false)
+    assert.equal(user.shopGrant, undefined)
+
+    await deliver('subscription.update', subscription({ product: shopPlan }))
+    await deliver('subscription.past_due', subscription({ product: shopPlan, status: 'past_due' }))
+    user = read('users', 'alice')
+    assert.equal(user.hasShopAccess, false, 'an unpaid renewal closes the shop too')
+  } finally {
+    delete process.env.CREEM_SHOP_PRODUCT_ID
+    delete process.env.INTEGRATIONS_SECRET
+  }
+})

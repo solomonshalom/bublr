@@ -664,6 +664,69 @@ https://bublr.life
 `
 }
 
+const escapeHtml = value =>
+  String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+
+function formatOrderAmount(amount, currency) {
+  if (!Number.isFinite(amount)) return ''
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: String(currency || 'usd').toUpperCase() }).format(amount / 100)
+  } catch (_) {
+    return `${(amount / 100).toFixed(2)} ${String(currency || '').toUpperCase()}`
+  }
+}
+
+/**
+ * Tell a writer someone bought from their shop. The money is already in
+ * their own Stripe/Creem account; this is so they know what to send where.
+ */
+export async function sendShopOrderEmail({ writerEmail, writerName, order, buyer }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.error('RESEND_API_KEY not configured')
+    return { success: false, error: 'Email service not configured' }
+  }
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
+  const amount = formatOrderAmount(order.amount, order.currency)
+  const item = order.variant ? `${order.productTitle} (${order.variant})` : order.productTitle
+  const address = buyer?.address
+    ? [buyer.address.line1, buyer.address.line2, [buyer.address.postal_code, buyer.address.city].filter(Boolean).join(' '), buyer.address.state, buyer.address.country]
+        .filter(Boolean)
+        .join(', ')
+    : ''
+  const provider = order.provider === 'creem' ? 'Creem' : 'Stripe'
+  const rows = [
+    ['Item', item],
+    ['Paid', `${amount}${order.mode === 'test' ? ' (test mode)' : ''}`],
+    ['Buyer', [buyer?.name, buyer?.email].filter(Boolean).join(' · ')],
+    buyer?.phone ? ['Phone', buyer.phone] : null,
+    address ? ['Ship to', address] : null,
+    ['Payment', `${provider} · ${order.checkoutId}`],
+  ].filter(Boolean)
+
+  const html = `<!DOCTYPE html><html><body style="margin:0;padding:32px 16px;background:#fcfcfc;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;color:#171717;">
+<table role="presentation" width="100%" style="max-width:520px;margin:0 auto;border-collapse:collapse;">
+<tr><td style="font-size:18px;font-weight:500;padding-bottom:8px;">You made a sale</td></tr>
+<tr><td style="font-size:14px;color:#6f6f6f;padding-bottom:20px;">Hi${writerName ? ` ${escapeHtml(writerName)}` : ''}, someone bought from your Bublr shop. The payment went straight to your ${provider} account.</td></tr>
+${rows.map(([k, v]) => `<tr><td style="font-size:14px;padding:6px 0;border-top:1px solid #eee;"><span style="color:#6f6f6f;display:inline-block;width:80px;">${escapeHtml(k)}</span>${escapeHtml(v)}</td></tr>`).join('\n')}
+<tr><td style="padding-top:24px;"><a href="${baseUrl}/dashboard/settings/shop" style="font-size:14px;color:#171717;">See all orders</a></td></tr>
+</table></body></html>`
+  const text = `You made a sale\n\n${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nAll orders: ${baseUrl}/dashboard/settings/shop`
+
+  try {
+    const { error } = await resend().emails.send({
+      from: FROM_EMAIL,
+      to: writerEmail,
+      subject: `New order: ${item}${amount ? ` (${amount})` : ''}`,
+      html,
+      text,
+    })
+    if (error) return { success: false, error: error.message || String(error) }
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}
+
 export default {
   get emails() {
     return resend().emails

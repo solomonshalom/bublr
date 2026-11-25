@@ -19,6 +19,11 @@ import { generateProfilePageSchema, generateOrganizationSchema, generateBreadcru
 import { SubscribeOrSign, GuestBookEntries } from '../../components/guestbook'
 import FollowButton from '../../components/follow-button'
 import { ProfileCanvas } from '../../components/profile-canvas'
+import GalleryBlock from '../../components/blocks/gallery-block'
+import MusicBlock from '../../components/blocks/music-block'
+import ShopGrid from '../../components/blocks/shop-grid'
+import { BlockStyles } from '../../components/blocks/tokens'
+import { withBlockSections } from '../../lib/profile-sections'
 import { sanitizeFontFamily } from '../../lib/fonts'
 
 // Color palette for dots (same as berrysauce)
@@ -683,8 +688,12 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
     if (!base.includes('education')) {
       base.splice(base.indexOf('work') + 1, 0, 'education')
     }
-    return base
+    return withBlockSections(base)
   })()
+
+  const hasGallery = (user.gallery?.albums || []).length > 0
+  const hasMusic = (user.music?.tracks || []).length > 0 || user.musicLive === true
+  const hasShop = (user.shopProducts || []).length > 0
 
   // Theme-aware colors (matching app's --grey-1)
   const colors = {
@@ -703,6 +712,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
   return (
     <>
       <Global styles={globalStyles} />
+      {(hasGallery || hasMusic || hasShop) && <BlockStyles />}
       <Head>
         {meta({
           title: `${user.displayName} (@${user.name}) | Bublr`,
@@ -1385,6 +1395,37 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                   )
                 }
 
+                // Gallery, Music and Shop blocks (components/blocks)
+                if (
+                  (sectionType === 'gallery' && hasGallery) ||
+                  (sectionType === 'music' && hasMusic) ||
+                  (sectionType === 'shop' && hasShop)
+                ) {
+                  const titles = {
+                    gallery: user.gallerySectionTitle || 'Gallery',
+                    music: user.musicSectionTitle || 'Music',
+                    shop: user.shopSectionTitle || 'Shop',
+                  }
+                  return (
+                    <div key={sectionType} id={sectionType}>
+                      {user.dividersVisibility?.[sectionType] !== false && (
+                        <hr css={css`opacity: 0.15; margin-top: 20px; margin-bottom: 32px; border-color: ${colors.text};`} />
+                      )}
+                      {user.dividersVisibility?.[sectionType] === false && (
+                        <div css={css`margin-top: 32px;`} />
+                      )}
+                      <p css={css`font-weight: 500; margin-bottom: 8px;`}>
+                        {titles[sectionType]}
+                      </p>
+                      {sectionType === 'gallery' && <GalleryBlock gallery={user.gallery} />}
+                      {sectionType === 'music' && <MusicBlock music={user.music} username={user.name} />}
+                      {sectionType === 'shop' && (
+                        <ShopGrid products={user.shopProducts} username={user.name} onCustomDomain={user.isCustomDomain === true} />
+                      )}
+                    </div>
+                  )
+                }
+
                 // Guest Book Section - render if visibility is enabled (allow client-side fetch if SSR returns empty)
                 if (sectionType === 'guestbook' && user.guestbookVisibility !== false) {
                   return (
@@ -1524,10 +1565,13 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
         __html: safeJsonLd(profilePageSchema)
       }} />
 
-      {/* Breadcrumb schema for navigation SEO */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{
-        __html: safeJsonLd(breadcrumbSchema)
-      }} />
+      {/* Breadcrumb schema for navigation SEO. The custom-domain home page
+          (pages/index.js) doesn't pass one; rendering it anyway crashed that page. */}
+      {breadcrumbSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: safeJsonLd(breadcrumbSchema)
+        }} />
+      )}
 
       {/* Newsletter subscription schema for AI discoverability */}
       {newsletterSchema && (

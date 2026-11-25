@@ -30,6 +30,14 @@ const { duration: EXIT_DURATION, ease: EXIT_EASE } = GSAP_EXIT
  * finishes, so the container returns to transform:none and fixed overlays stay
  * anchored to the viewport. The exit is opacity-only for the same reason.
  */
+// A navigation run inside a view transition (the shop's photo morph) is
+// animated by the browser. The fade here would hide the new page while the
+// browser captures it, so that one navigation swaps instantly instead.
+let skipNextTransition = false
+export function skipNextPageTransition() {
+  skipNextTransition = true
+}
+
 export function PageTransition({ children }) {
   const containerRef = useRef(null)
   const router = useRouter()
@@ -91,7 +99,7 @@ export function PageTransition({ children }) {
       const handleStart = (url) => {
         if (url === router.asPath || !containerRef.current) return
         isNavigating.current = true
-        if (prefersReducedMotion()) return // reduced motion: swap instantly in handleComplete
+        if (prefersReducedMotion() || skipNextTransition) return // swap instantly in handleComplete
         fadeOut()
       }
 
@@ -101,7 +109,8 @@ export function PageTransition({ children }) {
         // Scroll to top while faded out (single source of truth for scroll reset)
         window.scrollTo(0, 0)
 
-        if (prefersReducedMotion()) {
+        if (prefersReducedMotion() || skipNextTransition) {
+          skipNextTransition = false
           setDisplayedChildren(childrenRef.current)
           gsap.set(containerRef.current, { opacity: 1, clearProps: 'transform' })
           isNavigating.current = false
@@ -117,6 +126,7 @@ export function PageTransition({ children }) {
       }
 
       const handleError = () => {
+        skipNextTransition = false
         if (containerRef.current) {
           gsap.set(containerRef.current, { opacity: 1, clearProps: 'transform' })
         }

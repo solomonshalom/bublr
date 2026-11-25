@@ -26,10 +26,7 @@ export async function checkSubscriptionAccess(userData, userId = null, performLa
     return true // No end date means access continues
   }
 
-  const periodEndDate = new Date(periodEnd)
-  const now = new Date()
-
-  if (periodEndDate > now) {
+  if (periodEndMillis(periodEnd) > Date.now()) {
     // Still within grace period
     return true
   }
@@ -65,5 +62,25 @@ export function hasActiveAccess(userData) {
     return true
   }
 
-  return new Date(periodEnd) > new Date()
+  return periodEndMillis(periodEnd) > Date.now()
+}
+
+// currentPeriodEnd can be a Date, an ISO string or a Firestore Timestamp.
+function periodEndMillis(value) {
+  if (value && typeof value.toMillis === 'function') return value.toMillis()
+  const ms = new Date(value).getTime()
+  return Number.isFinite(ms) ? ms : 0
+}
+
+/**
+ * Whether the writer's shop is open: an active subscription (grace period
+ * included) on the Pro + Shop plan. `hasShopAccess` is written by the
+ * subscription webhook from the plan's product ID.
+ *
+ * @param {Object} userData - User document data from Firestore
+ * @returns {boolean}
+ */
+export function hasActiveShopAccess(userData) {
+  if (!userData || userData.hasShopAccess !== true) return false
+  return hasActiveAccess(userData)
 }

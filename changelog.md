@@ -232,3 +232,24 @@ This week's check started from Bublr's own privacy page. It says you can "reques
 - If the last step (removing the sign-in) fails, you're signed out and your data is still gone. Signing in again with the same address starts an empty account.
 - The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
 - We looked at comments, scheduling and analytics dashboards again. They still don't fit a quiet writing space.
+
+# Tiny Home - Update (25th November'26)
+Bublr is meant to be a tiny home for anyone on the internet. A home has more in it than writing: the photos on the fridge, the record that's playing, the things you make. So profiles can now hold three new things, each an optional section you switch on from settings. Their look and feel is ported from the gallery, music and supply pages of Jeremy Bosma's site (jeremybosma.nl), down to the timing of every animation.
+
+## Added
+- **Gallery.** *Settings → Gallery.* Make albums of photos and short videos. On your profile each album is a little fanned stack; tap it and the stack opens into a grid, tap a photo and it grows to fill the screen. Or show everything as one grid.
+- **Music.** *Settings → Music.* Pick songs and albums from Apple's catalogue (covers included) and visitors choose where to listen: Apple Music, Spotify or YouTube. Songs from one album fold into a single row that opens.
+- **Music, live from Spotify.** Connect your own Spotify app and your profile shows the song you're playing right now, with a moving progress bar, then what you played last. If Spotify isn't connected, your picks show instead. Your Client Secret and Spotify sign-in are stored encrypted.
+- **A shop on your page.** *Settings → Shop.* Sell tees, zines, prints or downloads, with photos, colours and sizes, a product page and a checkout. Buyers pay you directly, through your own Stripe (anything, including things you ship; connect it with a restricted key) or Creem (digital things). Bublr takes no cut and never holds the money. You get an email for every order, and orders are listed in settings with the address to ship to. Digital items can hand the buyer a download link right after they pay.
+- **Pro + Shop plan, $3 a month.** Everything in Pro (custom domain, your own footer) plus the shop. If you already pay for Pro, *Add the shop* moves your plan over and charges the difference.
+- **Try it with test keys.** Connect a Stripe or Creem test key and only you can buy, with a test card; visitors see "Not available yet" until you switch to a live key.
+- **Tests.** `npm test` now runs 180 tests, including that prices come from your saved products and never from the buyer, that what was actually paid is checked before an order counts, that payment keys, Spotify tokens, buyer details, checkout receipts and download links never reach a public page, and that only Pro + Shop writers can open a shop.
+
+## Fixed
+- **Profiles on a custom domain loaded again.** The home page of a writer's own domain crashed while adding search-engine data it had never been given.
+
+## Known issues
+- Spotify only lets an app like this run for its owner if they have Spotify Premium, and asks you to sign in again every six months.
+- An order is recorded when the buyer comes back from paying. If they close the tab on the payment page, you're still paid and see it in Stripe or Creem, but it won't show in Bublr's order list.
+- A shop holds up to 200 products.
+- The Firestore rules and the Explore spam clean-up are still open (see the comeback release).

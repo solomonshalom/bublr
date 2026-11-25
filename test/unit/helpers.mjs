@@ -79,6 +79,15 @@ export function mockRes() {
       if (payload !== undefined) res.body = payload
       return res
     },
+    redirect(status, url) {
+      if (url === undefined) {
+        url = status
+        status = 307
+      }
+      res.statusCode = status
+      res.redirectedTo = url
+      return res
+    },
   }
   return res
 }

@@ -24,14 +24,30 @@ export function customDomainProductId() {
 }
 
 /**
- * Creem product IDs for the custom domain plans this deployment sells. A Creem
- * store can hold other apps' products too, and every webhook endpoint in it
- * receives every event, so the webhook route needs to tell ours apart.
+ * Product ID of the Pro + Shop plan: everything the custom domain plan has,
+ * plus a shop on the writer's profile ($2 + $1 a month).
+ */
+export function shopProductId() {
+  return process.env.CREEM_SHOP_PRODUCT_ID || null
+}
+
+/** Whether a Creem product ID is the Pro + Shop plan. */
+export function isShopProduct(productId) {
+  const shop = shopProductId()
+  return Boolean(shop && productId && productId === shop)
+}
+
+/**
+ * Creem product IDs for the plans this deployment sells (custom domain monthly
+ * and yearly, and Pro + Shop). A Creem store can hold other apps' products
+ * too, and every webhook endpoint in it receives every event, so the webhook
+ * route needs to tell ours apart.
  */
 export function customDomainProductIds() {
   return [
     process.env.CREEM_CUSTOM_DOMAIN_PRODUCT_ID,
     process.env.CREEM_CUSTOM_DOMAIN_YEARLY_PRODUCT_ID,
+    process.env.CREEM_SHOP_PRODUCT_ID,
   ].filter(Boolean)
 }
 
@@ -87,6 +103,20 @@ export async function createCheckout({ productId, email, successUrl, metadata })
   })
   if (!checkout?.checkout_url) throw new CreemError('Creem returned a checkout without a URL')
   return { id: checkout.id, url: checkout.checkout_url }
+}
+
+/**
+ * Move a writer's existing subscription to another plan (Pro -> Pro + Shop).
+ * Creem charges the prorated difference straight away and sends
+ * subscription.update, which the webhook applies like any other change.
+ * Needs an API key that may write subscriptions.
+ */
+export async function upgradeSubscription(subscriptionId, productId) {
+  if (!subscriptionId || !productId) throw new CreemError('upgradeSubscription needs a subscription and a product')
+  return post(`/v1/subscriptions/${encodeURIComponent(subscriptionId)}/upgrade`, {
+    product_id: productId,
+    update_behavior: 'proration-charge-immediately',
+  })
 }
 
 /** A link to Creem's billing portal for one customer (cancel, change card, invoices). */

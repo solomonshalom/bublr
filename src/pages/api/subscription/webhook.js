@@ -1,7 +1,8 @@
 import { validateEvent, WebhookVerificationError } from '../../../lib/creem-webhook'
-import { customDomainProductIds } from '../../../lib/creem'
-import { firestore } from '../../../lib/firebase'
+import { customDomainProductIds, isShopProduct } from '../../../lib/creem'
+import firebase, { firestore } from '../../../lib/firebase'
 import { sendSubscriptionEmail } from '../../../lib/resend'
+import { signShopGrant } from '../../../lib/shop-trust'
 
 // Disable body parsing, we need the raw body for webhook verification
 export const config = {
@@ -172,13 +173,15 @@ function planChange(user, event, now = new Date()) {
     email = { type: 'expired' }
   }
 
+  const productId = subscription.productId ?? (sameSubscription ? before.productId ?? null : null)
+
   return {
     update: {
       subscription: {
         id: subscription.id,
         status: subscription.status,
         customerId: subscription.customerId ?? (sameSubscription ? before.customerId ?? null : null),
-        productId: subscription.productId ?? (sameSubscription ? before.productId ?? null : null),
+        productId,
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
@@ -186,9 +189,12 @@ function planChange(user, event, now = new Date()) {
         updatedAt: now.toISOString(),
       },
       hasCustomDomainAccess: access,
+      // The shop is part of the Pro + Shop plan only. Moving back to plain Pro
+      // closes it; the products stay saved for when it reopens.
+      hasShopAccess: access && isShopProduct(productId),
     },
     email,
-    summary: `${subscription.status}, access ${access ? 'on' : 'off'}${email ? `, ${email.type} email` : ''}`,
+    summary: `${subscription.status}, access ${access ? 'on' : 'off'}${access && isShopProduct(productId) ? ' (with shop)' : ''}${email ? `, ${email.type} email` : ''}`,
   }
 }
 
@@ -204,6 +210,12 @@ async function applyEvent(userId, event) {
     const user = snapshot.data()
     const change = planChange(user, event)
     if (!change) return null
+
+    // The shop opens only with the server's signature over this subscription
+    // (user documents can be written without signing in; see lib/shop-trust).
+    const grant = change.update.hasShopAccess ? signShopGrant(userId, change.update.subscription) : null
+    if (change.update.hasShopAccess && !grant) console.error('Shop plan active but INTEGRATIONS_SECRET is missing; the shop stays closed')
+    change.update.shopGrant = grant || firebase.firestore.FieldValue.delete()
 
     transaction.update(userRef, change.update)
     return {

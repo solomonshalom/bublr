@@ -21,6 +21,11 @@ export async function sendSubscriptionEmail(params) {
   return { success: true }
 }
 
+export async function sendShopOrderEmail(params) {
+  sent.push({ kind: 'shop-order', ...params })
+  return { success: true }
+}
+
 export async function sendConfirmationEmail(params) {
   sent.push({ kind: 'confirm', ...params })
   return { success: true }

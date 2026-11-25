@@ -8,6 +8,7 @@ import { useDocumentData } from 'react-firebase-hooks/firestore'
 import { firestore, auth } from '../lib/firebase'
 import { authedFetch } from '../lib/authed-fetch'
 import { isReservedUsername } from '../lib/reserved-usernames'
+import { withBlockSections } from '../lib/profile-sections'
 
 // Fields other parts of Bublr own (subscribe/follow/billing/API-key routes,
 // the reading-list button, the sticker canvas). The profile editor never
@@ -28,6 +29,17 @@ const SERVER_MANAGED_USER_FIELDS = [
   'customBranding',
   'newsletterTemplate',
   'profileDecorations',
+  // Gallery, Music and Shop have their own settings pages; the shop, its
+  // orders and the sealed payment/Spotify secrets are written by API routes.
+  'gallery',
+  'gallerySectionTitle',
+  'music',
+  'musicSectionTitle',
+  'shop',
+  'shopSectionTitle',
+  'shopOrders',
+  'hasShopAccess',
+  'integrations',
 ]
 
 function profileFieldsToSave(clientUser) {
@@ -643,7 +655,7 @@ const normalizeSectionOrder = order => {
   if (!result.includes('education')) {
     result.splice(result.indexOf('work') + 1, 0, 'education')
   }
-  return result
+  return withBlockSections(result)
 }
 
 // Reusable editor for an "Experience" style section (Work / Education). Each entry
@@ -2294,13 +2306,16 @@ function Editor({ user, section }) {
     })
   }, [user])
 
-  const DEFAULT_SECTION_ORDER = ['skills', 'work', 'education', 'writing', 'guestbook', 'custom']
+  const DEFAULT_SECTION_ORDER = ['skills', 'work', 'education', 'writing', 'gallery', 'music', 'shop', 'guestbook', 'custom']
 
   const SECTION_LABELS = {
     skills: 'Skills & Tags',
     work: 'Work',
     education: 'Education',
     writing: 'Writing',
+    gallery: 'Gallery',
+    music: 'Music',
+    shop: 'Shop',
     guestbook: 'Guest Book',
     custom: 'Custom Sections',
   }
@@ -2320,13 +2335,16 @@ function Editor({ user, section }) {
     newsletter: 'Newsletter Button',
   }
 
-  const DEFAULT_DIVIDERS_VISIBILITY = { skills: true, work: true, education: true, writing: true, guestbook: true, custom: true }
+  const DEFAULT_DIVIDERS_VISIBILITY = { skills: true, work: true, education: true, writing: true, gallery: true, music: true, shop: true, guestbook: true, custom: true }
 
   const DIVIDERS_LABELS = {
     skills: 'Before Skills',
     work: 'Before Work',
     education: 'Before Education',
     writing: 'Before Writing',
+    gallery: 'Before Gallery',
+    music: 'Before Music',
+    shop: 'Before Shop',
     guestbook: 'Before Guest Book',
     custom: 'Before Custom Sections',
   }
@@ -2351,6 +2369,9 @@ function Editor({ user, section }) {
         work: show,
         education: show,
         writing: show,
+        gallery: show,
+        music: show,
+        shop: show,
         guestbook: show,
         custom: show
       }
@@ -4047,7 +4068,7 @@ function Editor({ user, section }) {
                   flex-direction: column;
                   gap: 0.5rem;
                 `}>
-                  {['skills', 'work', 'education', 'writing', 'custom'].map((divider) => (
+                  {['skills', 'work', 'education', 'writing', 'gallery', 'music', 'shop', 'custom'].map((divider) => (
                     <div
                       key={divider}
                       css={css`

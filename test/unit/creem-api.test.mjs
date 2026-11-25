@@ -126,7 +126,7 @@ test('checkout route: returns Creem\'s checkout URL and ties the payment to the 
     product_id: PRODUCT,
     customer: { email: 'alice@example.com' },
     success_url: 'https://bublr.life/dashboard?subscription=success',
-    metadata: { userId: 'alice', userName: 'Alice' },
+    metadata: { userId: 'alice', userName: 'Alice', plan: 'pro' },
   })
 })
 
@@ -164,5 +164,16 @@ test('portal route: opens the billing portal for the writer\'s own Creem custome
 test('portal route: a writer who never subscribed has no portal', async () => {
   const res = await call(portalRoute, POST(authHeader('alice'), { userId: 'alice' }))
   assert.equal(res.statusCode, 400)
+  assert.equal(requests.length, 0)
+})
+
+test('checkout route: a writer with a renewing plan can’t start a second subscription', async () => {
+  seed('users', 'alice', { name: 'alice', displayName: 'Alice', hasCustomDomainAccess: true, subscription: { id: 'sub_1', status: 'active', cancelAtPeriodEnd: false } })
+  const res = await call(
+    createCheckoutRoute,
+    POST(authHeader('alice'), { userId: 'alice', userEmail: 'alice@example.com', userName: 'Alice', plan: 'shop' })
+  )
+  assert.equal(res.statusCode, 409)
+  assert.equal(res.body.code, 'ALREADY_SUBSCRIBED')
   assert.equal(requests.length, 0)
 })
