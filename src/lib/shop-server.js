@@ -2,6 +2,7 @@ import { firestore } from './firebase'
 import { requireAuth } from './server-auth'
 import { open, seal } from './secret-box'
 import { hasVerifiedShopAccess } from './shop-trust'
+import { detectProvider, keyMode } from './shop-payments'
 
 /**
  * Server-side helpers shared by the /api/shop routes.
@@ -62,14 +63,29 @@ export function paymentKey(user) {
   return open(payments.keySealed, paymentKeyContext(user.id))
 }
 
+/**
+ * The connected account as the sealed key says: { apiKey, provider, mode },
+ * or null. The plain `provider` and `mode` fields beside the key can be
+ * rewritten by anyone (user documents are world-writable), so test or live
+ * is always worked out from the key itself: a test key must never count as
+ * live, or a test card would unlock real things.
+ */
+export function paymentAccount(user) {
+  const apiKey = paymentKey(user)
+  const provider = apiKey ? detectProvider(apiKey) : null
+  if (!provider) return null
+  return { apiKey, provider, mode: keyMode(apiKey) }
+}
+
 /** What the dashboard may show about the connected payment account. */
 export function paymentStatus(user) {
   const payments = user?.integrations?.payments
   if (!payments?.provider || !payments?.keySealed) return null
+  const account = paymentAccount(user)
   return {
-    provider: payments.provider,
+    provider: account?.provider || payments.provider,
     keyHint: payments.keyHint || null,
-    mode: payments.mode || 'live',
+    mode: account?.mode || 'live',
     accountName: payments.accountName || null,
     connectedAt: payments.connectedAt || null,
   }

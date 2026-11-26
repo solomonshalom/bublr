@@ -28,7 +28,9 @@ const completeRoute = (await import('../../src/pages/api/shop/checkout-complete.
 const ordersRoute = (await import('../../src/pages/api/shop/orders.js')).default
 
 const STRIPE_KEY = fakeKey('rk', 'test', '51abcdefghijklmnopqrstuv')
+const STRIPE_LIVE_KEY = fakeKey('rk', 'live', '51abcdefghijklmnopqrstuv')
 const CREEM_KEY = fakeKey('creem', 'test', 'abcdefghijklmnop')
+const CREEM_LIVE_KEY = fakeKey('creem', 'abcdefghijklmnopqr')
 
 let requests = []
 let replies = []
@@ -71,7 +73,8 @@ function seedWriter(extra = {}, { mode = 'live', products } = {}) {
     ...shopPlan,
     shopGrant: signShopGrant('alice', shopPlan.subscription),
     shop: { products: list, sig: signCatalogue('alice', list) },
-    integrations: { payments: { provider: 'stripe', keySealed: seal(STRIPE_KEY, 'alice:payments'), keyHint: 'rk_test_…stuv', mode } },
+    // Test or live comes from the key itself, as on the server
+    integrations: { payments: { provider: 'stripe', keySealed: seal(mode === 'test' ? STRIPE_KEY : STRIPE_LIVE_KEY, 'alice:payments'), keyHint: 'rk_…stuv', mode } },
     ...extra,
   })
 }
@@ -190,7 +193,7 @@ test('checkout: a Stripe checkout on the writer’s own account, priced from the
 
   const r = requests[0]
   assert.equal(r.url, 'https://api.stripe.com/v1/checkout/sessions')
-  assert.equal(r.headers.Authorization, `Bearer ${STRIPE_KEY}`, 'uses the writer’s key, not Bublr’s')
+  assert.equal(r.headers.Authorization, `Bearer ${STRIPE_LIVE_KEY}`, 'uses the writer’s key, not Bublr’s')
   assert.match(r.headers['Idempotency-Key'], /^bublr-/)
   const f = r.body
   assert.equal(f.get('mode'), 'payment')
@@ -240,7 +243,7 @@ test('checkout: refused when the shop is closed, unpaid, sold out or the option 
 })
 
 test('checkout: Creem sells digital items through a product made once in the writer’s store', async () => {
-  seedWriter({ integrations: { payments: { provider: 'creem', keySealed: seal(CREEM_KEY, 'alice:payments'), mode: 'live', creemProducts: {} } } })
+  seedWriter({ integrations: { payments: { provider: 'creem', keySealed: seal(CREEM_LIVE_KEY, 'alice:payments'), mode: 'live', creemProducts: {} } } })
   replies = [
     { status: 200, body: { id: 'prod_creem_1' } },
     { status: 200, body: { id: 'ch_1', checkout_url: 'https://checkout.creem.io/ch_1' } },
@@ -249,7 +252,7 @@ test('checkout: Creem sells digital items through a product made once in the wri
   const digitalBuyer = { first_name: 'Ana', last_name: 'Lee', email: 'ana@example.com' }
   const first = await call(checkoutRoute, req('POST', { body: { username: 'alice', productId: 'ebook00001', buyer: digitalBuyer } }))
   assert.equal(first.statusCode, 200)
-  assert.equal(requests[0].url, 'https://test-api.creem.io/v1/products')
+  assert.equal(requests[0].url, 'https://api.creem.io/v1/products')
   assert.equal(requests[0].body.price, 900)
   assert.equal(requests[0].body.billing_type, 'onetime')
   assert.equal(requests[1].body.product_id, 'prod_creem_1')
@@ -267,7 +270,7 @@ test('checkout: Creem sells digital items through a product made once in the wri
   replies = [{ status: 200, body: { id: 'prod_creem_2' } }, { status: 200, body: { id: 'ch_3', checkout_url: 'https://checkout.creem.io/ch_3' } }]
   requests = []
   await call(checkoutRoute, req('POST', { body: { username: 'alice', productId: 'ebook00001', buyer: digitalBuyer } }))
-  assert.equal(requests[0].url, 'https://test-api.creem.io/v1/products')
+  assert.equal(requests[0].url, 'https://api.creem.io/v1/products')
   assert.equal(requests[1].body.product_id, 'prod_creem_2')
 
   const physical = await call(checkoutRoute, req('POST', { body: { username: 'alice', productId: 'tee0000001', colorId: 'white001', sizeId: 'sizes001', buyer } }))

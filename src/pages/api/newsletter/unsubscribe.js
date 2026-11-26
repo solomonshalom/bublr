@@ -122,14 +122,22 @@ export default async function handler(req, res) {
       }
     }
 
+    // Off the list, read fresh in a transaction (stopping the payment above
+    // wrote to it). If the payment couldn't be stopped, the entry stays,
+    // marked unsubscribed (no more email), so its subscription can still be
+    // found and cancelled from Bublr.
     const normalizedEmail = email.trim().toLowerCase()
-    const subscribers = authorData.subscribers || []
-    const updated = subscribers.filter(
-      sub => String(typeof sub === 'string' ? sub : sub.email || '').toLowerCase() !== normalizedEmail
-    )
-    if (updated.length !== subscribers.length) {
-      await firestore.collection('users').doc(authorDoc.id).update({ subscribers: updated })
-    }
+    const userRef = firestore.collection('users').doc(authorDoc.id)
+    await firestore.runTransaction(async transaction => {
+      const snapshot = await transaction.get(userRef)
+      const subscribers = Array.isArray(snapshot.data()?.subscribers) ? snapshot.data().subscribers : []
+      const matches = sub => String(typeof sub === 'string' ? sub : sub?.email || '').toLowerCase() === normalizedEmail
+      if (!subscribers.some(matches)) return
+      const updated = paymentStopped
+        ? subscribers.filter(sub => !matches(sub))
+        : subscribers.map(sub => (matches(sub) ? { ...sub, unsubscribed: true, unsubscribedAt: new Date().toISOString() } : sub))
+      transaction.update(userRef, { subscribers: updated })
+    })
 
     if (wantsHtml) {
       return page(
@@ -140,7 +148,7 @@ export default async function handler(req, res) {
          <p>You won't receive any more email about ${authorLabel}'s new posts.</p>
          ${renewing ? (paymentStopped
            ? '<p>Your paid subscription is cancelled too. You won’t be charged again.</p>'
-           : `<p><strong>We couldn’t cancel your payment automatically.</strong> We’ve asked ${authorLabel} to cancel it. You can also cancel it yourself from the receipt ${escapeHtml(PROVIDERS[paid.provider]?.name || 'your payment provider')} emailed you.</p>`) : ''}
+           : `<p><strong>We couldn’t cancel your payment automatically.</strong> You won’t get any more email, and we’ve asked ${authorLabel} to cancel it. You can also cancel it yourself from the receipt ${escapeHtml(PROVIDERS[paid.provider]?.name || 'your payment provider')} emailed you.</p>`) : ''}
          <p style="margin-top: 24px;"><a href="https://bublr.life/${authorPath}">Visit ${authorLabel}'s profile</a></p>`
       )
     }

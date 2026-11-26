@@ -186,7 +186,8 @@ function downloadCSV(subscribers, currentMode) {
       const info = paidInfo(s, currentMode)
       const plan = info && info.state !== 'ended' ? `paid ${info.price}` : 'free'
       const until = info && info.state !== 'ended' && info.end ? new Date(info.end).toISOString() : ''
-      return `"${email}","${date}","${s.pending === true ? 'pending' : 'confirmed'}","${plan}","${until}"`
+      const status = s.pending === true ? 'pending' : s.unsubscribed === true ? 'unsubscribed' : 'confirmed'
+      return `"${email}","${date}","${status}","${plan}","${until}"`
     })
     .join('\n')
   const csv = header + rows
@@ -210,7 +211,8 @@ function SubscribersContent() {
 
   const subscribers = userDoc?.subscribers || []
   const pendingCount = subscribers.filter(s => s && s.pending === true).length
-  const count = subscribers.length - pendingCount
+  const unsubscribedCount = subscribers.filter(s => s && s.unsubscribed === true).length
+  const count = subscribers.length - pendingCount - unsubscribedCount
   const currentMode = userDoc?.integrations?.payments?.mode || 'live'
   const paidCount = subscribers.filter(s => {
     const info = paidInfo(s, currentMode)
@@ -302,6 +304,11 @@ function SubscribersContent() {
                       <td css={tdStyle}>
                         {sub.email || '—'}
                         {sub.pending === true && <span css={tdMutedStyle}> (unconfirmed)</span>}
+                        {sub.unsubscribed === true && (
+                          <span css={tdMutedStyle}>
+                            {paidInfo(sub, currentMode)?.renewing ? ' (unsubscribed, but their payment didn’t stop: stop the renewal)' : ' (unsubscribed)'}
+                          </span>
+                        )}
                       </td>
                       <td css={tdMutedStyle}>{formatDate(sub.subscribedAt)}</td>
                       <td css={tdMutedStyle}>

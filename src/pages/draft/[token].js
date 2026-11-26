@@ -171,9 +171,14 @@ export default function SharedDraft({ draft, fontSettings, customFonts }) {
             />
           ) : (
             <p css={css`color: var(--grey-3); margin-bottom: 2rem;`}>
-              Nothing written here yet.
+              {draft.paid ? '' : 'Nothing written here yet.'}
             </p>
           )}
+          {draft.paid ? (
+            <p css={css`color: var(--grey-3); margin-bottom: 2rem; font-size: 0.9rem;`}>
+              This draft is for paid subscribers. A shared link shows only its free preview.
+            </p>
+          ) : null}
         </article>
       </Container>
     </>

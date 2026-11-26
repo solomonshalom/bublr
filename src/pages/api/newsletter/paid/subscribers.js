@@ -5,6 +5,7 @@ import {
   PaidNewsletterError,
   paidSubscribers,
   refreshPaidSubscriber,
+  refreshStaleRecords,
   renewingPaidSubscribers,
   setPaidRenewal,
 } from '../../../../lib/paid-newsletter'
@@ -56,10 +57,12 @@ export default async function handler(req, res) {
     }
 
     if (action === 'cancel-all') {
-      const renewing = renewingPaidSubscribers(user)
+      // Anything that could still charge, after asking the provider about stale records
+      const current = await refreshStaleRecords(user)
+      const renewing = renewingPaidSubscribers(current, { strict: true })
       const outcomes = await inBatches(renewing, 3, async ({ email: address }) => {
         try {
-          await setPaidRenewal(user, address, { renew: false })
+          await setPaidRenewal(current, address, { renew: false })
           return true
         } catch (error) {
           console.error('Paid cancel-all: one failed:', error?.status, error?.message)
@@ -71,7 +74,7 @@ export default async function handler(req, res) {
       return res.status(failed ? 207 : 200).json({
         cancelled: outcomes.length - failed,
         failed,
-        stillRenewing: renewingPaidSubscribers(latest).length,
+        stillRenewing: renewingPaidSubscribers(latest, { strict: true }).length,
       })
     }
 

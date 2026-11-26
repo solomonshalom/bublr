@@ -57,4 +57,9 @@ export async function sendPaidCancelFailedEmail(params) {
   return { success: true }
 }
 
+export async function sendDuplicatePaymentEmail(params) {
+  sent.push({ kind: 'paid-duplicate', ...params })
+  return { success: true }
+}
+
 export default { emails: { send: async () => ({}) }, batch: { send: async () => ({}) } }

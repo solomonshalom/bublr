@@ -408,3 +408,67 @@ test('account deletion: followers’ servers are told and the follower list goes
   assert.equal(requests.find(r => r.method === 'POST').body.type, 'Delete')
   assert.deepEqual(all('fediverseFollowers').map(f => f.uid), ['bob'])
 })
+
+// ---------------------------------------------------------------- regressions from review
+
+test('review: a key served from another server can’t speak for an account', async () => {
+  seedWriter()
+  const evilKeys = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+  // evil.example claims its key belongs to bob on mastodon.example
+  on('GET', 'https://evil.example/k', {
+    status: 200,
+    body: { id: REMOTE_ACTOR, inbox: 'https://evil.example/inbox', publicKey: { id: 'https://evil.example/k', owner: REMOTE_ACTOR, publicKeyPem: evilKeys.publicKey.export({ type: 'spki', format: 'pem' }) } },
+  })
+  const follow = { id: 'https://mastodon.example/follows/9', type: 'Follow', actor: REMOTE_ACTOR, object: ALICE }
+  const res = await deliver(inboxRoute, { ...signedDelivery(follow, { keys: evilKeys, keyId: 'https://evil.example/k' }), query: { uid: 'alice' } })
+  assert.equal(res.statusCode, 401)
+  assert.equal(all('fediverseFollowers').length, 0)
+})
+
+test('review: a key document that isn’t the actor must be listed by the actor', async () => {
+  seedWriter()
+  const otherKeys = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+  // Same server, but the actor doesn't list this key
+  on('GET', 'https://mastodon.example/keys/rogue', {
+    status: 200,
+    body: { id: 'https://mastodon.example/keys/rogue', owner: REMOTE_ACTOR, publicKeyPem: otherKeys.publicKey.export({ type: 'spki', format: 'pem' }) },
+  })
+  const follow = { id: 'https://mastodon.example/follows/10', type: 'Follow', actor: REMOTE_ACTOR, object: ALICE }
+  const res = await deliver(inboxRoute, { ...signedDelivery(follow, { keys: otherKeys, keyId: 'https://mastodon.example/keys/rogue' }), query: { uid: 'alice' } })
+  assert.equal(res.statusCode, 401)
+})
+
+test('review: “this account is gone” counts only if the account’s own server says so', async () => {
+  seedWriter()
+  seedFollower()
+  // The key is on another server that answers 410; bob's real account is fine
+  on('GET', 'https://evil.example/k', { status: 410, body: {} })
+  const forged = signedDelivery({ id: 'x', type: 'Delete', actor: REMOTE_ACTOR, object: REMOTE_ACTOR }, { path: '/api/activitypub/inbox', keyId: 'https://evil.example/k' })
+  assert.equal((await deliver(sharedInbox, forged)).statusCode, 401)
+  // Same server, but the account still answers
+  on('GET', 'https://mastodon.example/users/bob-key', { status: 410, body: {} })
+  const stillThere = signedDelivery({ id: 'y', type: 'Delete', actor: REMOTE_ACTOR, object: REMOTE_ACTOR }, { path: '/api/activitypub/inbox', keyId: 'https://mastodon.example/users/bob-key' })
+  assert.equal((await deliver(sharedInbox, stillThere)).statusCode, 401)
+  assert.equal(all('fediverseFollowers').length, 1)
+})
+
+test('review: another writer’s sealed key copied into a document gives no public key', () => {
+  seedWriter()
+  const alice = { id: 'alice', ...read('users', 'alice') }
+  assert.ok(actorPublicKeyPem(alice))
+  assert.equal(actorPublicKeyPem({ id: 'mallory', name: 'mallory', fediverse: { enabled: true, keySealed: alice.fediverse.keySealed } }), null)
+})
+
+test('review: a POST whose signature leaves out the host is refused', () => {
+  const ours = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+  const body = '{}'
+  const date = new Date().toUTCString()
+  const digest = sig.digestHeader(body)
+  const signingString = `(request-target): post /inbox\ndate: ${date}\ndigest: ${digest}`
+  const signature = crypto.sign('RSA-SHA256', Buffer.from(signingString), ours.privateKey).toString('base64')
+  const parsed = sig.parseSignatureHeader(`keyId="k",algorithm="rsa-sha256",headers="(request-target) date digest",signature="${signature}"`)
+  assert.throws(
+    () => sig.verifyRequestSignature({ method: 'POST', paths: ['/inbox'], headers: { date, digest }, rawBody: body, parsed, publicKeyPem: ours.publicKey.export({ type: 'spki', format: 'pem' }) }),
+    /host/
+  )
+})

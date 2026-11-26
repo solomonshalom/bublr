@@ -1,7 +1,7 @@
 import { firestore } from '../../../lib/firebase'
 import { orderTotal } from '../../../lib/shop'
 import { retrieveProviderCheckout, PaymentProviderError } from '../../../lib/shop-payments'
-import { MAX_ORDERS, buyerContext, findUserByName, openDelivery, paymentKey } from '../../../lib/shop-server'
+import { MAX_ORDERS, buyerContext, findUserByName, openDelivery, paymentAccount } from '../../../lib/shop-server'
 import { trustedProducts } from '../../../lib/shop-trust'
 import { hashId, seal } from '../../../lib/secret-box'
 import { sendShopOrderEmail } from '../../../lib/resend'
@@ -36,8 +36,9 @@ export default async function handler(req, res) {
 
   try {
     const user = await findUserByName(String(req.query.user || ''))
-    const apiKey = user ? paymentKey(user) : null
-    const provider = user?.integrations?.payments?.provider
+    const account = user ? paymentAccount(user) : null
+    const apiKey = account?.apiKey
+    const provider = account?.provider
     if (!user || !apiKey) return res.status(404).json({ error: 'Order not found' })
 
     const checkout = await retrieveProviderCheckout(provider, { apiKey, checkoutId })
@@ -80,7 +81,7 @@ export default async function handler(req, res) {
       id: orderId,
       provider,
       checkoutHash,
-      mode: user.integrations.payments.mode || 'live',
+      mode: account.mode,
       productId: meta.bublr_product || null,
       productTitle: product?.title || 'Deleted product',
       variant: meta.bublr_variant || '',

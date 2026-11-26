@@ -9,7 +9,7 @@ import {
   resolveVariant,
 } from '../../../lib/shop'
 import { createCreemProduct, createProviderCheckout, PaymentProviderError } from '../../../lib/shop-payments'
-import { findUserByName, paymentKey, productPath, shopOrigin } from '../../../lib/shop-server'
+import { findUserByName, paymentAccount, productPath, shopOrigin } from '../../../lib/shop-server'
 import { hasVerifiedShopAccess, signCreemProduct, trustedProducts, verifyCreemProduct } from '../../../lib/shop-trust'
 import { getBearerToken, verifyIdToken } from '../../../lib/server-auth'
 import { clientIp, isRateLimited } from '../../../lib/rate-limit'
@@ -55,15 +55,16 @@ export default async function handler(req, res) {
     }
 
     const payments = user.integrations?.payments
-    const apiKey = paymentKey(user)
-    const provider = payments?.provider
+    const account = paymentAccount(user)
+    const apiKey = account?.apiKey
+    const provider = account?.provider
     if (!apiKey || !PROVIDERS[provider]) {
       return res.status(409).json({ error: 'This shop isn’t taking payments yet.' })
     }
 
     // With a test key, only the writer can buy (to try their shop out). A
     // visitor paying with a test card must never get a real download.
-    if (payments.mode === 'test' && (await signedInUid(req)) !== user.id) {
+    if (account.mode === 'test' && (await signedInUid(req)) !== user.id) {
       return res.status(403).json({ error: 'This shop is in test mode, so it isn’t selling yet.' })
     }
 

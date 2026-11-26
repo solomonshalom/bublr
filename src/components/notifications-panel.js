@@ -648,18 +648,23 @@ export default function NotificationsPanel({ isOpen, onClose }) {
     setRemovingSubscriber(email)
 
     try {
-      // Filter out the subscriber (handle both string and object formats)
+      // Through the server: a paid subscriber's payment is stopped first, and
+      // nothing else on the list is overwritten.
+      const response = await authedFetch('/api/newsletter/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        window.alert(data.error || 'Couldn’t remove the subscriber.')
+        throw new Error(data.error || 'remove failed')
+      }
+
       const updatedSubscribers = subscribers.filter((sub) => {
         const subEmail = typeof sub === 'string' ? sub : sub.email
         return subEmail.toLowerCase() !== email.toLowerCase()
       })
-
-      // Update Firestore
-      await firestore.collection('users').doc(user.uid).update({
-        subscribers: updatedSubscribers,
-      })
-
-      // Update local state (optimistic update already done visually)
       setSubscribers(updatedSubscribers)
     } catch (err) {
       console.error('Failed to remove subscriber:', err)

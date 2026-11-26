@@ -46,13 +46,16 @@ const publicKeys = new Map()
 /** The public key (PEM) that matches the sealed private key, or null. */
 export function actorPublicKeyPem(user) {
   const sealed = user?.fediverse?.keySealed
-  if (!sealed) return null
-  const cached = publicKeys.get(sealed)
+  if (!sealed || !user.id) return null
+  // Cached per writer and key: another writer's sealed key copied into this
+  // document must not come back from the cache without being opened.
+  const cacheKey = `${user.id}|${sealed}`
+  const cached = publicKeys.get(cacheKey)
   if (cached) return cached
   const privatePem = actorPrivateKey(user)
   if (!privatePem) return null
   const pem = crypto.createPublicKey(privatePem).export({ type: 'spki', format: 'pem' })
   if (publicKeys.size > 500) publicKeys.clear()
-  publicKeys.set(sealed, pem)
+  publicKeys.set(cacheKey, pem)
   return pem
 }

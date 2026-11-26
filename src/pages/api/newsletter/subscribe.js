@@ -1,7 +1,7 @@
 import { firestore } from '../../../lib/firebase'
 import { clientIp, isRateLimited } from '../../../lib/rate-limit'
 import { sendConfirmationEmail } from '../../../lib/resend'
-import { isPending, subscriberEmail } from '../../../lib/subscribers'
+import { isPending, isUnsubscribed, subscriberEmail } from '../../../lib/subscribers'
 import { notifyNewSubscriber } from '../../../lib/subscriber-notify'
 
 // Simple email validation
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     const normalizedEmail = email.trim().toLowerCase()
     const existing = subscribers.find(sub => subscriberEmail(sub) === normalizedEmail)
 
-    if (existing && !isPending(existing)) {
+    if (existing && !isPending(existing) && !isUnsubscribed(existing)) {
       return res.status(200).json({
         success: true,
         message: 'Already subscribed',
@@ -62,6 +62,16 @@ export default async function handler(req, res) {
     // first, so nobody can be signed up (or flood a list) with addresses
     // they don't own. Without email there is nothing to confirm with.
     const needsConfirmation = !!process.env.RESEND_API_KEY
+
+    // Unsubscribed earlier (with a paid record kept): back on the list once
+    // they confirm, or straight away when there's no email to confirm with.
+    if (existing && isUnsubscribed(existing) && !needsConfirmation) {
+      const { unsubscribed, unsubscribedAt, ...rest } = existing
+      await firestore.collection('users').doc(authorDoc.id).update({
+        subscribers: subscribers.map(sub => (sub === existing ? rest : sub)),
+      })
+      return res.status(200).json({ success: true, message: 'Successfully subscribed!' })
+    }
 
     if (existing) {
       // Still waiting for confirmation: send the email again, at most once a minute
@@ -75,7 +85,7 @@ export default async function handler(req, res) {
         if (mail.success) {
           await firestore.collection('users').doc(authorDoc.id).update({
             subscribers: subscribers.map(sub =>
-              sub === existing ? { ...existing, lastRequestedAt: new Date().toISOString() } : sub
+              sub === existing ? { ...existing, pending: true, lastRequestedAt: new Date().toISOString() } : sub
             ),
           })
         }

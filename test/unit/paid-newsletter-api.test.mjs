@@ -41,6 +41,7 @@ const { verifyUnsubscribe, signUnsubscribe } = await import('../../src/lib/unsub
 
 const fakeKey = (...parts) => parts.join('_')
 const STRIPE_KEY = fakeKey('rk', 'live', '51abcdefghijklmnopqrstuv')
+const STRIPE_TEST_KEY = fakeKey('rk', 'test', '51abcdefghijklmnopqrstuv')
 const CREEM_KEY = fakeKey('creem', 'abcdefghijklmnop')
 const DAY = 24 * 60 * 60 * 1000
 const LINE = '<div data-type="paywall" class="tiptap-paywall"></div>'
@@ -77,7 +78,8 @@ function seedWriter(extra = {}, { provider = 'stripe', mode = 'live', settings =
     posts: [],
     ...shopPlan,
     shopGrant: signShopGrant('alice', shopPlan.subscription),
-    integrations: { payments: { provider, keySealed: seal(provider === 'stripe' ? STRIPE_KEY : CREEM_KEY, 'alice:payments'), keyHint: '…', mode } },
+    // Test or live comes from the key itself
+    integrations: { payments: { provider, keySealed: seal(provider === 'stripe' ? (mode === 'test' ? STRIPE_TEST_KEY : STRIPE_KEY) : CREEM_KEY, 'alice:payments'), keyHint: '…', mode } },
     ...(settings ? { paidNewsletter: signedPaidSettings('alice', settings) } : {}),
     subscribers,
     ...extra,
@@ -424,14 +426,27 @@ test('unsubscribe: a paying reader who leaves stops paying too', async () => {
   assert.ok(verifyUnsubscribe('reader@example.com', 'alice', token))
 })
 
-test('unsubscribe: if the payment can’t be stopped, the reader is still unsubscribed and the writer is asked to cancel it', async () => {
+test('unsubscribe: if the payment can’t be stopped, the reader gets no more email, the writer is asked to cancel it, and the record stays so they can', async () => {
   seedWriter({}, { subscribers: [paidEntry('reader@example.com')] })
   const token = signUnsubscribe('reader@example.com', 'alice')
   on('POST', 'api.stripe.com/v1/subscriptions/sub_reader', { status: 500, body: { error: { message: 'down' } } })
   const res = await call(unsubscribeRoute, req('POST', { headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: { email: 'reader@example.com', author: 'alice', token } }))
   assert.match(res.body, /couldn’t cancel your payment automatically/)
-  assert.equal(read('users', 'alice').subscribers.length, 0)
+  const [entry] = read('users', 'alice').subscribers
+  assert.equal(entry.unsubscribed, true)
+  assert.ok(verifiedPaid('alice', entry), 'the subscription can still be found and cancelled')
   assert.equal(sent.filter(m => m.kind === 'paid-cancel-failed').length, 1)
+
+  // No more email
+  seedPaidPost()
+  const result = await notifySubscribersOfPost('post1')
+  assert.equal(result.body.sent, 0)
+
+  // The writer stops it later; the entry stays marked
+  on('POST', 'api.stripe.com/v1/subscriptions/sub_reader', { status: 200, body: { id: 'sub_reader', status: 'active', cancel_at_period_end: true, current_period_end: Math.floor((Date.now() + 20 * DAY) / 1000) } })
+  const stop = await call(subscribersRoute, req('POST', { headers: authHeader('alice'), body: { action: 'cancel', email: 'reader@example.com' } }))
+  assert.equal(stop.statusCode, 200)
+  assert.equal(read('users', 'alice').subscribers[0].unsubscribed, true)
 })
 
 test('writer: end every paid subscription before leaving; account deletion waits for it', async () => {
@@ -577,4 +592,103 @@ test('complete: Creem, where the checkout names the subscription and it’s fetc
   assert.equal(cancel.statusCode, 200)
   assert.equal(cancel.body.cancelAtPeriodEnd, true)
   assert.equal(verifiedPaid('alice', read('users', 'alice').subscribers[0]).cancelAtPeriodEnd, true)
+})
+
+// ---------------------------------------------------------------- regressions from review
+
+const { getSharedDraft } = await import('../../src/lib/draft-share.js')
+const removeRoute = (await import('../../src/pages/api/newsletter/remove.js')).default
+const v1PostRoute = (await import('../../src/pages/api/v1/posts/[slug].js')).default
+
+test('review: a shared-draft link never opens a paid post, even one flipped to a draft with a token', async () => {
+  seedWriter()
+  seedPaidPost()
+  seed('posts', 'post1', { ...read('posts', 'post1'), published: false, shareToken: 'a'.repeat(48) })
+  const shared = await getSharedDraft('a'.repeat(48))
+  assert.equal(shared.draft.paid, true)
+  assert.equal(shared.draft.content, '<p>Free bit</p>')
+  assert.ok(!JSON.stringify(shared).includes('secret ending'))
+})
+
+test('review: test or live comes from the key, not the field beside it', async () => {
+  seedWriter({}, { mode: 'test' })
+  const doc = read('users', 'alice')
+  seed('users', 'alice', { ...doc, integrations: { payments: { ...doc.integrations.payments, mode: 'live' } } })
+  const visitor = await call(checkoutRoute, req('POST', { body: { username: 'alice', email: 'r@example.com' } }))
+  assert.equal(visitor.statusCode, 403)
+
+  // A record paid with a test card stays a test record, whatever the field says
+  on('GET', 'api.stripe.com/v1/checkout/sessions/cs_paid', { status: 200, body: stripeSession() })
+  await call(completeRoute, req('GET', { query: { user: 'alice', session_id: 'cs_paid' } }))
+  assert.equal(verifiedPaid('alice', read('users', 'alice').subscribers[0]).mode, 'test')
+})
+
+test('review: emailed links point at Bublr itself, never a custom domain from the document', async () => {
+  seedWriter({ customDomain: { domain: 'evil.example', status: 'verified' } }, { subscribers: [paidEntry('reader@example.com')] })
+  await call(loginRoute, req('POST', { headers: { host: 'evil.example' }, body: { username: 'alice', email: 'reader@example.com' } }))
+  const link = sent.find(m => m.kind === 'reader-login').loginUrl
+  assert.match(link, /^https:\/\/bublr\.life\/api\/newsletter\/paid\/session\?token=/)
+})
+
+test('review: a second checkout for someone already paying is stopped; the first is never cancelled', async () => {
+  seedWriter({}, { subscribers: [paidEntry('reader@example.com', { checkoutHash: hashId('cs_first') }, { subscriptionId: 'sub_first' })] })
+  on('GET', 'api.stripe.com/v1/subscriptions/sub_first', { status: 200, body: { id: 'sub_first', status: 'active', cancel_at_period_end: false, current_period_end: Math.floor((Date.now() + 20 * DAY) / 1000) } })
+  on('GET', 'api.stripe.com/v1/checkout/sessions/cs_paid', { status: 200, body: stripeSession() })
+  on('POST', 'api.stripe.com/v1/subscriptions/sub_new', { status: 200, body: { id: 'sub_new', status: 'active', cancel_at_period_end: true } })
+  const res = await call(completeRoute, req('GET', { query: { user: 'alice', session_id: 'cs_paid' } }))
+  assert.equal(res.body.duplicate, true)
+  assert.ok(requests.some(r => r.method === 'POST' && r.url.endsWith('/v1/subscriptions/sub_new')), 'the new one stops renewing')
+  assert.ok(!requests.some(r => r.method === 'POST' && r.url.endsWith('/v1/subscriptions/sub_first')), 'the first one is left alone')
+  assert.equal(verifiedPaid('alice', read('users', 'alice').subscribers[0]).checkoutHash, hashId('cs_first'))
+  assert.equal(sent.filter(m => m.kind === 'paid-welcome').length, 0)
+  assert.equal(sent.filter(m => m.kind === 'paid-duplicate').length, 1)
+})
+
+test('review: deleting the account checks stale records with the provider first', async () => {
+  seedWriter({ subscription: { ...shopPlan.subscription, cancelAtPeriodEnd: true } }, { subscribers: [paidEntry('reader@example.com', { currentPeriodEnd: Date.now() - 40 * DAY, checkedAt: Date.now() - 40 * DAY })] })
+  on('GET', 'api.stripe.com/v1/subscriptions/sub_reader', { status: 200, body: { id: 'sub_reader', status: 'active', cancel_at_period_end: false, current_period_end: Math.floor((Date.now() + 10 * DAY) / 1000) } })
+  const res = await call(deleteAccountRoute, req('POST', { headers: authHeader('alice'), body: { confirm: 'delete my account' } }))
+  assert.equal(res.statusCode, 409)
+  assert.equal(res.body.code, 'PAID_SUBSCRIBERS_ACTIVE')
+})
+
+test('review: removing a paying subscriber stops their payment first, or removes nothing', async () => {
+  seedWriter({}, { subscribers: [paidEntry('reader@example.com')] })
+  on('POST', 'api.stripe.com/v1/subscriptions/sub_reader', { status: 500, body: {} })
+  const refused = await call(removeRoute, req('POST', { headers: authHeader('alice'), body: { email: 'reader@example.com' } }))
+  assert.equal(refused.statusCode, 409)
+  assert.equal(read('users', 'alice').subscribers.length, 1)
+
+  on('POST', 'api.stripe.com/v1/subscriptions/sub_reader', { status: 200, body: { id: 'sub_reader', status: 'active', cancel_at_period_end: true } })
+  const removed = await call(removeRoute, req('POST', { headers: authHeader('alice'), body: { email: 'reader@example.com' } }))
+  assert.equal(removed.statusCode, 200)
+  assert.equal(read('users', 'alice').subscribers.length, 0)
+})
+
+test('review: the developer API seals a paid post’s new body, and refuses one it can’t open', async () => {
+  const { createHash } = await import('node:crypto')
+  const apiKey = 'bublr_sk_' + 'ab'.repeat(32)
+  const keyHash = createHash('sha256').update(apiKey).digest('hex')
+  seedWriter({ posts: ['post1'], apiKeys: [{ keyHash, name: 'k', createdAt: Date.now() }] })
+  seed('apiKeyLookup', keyHash, { userId: 'alice', createdAt: Date.now() })
+  seedPaidPost()
+  const auth = { authorization: `Bearer ${apiKey}` }
+  const put = await call(v1PostRoute, req('PUT', { headers: auth, query: { slug: 'paid-one' }, body: { content: `<p>Free 2</p>${LINE}<p>Secret 2</p>` } }))
+  assert.equal(put.statusCode, 200)
+  assert.equal(read('posts', 'post1').content, '<p>Free 2</p>')
+  assert.ok(!JSON.stringify(read('posts', 'post1')).includes('Secret 2'))
+
+  seed('posts', 'post1', { ...read('posts', 'post1'), paidContentSealed: 'v1.broken.seal.value' })
+  const get = await call(v1PostRoute, req('GET', { headers: auth, query: { slug: 'paid-one' } }))
+  assert.equal(get.statusCode, 500)
+})
+
+test('review: any save to a post that is paid by then is sealed, whatever the saver thought', async () => {
+  const { savePostFields } = await import('../../src/lib/paid-content.js')
+  seedWriter()
+  seedPaidPost()
+  await savePostFields('post1', { content: `<p>Open</p>${LINE}<p>Hidden</p>` }, { uid: 'alice' })
+  assert.equal(read('posts', 'post1').content, '<p>Open</p>')
+  assert.ok(!JSON.stringify(read('posts', 'post1')).includes('Hidden'))
+  await assert.rejects(savePostFields('post1', { content: 'x' }, { uid: 'mallory' }), /your own posts/)
 })

@@ -1,3 +1,4 @@
+import { firestore } from './firebase'
 import { canSeal, open, seal } from './secret-box'
 
 /**
@@ -93,6 +94,28 @@ export function fullContent(post, postId = post?.id) {
   } catch (_) {
     return null
   }
+}
+
+/**
+ * Save fields of a post (title, excerpt, content…), sealing the body if the
+ * post is paid at the moment of writing. Read and written in one
+ * transaction, so a save racing a switch to paid can't put the whole post
+ * back in the open. `uid` (optional) must be the author.
+ */
+export async function savePostFields(postId, fields, { uid = null } = {}) {
+  const ref = firestore.collection('posts').doc(postId)
+  return firestore.runTransaction(async transaction => {
+    const snapshot = await transaction.get(ref)
+    if (!snapshot.exists) throw new PaidContentError('Post not found', 404)
+    const data = snapshot.data()
+    if (uid && data.author !== uid) throw new PaidContentError('You can only change your own posts.', 403)
+    const update = { ...fields }
+    if (Object.prototype.hasOwnProperty.call(fields, 'content') && isPaidPost(data)) {
+      Object.assign(update, sealedFields(data.author, postId, fields.content))
+    }
+    transaction.update(ref, update)
+    return { ...data, ...update }
+  })
 }
 
 /** What feeds carry for a post: a paid post's free preview, and a note that there's more. */

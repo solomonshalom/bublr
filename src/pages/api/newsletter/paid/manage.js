@@ -2,10 +2,11 @@ import { firestore } from '../../../../lib/firebase'
 import { escapeHtml } from '../../../../lib/escape'
 import { PROVIDERS } from '../../../../lib/shop'
 import { PaymentProviderError } from '../../../../lib/shop-payments'
-import { paymentKey, shopOrigin } from '../../../../lib/shop-server'
+import { paymentAccount } from '../../../../lib/shop-server'
 import { billingPortalUrl } from '../../../../lib/newsletter-payments'
 import {
   PaidNewsletterError,
+  currentModeOf,
   describePrice,
   findSubscriber,
   isRenewing,
@@ -15,7 +16,7 @@ import {
   setPaidRenewal,
   verifiedPaid,
 } from '../../../../lib/paid-newsletter'
-import { verifyManageToken } from '../../../../lib/reader-session'
+import { emailOrigin, verifyManageToken } from '../../../../lib/reader-session'
 import { clientIp, isRateLimited } from '../../../../lib/rate-limit'
 
 /**
@@ -64,7 +65,7 @@ const button = (token, action, label, secondary = false) => `<form method="POST"
 
 function statusPage(res, { user, email, paid, token, origin, message = null }) {
   const writer = escapeHtml(user.displayName || user.name)
-  const currentMode = user.integrations?.payments?.mode || 'live'
+  const currentMode = currentModeOf(user)
   const state = paidState(paid, { currentMode })
   const provider = PROVIDERS[paid.provider]?.name || 'your payment provider'
   const price = describePrice(paid.amount, paid.currency, paid.interval)
@@ -114,7 +115,7 @@ export default async function handler(req, res) {
     const snapshot = await firestore.collection('users').doc(link.writerId).get()
     if (!snapshot.exists) return page(res, 404, 'Not found', '<h1>This writer isn’t on Bublr any more</h1>')
     const user = { id: snapshot.id, ...snapshot.data() }
-    const { origin } = shopOrigin(req, user)
+    const origin = emailOrigin()
     let paid = verifiedPaid(user.id, findSubscriber(user, link.email))
     if (!paid) {
       return page(res, 404, 'No subscription', `<h1>No paid subscription</h1><p>There’s no paid subscription for this address any more. <a href="${escapeHtml(origin)}/${encodeURIComponent(user.name)}">Visit the writer’s page</a></p>`)
@@ -129,8 +130,9 @@ export default async function handler(req, res) {
     const action = params.action
     if (action === 'card') {
       const ref = openSubscriptionRef(user.id, link.email, paid)
-      const apiKey = paymentKey(user)
-      if (!ref?.customerId || !apiKey || user.integrations?.payments?.provider !== paid.provider) {
+      const account = paymentAccount(user)
+      const apiKey = account?.apiKey
+      if (!ref?.customerId || !apiKey || account.provider !== paid.provider || account.mode !== paid.mode) {
         return statusPage(res, { user, email: link.email, paid, token, origin, message: 'Changing your card isn’t available here right now. Please contact the writer.' })
       }
       const returnUrl = `${origin}/api/newsletter/paid/manage?token=${encodeURIComponent(token)}`

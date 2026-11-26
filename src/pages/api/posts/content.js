@@ -1,6 +1,6 @@
-import firebase, { firestore } from '../../../lib/firebase'
+import firebase from '../../../lib/firebase'
 import { requirePostOwner } from '../../../lib/post-owner'
-import { MAX_POST_HTML, PaidContentError, fullContent, isPaidPost, sealedFields } from '../../../lib/paid-content'
+import { MAX_POST_HTML, PaidContentError, fullContent, isPaidPost, savePostFields } from '../../../lib/paid-content'
 
 /**
  * A post's body for its writer.
@@ -48,11 +48,12 @@ export default async function handler(req, res) {
     }
     if (content !== undefined) {
       if (typeof content !== 'string' || content.length > MAX_POST_HTML) return res.status(413).json({ error: 'This post is too long to save.' })
-      Object.assign(update, isPaidPost(post) ? sealedFields(uid, post.id, content) : { content })
+      update.content = content
     }
     if (!Object.keys(update).length) return res.status(200).json({ saved: false })
     update.lastEdited = firebase.firestore.Timestamp.now()
-    await firestore.collection('posts').doc(post.id).update(update)
+    // Sealed if the post is paid when it's written, not when it was read
+    await savePostFields(post.id, update, { uid })
     return res.status(200).json({ saved: true })
   } catch (error) {
     if (error instanceof PaidContentError) return res.status(error.status).json({ error: error.message })

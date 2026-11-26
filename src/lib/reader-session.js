@@ -86,6 +86,14 @@ export const clearedSessionCookie = () => cookieHeader('', 0)
 
 // ------------------------------------------------------------ links
 
+/**
+ * Links that go out by email always point at Bublr's own address, never a
+ * writer's custom domain: `customDomain` sits in a world-writable document,
+ * so a link built from it could be sent somewhere else, with a sign-in token
+ * in it.
+ */
+export const emailOrigin = () => String(process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life').replace(/\/+$/, '')
+
 /** A sign-in link: opens /api/newsletter/paid/session, which sets the cookie and goes to `next`. */
 export function loginUrl(origin, email, { next = '/', ttlMs = LOGIN_LINK_TTL_MS, now = Date.now() } = {}) {
   const token = signToken('reader-login', { e: norm(email), n: safeNext(next) }, { now, ttlMs })

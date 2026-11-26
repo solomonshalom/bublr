@@ -8,7 +8,9 @@ import { signRequest } from './signatures'
  * (a key id, an actor, an inbox), so before fetching it must be https, on the
  * public internet (no private, loopback or link-local addresses, by name or
  * after DNS), and answers are size- and time-limited. Redirects are followed
- * by hand so each hop is checked too.
+ * by hand so each hop is checked too. fetch() resolves the name again, so a
+ * host that answers DNS differently the second time (rebinding) isn't caught;
+ * on Vercel's functions there's no private network behind it to reach.
  */
 
 const MAX_BYTES = 1024 * 1024

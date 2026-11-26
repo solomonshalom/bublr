@@ -1,21 +1,23 @@
 import firebase, { firestore } from '../../../../lib/firebase'
 import { PROVIDERS } from '../../../../lib/shop'
 import { PaymentProviderError } from '../../../../lib/shop-payments'
-import { findUserByName, paymentKey, shopOrigin } from '../../../../lib/shop-server'
+import { findUserByName, paymentAccount } from '../../../../lib/shop-server'
 import { hashId } from '../../../../lib/secret-box'
 import { clientIp, isRateLimited } from '../../../../lib/rate-limit'
-import { sendNewPaidSubscriberEmail, sendPaidWelcomeEmail } from '../../../../lib/resend'
+import { sendDuplicatePaymentEmail, sendNewPaidSubscriberEmail, sendPaidWelcomeEmail } from '../../../../lib/resend'
 import { cancelAtPeriodEnd, retrieveSubscriptionCheckout } from '../../../../lib/newsletter-payments'
 import {
+  couldStillCharge,
   describePrice,
-  isRenewing,
+  findSubscriber,
   openSubscriptionRef,
+  refreshPaidSubscriber,
   recordFromSubscription,
   sealSubscriptionRef,
   verifiedPaid,
   writePaidRecord,
 } from '../../../../lib/paid-newsletter'
-import { EMAIL_LINK_TTL_MS, loginUrl, manageUrl, maskEmail, paidSessionCookie } from '../../../../lib/reader-session'
+import { EMAIL_LINK_TTL_MS, emailOrigin, loginUrl, manageUrl, maskEmail, paidSessionCookie } from '../../../../lib/reader-session'
 
 /**
  * Confirm a paid subscription when the reader comes back from Stripe/Creem
@@ -47,9 +49,9 @@ export default async function handler(req, res) {
 
   try {
     const user = await findUserByName(String(req.query.user || ''))
-    const apiKey = user ? paymentKey(user) : null
-    const payments = user?.integrations?.payments
-    if (!user || !apiKey || !PROVIDERS[payments?.provider]) return res.status(404).json({ error: 'Subscription not found' })
+    const payments = user ? paymentAccount(user) : null
+    const apiKey = payments?.apiKey
+    if (!user || !apiKey || !PROVIDERS[payments.provider]) return res.status(404).json({ error: 'Subscription not found' })
 
     const checkout = await retrieveSubscriptionCheckout(payments.provider, { apiKey, checkoutId })
     const meta = checkout.metadata || {}
@@ -74,15 +76,55 @@ export default async function handler(req, res) {
     const email = String(checkout.email || meta.bublr_email || '').trim().toLowerCase()
     if (!email.includes('@')) return res.status(409).json({ paid: true, error: 'The payment has no email address, so it couldn’t be linked to a subscription.' })
 
+    // A second subscription for someone already paying: stop it renewing and
+    // tell the writer, who can refund the extra payment.
+    async function duplicate() {
+      await cancelAtPeriodEnd(payments.provider, { apiKey, subscriptionId: checkout.subscription.id }).catch(error =>
+        console.error('Paid complete: could not stop a duplicate subscription:', error?.message)
+      )
+      if (user.email && !isRateLimited(`paid-duplicate:${checkoutId}`, { max: 1, windowMs: 24 * 60 * 60 * 1000 })) {
+        await sendDuplicatePaymentEmail({
+          writerEmail: user.email,
+          writerName: user.displayName || user.name,
+          subscriberLabel: maskEmail(email),
+          providerName: PROVIDERS[payments.provider].name,
+        }).catch(() => {})
+      }
+      return res.status(200).json({
+        paid: true,
+        duplicate: true,
+        email: maskEmail(email),
+        signedIn: false,
+        message: 'You already have a paid subscription, so this second one won’t renew. Ask the writer for a refund of the extra payment.',
+      })
+    }
+
     const now = Date.now()
     const checkoutHash = hashId(checkoutId)
-    const mode = payments.mode || 'live'
-    let replaced = null
+    const mode = payments.mode
+    const newSubscriptionId = checkout.subscription.id
+    const writerName = user.displayName || user.name
+    const providerName = PROVIDERS[payments.provider].name
+
+    // Already paying through another subscription (two tabs, or a second
+    // checkout)? Ask the provider whether that one still renews. If it does,
+    // the subscription on record stays as it is and this new one is stopped
+    // from renewing: never the other way round, so reloading an old return
+    // page can't cancel the subscription a reader is relying on.
+    const sameSubscription = paid => openSubscriptionRef(user.id, email, paid)?.subscriptionId === newSubscriptionId
+    let existing = verifiedPaid(user.id, findSubscriber(user, email))
+    if (existing && existing.checkoutHash !== checkoutHash && !sameSubscription(existing) && couldStillCharge(existing)) {
+      existing = (await refreshPaidSubscriber(user, email, { now }).catch(() => null)) || existing
+    }
+    const keepsExisting = paid => paid && paid.checkoutHash !== checkoutHash && !sameSubscription(paid) && couldStillCharge(paid)
+    if (keepsExisting(existing)) return duplicate()
+
     const result = await writePaidRecord(user.id, email, entry => {
       const before = verifiedPaid(user.id, entry)
       if (before && before.checkoutHash === checkoutHash) return null // recorded already (a reload)
-      if (before && isRenewing(before, { now })) replaced = { paid: before, ref: openSubscriptionRef(user.id, email, before) }
+      if (keepsExisting(before)) return null // another checkout won the race
       return recordFromSubscription(user.id, email, {
+        previous: before && sameSubscription(before) ? before : null,
         provider: payments.provider,
         mode,
         subscription: checkout.subscription,
@@ -91,25 +133,17 @@ export default async function handler(req, res) {
         currency: checkout.currency,
         checkoutHash,
         startedAt: now,
-        ref: sealSubscriptionRef(user.id, email, { subscriptionId: checkout.subscription.id, customerId: checkout.subscription.customerId || checkout.customerId }),
+        ref: sealSubscriptionRef(user.id, email, { subscriptionId: newSubscriptionId, customerId: checkout.subscription.customerId || checkout.customerId }),
         now,
       })
-    }, { now })
+    }, { now, resubscribe: true })
     if (!result) return res.status(404).json({ error: 'Subscription not found' })
+    if (!result.written && result.paid?.checkoutHash !== checkoutHash) return duplicate()
 
-    const { origin } = shopOrigin(req, user)
-    const writerName = user.displayName || user.name
+    const origin = emailOrigin()
     const priceText = describePrice(result.paid.amount, result.paid.currency, result.paid.interval)
-    const providerName = PROVIDERS[payments.provider].name
 
     if (result.written) {
-      // Two checkouts finished for the same address (two tabs): keep the
-      // newest and stop the older one renewing, so nobody pays twice.
-      if (replaced?.ref?.subscriptionId && replaced.ref.subscriptionId !== checkout.subscription.id) {
-        await cancelAtPeriodEnd(replaced.paid.provider, { apiKey, subscriptionId: replaced.ref.subscriptionId }).catch(error =>
-          console.error('Paid complete: could not stop the older subscription:', error?.message)
-        )
-      }
       await sendPaidWelcomeEmail({
         subscriberEmail: email,
         authorName: writerName,

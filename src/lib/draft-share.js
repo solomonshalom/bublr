@@ -3,7 +3,7 @@ import { firestore } from './firebase'
 import { toPostAuthor } from './public-user'
 import { toMillis } from './timestamps'
 import { sanitizeFontFamily } from './fonts'
-import { fullContent, removePaywallLine } from './paid-content'
+import { isPaidPost } from './paid-content'
 
 /**
  * Private links to unpublished drafts ("Share draft" in the editor).
@@ -71,8 +71,11 @@ export async function getSharedDraft(token) {
   return {
     draft: {
       title: typeof post.title === 'string' ? post.title : '',
-      // A paid draft is shared whole: the writer chose who gets the link
-      content: removePaywallLine(fullContent({ ...post, id: doc.id }) ?? (typeof post.content === 'string' ? post.content : '')),
+      // A paid draft's link shows only its free preview. The token and the
+      // published flag sit in a world-writable document, so a link must
+      // never be a way to open what's sealed.
+      content: typeof post.content === 'string' ? post.content : '',
+      ...(isPaidPost(post) ? { paid: true } : {}),
       textDirection: post.textDirection || 'auto',
       lastEdited: toMillis(post.lastEdited) || null,
       author: toPostAuthor(user),

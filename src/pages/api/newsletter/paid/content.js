@@ -1,10 +1,9 @@
 import { firestore } from '../../../../lib/firebase'
 import { fullContent, isPaidPost, removePaywallLine } from '../../../../lib/paid-content'
 import { readerHasPaidAccess } from '../../../../lib/paid-newsletter'
-import { manageUrl, maskEmail, readerFromRequest, sessionCovers } from '../../../../lib/reader-session'
+import { emailOrigin, manageUrl, maskEmail, readerFromRequest, sessionCovers } from '../../../../lib/reader-session'
 import { sanitizePostHtml } from '../../../../lib/sanitize-post'
 import { getBearerToken, verifyIdToken } from '../../../../lib/server-auth'
-import { shopOrigin } from '../../../../lib/shop-server'
 import { clientIp, isRateLimited } from '../../../../lib/rate-limit'
 
 /**
@@ -63,7 +62,7 @@ export default async function handler(req, res) {
     if (!isAuthor) {
       const allowed = sessionCovers(session, author.id) && (await readerHasPaidAccess(author, session.email))
       if (!allowed) return res.status(200).json({ locked: true, signedIn: session ? maskEmail(session.email) : null })
-      reader = { email: maskEmail(session.email), manageUrl: manageUrl(shopOrigin(req, author).origin, session.email, author.id) }
+      reader = { email: maskEmail(session.email), manageUrl: manageUrl(emailOrigin(), session.email, author.id) }
     }
 
     const html = fullContent(post)

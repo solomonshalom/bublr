@@ -679,9 +679,22 @@ function Editor({ post, onBeforeDelete, onPaidSaved }) {
 
     setSaveStatus('saving')
     try {
-      if (accessRef.current === 'paid') {
-        // A paid post's body is sealed on the server; it never goes to
-        // Firestore from here (lib/paid-content).
+      // A free post saves straight to Firestore, in a transaction that backs
+      // off if the post has become paid meanwhile (another tab or device):
+      // a paid post's body must never land in the open `content` field.
+      let paid = accessRef.current === 'paid'
+      if (!paid) {
+        const ref = firestore.collection('posts').doc(post.id)
+        paid = await firestore.runTransaction(async transaction => {
+          const snapshot = await transaction.get(ref)
+          if (snapshot.data()?.access === 'paid') return true
+          transaction.update(ref, { ...changed, lastEdited: firebase.firestore.Timestamp.now() })
+          return false
+        })
+        if (paid) accessRef.current = 'paid'
+      }
+      if (paid) {
+        // Sealed on the server (lib/paid-content)
         const response = await authedFetch('/api/posts/content', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -692,11 +705,6 @@ function Editor({ post, onBeforeDelete, onPaidSaved }) {
           throw new Error(data.error || 'Save failed')
         }
         if (changed.content !== undefined) onPaidSaved?.(changed.content)
-      } else {
-        await firestore.collection('posts').doc(post.id).update({
-          ...changed,
-          lastEdited: firebase.firestore.Timestamp.now(),
-        })
       }
       setSaveStatus('saved')
       scheduleFederate()

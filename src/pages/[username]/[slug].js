@@ -615,7 +615,8 @@ export async function getStaticProps({ params }) {
     const authorUrl = `${SITE_URL}/${post.author.name}`
     const publishedTime = new Date(lastEditedTime).toISOString()
     // A paid post's length counts all of it, not just the free preview
-    const wholeBody = isPaidPost(post) ? fullContent(post) || post.content : post.content
+    // (post.author is the byline by now; the seal is bound to the author's id)
+    const wholeBody = isPaidPost(post) ? fullContent({ ...post, author: authorId }) || post.content : post.content
     const readingTime = calculateReadingTime(wholeBody)
     const wordCount = getWordCount(wholeBody)
     const description = generateMetaDescription(post.excerpt, post.content)

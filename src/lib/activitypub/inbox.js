@@ -1,4 +1,5 @@
 import { firestore } from '../firebase'
+import { clientIp, isRateLimited } from '../rate-limit'
 import { fediverseEnabled } from './actor-keys'
 import { actorUrl, inboxUrl, sharedInboxUrl, uidFromActorUrl } from './config'
 import { addFollower, removeActorEverywhere, removeFollower } from './followers'
@@ -54,32 +55,48 @@ export function _clearKeyCacheForTesting() {
   keys.clear()
 }
 
-function keyFromDocument(doc, keyId) {
-  // An actor with its key(s), or a key object on its own.
+const originOf = value => {
+  try {
+    return new URL(value).origin
+  } catch (_) {
+    return null
+  }
+}
+const sameOrigin = (a, b) => Boolean(originOf(a)) && originOf(a) === originOf(b)
+
+// The key with this id in an actor document (or a key document on its own).
+function findKey(doc, keyId) {
   if (doc.publicKey) {
     const list = Array.isArray(doc.publicKey) ? doc.publicKey : [doc.publicKey]
-    const key = list.find(k => k && k.id === keyId) || list[0]
-    if (!key?.publicKeyPem) return null
-    return { pem: key.publicKeyPem, owner: idOf(key.owner) || doc.id, actor: doc }
+    const key = list.find(k => k && typeof k === 'object' && k.id === keyId)
+    return key?.publicKeyPem ? { pem: key.publicKeyPem, owner: idOf(key.owner) } : null
   }
-  if (doc.publicKeyPem) return { pem: doc.publicKeyPem, owner: idOf(doc.owner), actor: null }
+  if (doc.publicKeyPem && doc.id === keyId) return { pem: doc.publicKeyPem, owner: idOf(doc.owner) }
   return null
 }
 
+/**
+ * The sender's key and the actor it belongs to. Nothing in the fetched
+ * document is taken on its word: the key and its owner must live on the same
+ * server as the key id, and unless the document is the owner itself, fetched
+ * from its own address, the owner is fetched too and must list this key.
+ * Otherwise any server could hand out a key "owned by" someone else's account.
+ */
 async function fetchKey(keyId, signer, { fresh = false } = {}) {
   const cached = keys.get(keyId)
   if (!fresh && cached && Date.now() - cached.at < KEY_TTL_MS) return cached
   const url = keyId.split('#')[0]
   const doc = await fetchActivityJson(url, { signer })
-  const key = keyFromDocument(doc, keyId)
-  if (!key?.owner) throw new InboxError('The key has no owner', 401)
-  if (!key.actor || key.actor.id !== key.owner) {
-    // The key lives apart from its actor: fetch the actor for its inbox.
-    const actor = await fetchActivityJson(key.owner, { signer })
-    if (actor.id !== key.owner) throw new InboxError('The key’s owner doesn’t match', 401)
-    key.actor = actor
+  const key = findKey(doc, keyId)
+  if (!key?.owner) throw new InboxError('The key isn’t in the document', 401)
+  if (!sameOrigin(key.owner, keyId)) throw new InboxError('The key and its owner are on different servers', 401)
+  let actor = doc
+  if (doc.id !== key.owner || doc.id !== url) {
+    actor = await fetchActivityJson(key.owner, { signer })
+    const listed = actor.id === key.owner ? findKey(actor, keyId) : null
+    if (!listed || listed.pem.trim() !== key.pem.trim()) throw new InboxError('The actor doesn’t list this key', 401)
   }
-  const entry = { ...key, at: Date.now() }
+  const entry = { pem: key.pem, owner: key.owner, actor, at: Date.now() }
   if (keys.size > 1000) keys.clear()
   keys.set(keyId, entry)
   return entry
@@ -143,11 +160,25 @@ export async function processInbox(req, { uid = null, now = Date.now() } = {}) {
     await assertPublicUrl(parsed.keyId)
     key = await fetchKey(parsed.keyId, signer)
   } catch (error) {
-    // A deleted account's key is gone with it. Its "I'm gone" can't be
-    // checked, but acting on it only removes follows, which is harmless.
-    if (activity.type === 'Delete' && idOf(activity.object) === actor && (error?.status === 404 || error?.status === 410)) {
-      await removeActorEverywhere(actor)
-      return { status: 202, body: { ok: true } }
+    // A deleted account's key is gone with it, so its "I'm gone" can't be
+    // checked by signature. Believe it only if the account's own address
+    // (on the same server as the key) says it's gone too.
+    if (
+      activity.type === 'Delete' &&
+      idOf(activity.object) === actor &&
+      sameOrigin(actor, parsed.keyId) &&
+      (error?.status === 404 || error?.status === 410)
+    ) {
+      let gone = false
+      try {
+        await fetchActivityJson(actor, { signer })
+      } catch (check) {
+        gone = check?.status === 404 || check?.status === 410
+      }
+      if (gone) {
+        await removeActorEverywhere(actor)
+        return { status: 202, body: { ok: true } }
+      }
     }
     if (error instanceof InboxError) throw error
     throw new InboxError(error instanceof RemoteError ? `Couldn’t fetch the key: ${error.message}` : 'Couldn’t fetch the key', 401)
@@ -216,6 +247,10 @@ export async function inboxHandler(req, res, { uid = null } = {}) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+  // Each delivery can make Bublr fetch from the sender's server: keep a lid on it.
+  if (isRateLimited(`ap-inbox:${clientIp(req)}`, { max: 600, windowMs: 10 * 60 * 1000 })) {
+    return res.status(429).json({ error: 'Too many requests' })
   }
   try {
     const { status, body } = await processInbox(req, { uid })

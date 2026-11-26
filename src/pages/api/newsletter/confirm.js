@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     }
 
     if (existing && isPending(existing)) {
-      const { pending, lastRequestedAt, ...rest } = existing
+      const { pending, lastRequestedAt, unsubscribed, unsubscribedAt, ...rest } = existing
       await firestore.collection('users').doc(authorDoc.id).update({
         subscribers: subscribers.map(sub => (sub === existing ? { ...rest, confirmedAt: new Date().toISOString() } : sub)),
       })

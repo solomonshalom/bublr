@@ -1,8 +1,8 @@
-import { findUserByName, shopOrigin } from '../../../../lib/shop-server'
+import { findUserByName } from '../../../../lib/shop-server'
 import { clientIp, isRateLimited } from '../../../../lib/rate-limit'
 import { sendReaderLoginEmail } from '../../../../lib/resend'
-import { findSubscriber, paidState, verifiedPaid } from '../../../../lib/paid-newsletter'
-import { loginUrl, safeNext } from '../../../../lib/reader-session'
+import { currentModeOf, findSubscriber, paidState, verifiedPaid } from '../../../../lib/paid-newsletter'
+import { emailOrigin, loginUrl, safeNext } from '../../../../lib/reader-session'
 
 /**
  * "Already a paid subscriber? Sign in." Emails a sign-in link to the address,
@@ -29,16 +29,15 @@ export default async function handler(req, res) {
     const user = await findUserByName(req.body?.username)
     if (!user) return res.status(200).json(DONE)
     const paid = verifiedPaid(user.id, findSubscriber(user, email))
-    const currentMode = user.integrations?.payments?.mode || 'live'
+    const currentMode = currentModeOf(user)
     // Expired records still get a link while the provider might say they
     // renewed (the content check asks it).
     const worthSending = paid && (paidState(paid, { currentMode }) !== 'ended' || ['active', 'trialing', 'past_due'].includes(paid.status))
     if (worthSending && !isRateLimited(`paid-login:${user.id}:${email}`, { max: 3, windowMs: 60 * 60 * 1000 })) {
-      const { origin } = shopOrigin(req, user)
       await sendReaderLoginEmail({
         subscriberEmail: email,
         authorName: user.displayName || user.name,
-        loginUrl: loginUrl(origin, email, { next: safeNext(req.body?.next) }),
+        loginUrl: loginUrl(emailOrigin(), email, { next: safeNext(req.body?.next) }),
       })
     }
     return res.status(200).json(DONE)

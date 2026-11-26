@@ -8,9 +8,12 @@ import { hashId } from '../secret-box'
  *
  *   { uid, actor, inbox, sharedInbox, followId, followedAt }
  *
- * The list itself is never shown publicly (the followers collection only
- * gives a count). Like every collection the API routes write to, the
- * Firestore rules must let the server read and write it.
+ * Bublr only ever publishes the count (the followers collection has no
+ * items). The documents themselves are as open as everything else the API
+ * routes write with the client SDK: until the Firestore rules lock them to
+ * the server, anyone with the project config could read or change them.
+ * Like every collection the routes use, the rules must let the server read
+ * and write it.
  */
 
 export const FOLLOWERS = 'fediverseFollowers'

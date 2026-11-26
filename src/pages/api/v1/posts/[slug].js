@@ -2,7 +2,7 @@ import { authenticateApiKey, API_ERROR_CODES } from '../../../../lib/api-auth'
 import firebase, { firestore } from '../../../../lib/firebase'
 import { setPostPublished } from '../../../../lib/publishing'
 import { toMillis } from '../../../../lib/timestamps'
-import { fullContent, isPaidPost, sealedFields, PaidContentError } from '../../../../lib/paid-content'
+import { fullContent, isPaidPost, savePostFields, PaidContentError } from '../../../../lib/paid-content'
 import { federatePost, federatePostDeleted } from '../../../../lib/activitypub/federation'
 
 // Content size limits (in characters)
@@ -81,14 +81,20 @@ async function handleGetPost(req, res, auth, slug) {
       return res.status(404).json({ error: 'Post not found' })
     }
 
+    // A paid post whose body can't be opened: refuse, so a client that
+    // saves back what it read can't replace the post with its preview.
+    if (fullContent(post) === null) {
+      return res.status(500).json({ error: 'This paid post can’t be opened right now. Please try again later.' })
+    }
+
     // Format the response
     const response = {
       id: post.id,
       slug: post.slug,
       title: post.title || '',
       excerpt: post.excerpt || '',
-      // The key belongs to the writer, so a paid post comes back whole.
-      content: fullContent(post) ?? post.content ?? '',
+      // The key belongs to the writer, so a paid post comes back whole
+      content: fullContent(post) ?? '',
       access: isPaidPost(post) ? 'paid' : 'everyone',
       published: post.published || false,
       lastEdited: toMillis(post.lastEdited) != null ? new Date(toMillis(post.lastEdited)).toISOString() : null,
@@ -137,8 +143,8 @@ async function handleUpdatePost(req, res, auth, slug) {
       if (typeof content !== 'string' || content.length > LIMITS.CONTENT_MAX) {
         return res.status(400).json({ error: `Content must be a string of ${LIMITS.CONTENT_MAX} characters or less` })
       }
-      // A paid post's body stays sealed (lib/paid-content).
-      Object.assign(updateData, isPaidPost(post) ? sealedFields(auth.userId, post.id, content) : { content })
+      // A paid post's body stays sealed (savePostFields, below)
+      updateData.content = content
     }
 
     if (dotColor !== undefined) {
@@ -175,9 +181,9 @@ async function handleUpdatePost(req, res, auth, slug) {
     // Update lastEdited timestamp (a real Firestore Timestamp, not a map)
     updateData.lastEdited = firebase.firestore.Timestamp.now()
 
-    // Apply updates
+    // Apply updates (a paid post's body is sealed as it's written)
     if (Object.keys(updateData).length > 0) {
-      await firestore.collection('posts').doc(post.id).update(updateData)
+      await savePostFields(post.id, updateData, { uid: auth.userId })
     }
 
     if (wantsFirstPublish) {

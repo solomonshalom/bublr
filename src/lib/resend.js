@@ -824,6 +824,19 @@ export async function sendNewPaidSubscriberEmail({ writerEmail, writerName, subs
   })
 }
 
+/** A reader paid twice (two checkouts at once): the second won't renew; the writer may refund it. */
+export async function sendDuplicatePaymentEmail({ writerEmail, writerName, subscriberLabel, providerName }) {
+  return sendSimple({
+    to: writerEmail,
+    subject: 'A reader paid twice',
+    heading: 'A paid subscriber paid twice',
+    paragraphs: [
+      `Hi${writerName ? ` ${writerName}` : ''}, ${subscriberLabel} finished two checkouts for your paid newsletter. Bublr kept their first subscription and stopped the second one from renewing.`,
+      `They were still charged once for the second one. If you’d like to refund it, you can do that in your ${providerName || 'payment provider'}’s dashboard.`,
+    ],
+  })
+}
+
 /** A paid subscriber unsubscribed, but their payment couldn't be stopped from Bublr. */
 export async function sendPaidCancelFailedEmail({ writerEmail, writerName, subscriberLabel, providerName }) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'

@@ -6,7 +6,7 @@ import {
   DELETE_CONFIRM_PHRASE,
   RECENT_SIGN_IN_SECONDS,
 } from '../../../lib/delete-account'
-import { renewingPaidSubscribers } from '../../../lib/paid-newsletter'
+import { refreshStaleRecords, renewingPaidSubscribers } from '../../../lib/paid-newsletter'
 
 /**
  * POST /api/account/delete  { confirm: "delete my account" }
@@ -59,10 +59,12 @@ export default async function handler(req, res) {
 
     // Readers paying this writer would keep being charged by the writer's
     // Stripe/Creem with nothing left to read.
-    const renewingReaders = userDoc.exists ? renewingPaidSubscribers({ id: uid, ...userDoc.data() }).length : 0
+    // Records whose period ran out are checked with Stripe/Creem first.
+    const writer = userDoc.exists ? await refreshStaleRecords({ id: uid, ...userDoc.data() }) : null
+    const renewingReaders = writer ? renewingPaidSubscribers(writer, { strict: true }).length : 0
     if (renewingReaders > 0) {
       return res.status(409).json({
-        error: `${renewingReaders} paid ${renewingReaders === 1 ? 'subscriber is' : 'subscribers are'} still being charged for your newsletter. Stop their subscriptions first (Settings → Newsletter → End all paid subscriptions), then delete your account.`,
+        error: `${renewingReaders} paid ${renewingReaders === 1 ? 'subscriber is' : 'subscribers are'} still being charged for your newsletter. Stop their subscriptions first (Settings → Newsletter → End all paid subscriptions; reconnect your payment account there if you disconnected it), then delete your account.`,
         code: 'PAID_SUBSCRIBERS_ACTIVE',
       })
     }

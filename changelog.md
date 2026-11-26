@@ -267,7 +267,7 @@ Yesterday profiles became a tiny home. A home has a front porch: the place where
 - **Writers stay in control.** *Subscribers* shows who pays, at what price, and when they renew or end. You can stop anyone's renewal, check every status with Stripe or Creem, or end all paid subscriptions at once. Free subscribers can get a preview of each paid post, or nothing (your choice).
 - **Follow from the fediverse.** *Settings → Fediverse*. Turn it on and people follow you from Mastodon and other fediverse (ActivityPub) apps as `@you@bublr.life`. New posts reach their timelines, edits follow a little later, and unpublishing or deleting a post takes it back. Your name, picture and bio go along. Paid posts go out as their preview and a link.
 - **Found from anywhere.** Paste your profile or a post's address into Mastodon's search and it finds you. Your handle is on your profile, and posts carry the `fediverse:creator` tag, which Mastodon uses to credit you on link previews.
-- **Tests.** `npm test` now runs 239 tests, including that a paid post's text never reaches a page, feed, email or server it shouldn't, that prices come from your saved settings and never from the reader, that what was actually paid is checked, that a session from paying one writer can't open another, and that every fediverse delivery is signed and checked both ways.
+- **Tests.** `npm test` now runs 252 tests, including that a paid post's text never reaches a page, feed, email or server it shouldn't, that prices come from your saved settings and never from the reader, that what was actually paid is checked, that a session from paying one writer can't open another, and that every fediverse delivery is signed and checked both ways.
 
 ## Changed
 - **The comparison pages say what's true now.** Bublr has paid subscriptions with a 0% fee, and a new row compares who you can follow from the fediverse: Ghost, WordPress.com, Write.as, Mataroa and Micro.blog can be followed too; the other 13 platforms can't (checked 26th November).
@@ -276,12 +276,16 @@ Yesterday profiles became a tiny home. A home has a front porch: the place where
 - **Account deletion waits while readers would still be charged.** End your paid subscriptions first (one button), then delete.
 
 ## Fixed
+- **A shop in test mode stays in test mode.** Whether a shop was in test mode was read from a setting that could be changed without signing in, so a test card could have bought a real download. It now comes from your payment key itself.
 - **Saving your profile no longer risks closing your shop.** The profile editor wrote back the shop plan's server signature as it was when the page opened, so a plan change made meanwhile could be undone.
 
 ## Known issues
 - Paid subscribers who changed their payment method or cancelled directly in Stripe or Creem show the change in Bublr when their current period ends, or straight away if you press *Check with Stripe/Creem* on the Newsletter page.
 - If you disconnect or change the payment account your paid subscribers signed up with, Bublr can no longer check or cancel their subscriptions; cancel them in that account's dashboard.
 - Translation of a paid post covers its free preview only.
+- After you switch a published post to paid, the page can show the whole post for up to a minute more, until its saved copy refreshes. Switch before publishing if that matters.
+- A shared draft link for a paid post shows only its free preview.
+- If someone pays twice at once (two tabs), Bublr keeps their first subscription and stops the second from renewing, but the second payment still went through; you're emailed so you can refund it.
 - If a follower's server is down when you publish, it misses that post (it's still on your profile and in your fediverse outbox). Replies, likes and boosts from the fediverse aren't shown on Bublr.
 - A fediverse handle uses your Bublr username. If you change it, followers keep following you, but their apps may take a day to show the new name.
 - The fediverse follower list lives in a new Firestore collection, `fediverseFollowers`; like everything the server writes, the Firestore rules must allow it.

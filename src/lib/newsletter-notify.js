@@ -4,6 +4,7 @@ import { hasActiveAccess } from './subscription'
 import { confirmedSubscribers, subscriberEmail } from './subscribers'
 import { fullContent, isPaidPost } from './paid-content'
 import {
+  currentModeOf,
   describePrice,
   needsRefresh,
   paidAccess,
@@ -20,7 +21,7 @@ const SITE = () => (process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life').re
  * period has run out (a few at a time) before deciding.
  */
 async function paidReaders(author, subscribers, { now = Date.now() } = {}) {
-  const currentMode = author.integrations?.payments?.mode || 'live'
+  const currentMode = currentModeOf(author)
   const records = new Map()
   const stale = []
   for (const sub of subscribers) {

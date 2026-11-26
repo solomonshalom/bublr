@@ -93,7 +93,7 @@ function FediverseEditor({ user }) {
               <li>Your name, picture, bio and website, and every post you publish from now on. Followers also see your recent posts on your fediverse profile.</li>
               <li>Edits reach followers a little after you stop typing. Unpublishing or deleting a post takes it off their timelines.</li>
               <li>Posts for paid subscribers go out as their free preview with a link; the rest stays on Bublr.</li>
-              <li>Drafts, your subscriber list and who follows you stay private.</li>
+              <li>Drafts and your subscriber list aren’t shared, and Bublr doesn’t show who follows you, only how many.</li>
               <li>Replies, likes and boosts from the fediverse aren’t shown on Bublr. Your page stays yours.</li>
               <li>Servers that copied a post may keep it after you delete it, as with any public post on the fediverse.</li>
             </ul>

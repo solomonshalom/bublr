@@ -1,7 +1,7 @@
 import { firestore } from './firebase'
 import { hashId, open, seal, signValues, verifyValues } from './secret-box'
 import { PROVIDERS, formatPrice } from './shop'
-import { paymentKey } from './shop-server'
+import { paymentAccount } from './shop-server'
 import { hasVerifiedShopAccess } from './shop-trust'
 import { isPending, subscriberEmail } from './subscribers'
 import { INTERVALS, cancelAtPeriodEnd, resumeSubscription, retrieveSubscription } from './newsletter-payments'
@@ -124,10 +124,10 @@ export function canPublishPaid(user) {
 export function openForSubscriptions(user) {
   if (!canPublishPaid(user)) return null
   const settings = trustedPaidSettings(user)
-  const payments = user.integrations?.payments
-  if (!payments?.keySealed || !PROVIDERS[payments.provider]) return null
-  if (!PROVIDERS[payments.provider].currencies.includes(settings.currency)) return null
-  return { settings, provider: payments.provider, mode: payments.mode || 'live' }
+  const account = paymentAccount(user)
+  if (!account || !PROVIDERS[account.provider]) return null
+  if (!PROVIDERS[account.provider].currencies.includes(settings.currency)) return null
+  return { settings, provider: account.provider, mode: account.mode }
 }
 
 export const priceFor = (settings, interval) => (interval === 'year' ? settings?.yearly : settings?.monthly) || null
@@ -248,6 +248,17 @@ export function isRenewing(paid, { now = Date.now() } = {}) {
   return now < (paid.currentPeriodEnd || 0) + PAST_DUE_GRACE_MS * 2
 }
 
+/**
+ * Whether the subscription could still charge the reader, with no time limit:
+ * for decisions where guessing wrong costs a reader money (deleting the
+ * account, ending everyone's subscription). Check stale records first
+ * (refreshStaleRecords).
+ */
+export function couldStillCharge(paid) {
+  if (!paid || paid.cancelAtPeriodEnd) return false
+  return ['active', 'trialing', 'past_due', 'unpaid', 'paused'].includes(paid.status)
+}
+
 /** Whether to ask the provider: the period the record knows about has run out. */
 export function needsRefresh(paid, { now = Date.now() } = {}) {
   if (!paid) return false
@@ -255,6 +266,9 @@ export function needsRefresh(paid, { now = Date.now() } = {}) {
   if (now < (paid.currentPeriodEnd || 0)) return false
   return now - (paid.checkedAt || 0) > REFRESH_EVERY_MS
 }
+
+/** Test or live, from the connected key itself (never the plain field beside it). */
+export const currentModeOf = user => paymentAccount(user)?.mode || 'live'
 
 export const findSubscriber = (user, email) => {
   const target = norm(email)
@@ -272,9 +286,13 @@ export function paidSubscribers(user) {
   return out
 }
 
-/** Paid subscribers whose subscription will charge them again (live mode). */
-export function renewingPaidSubscribers(user, { now = Date.now() } = {}) {
-  return paidSubscribers(user).filter(({ paid }) => paid.mode === 'live' && isRenewing(paid, { now }))
+/**
+ * Paid subscribers whose subscription will charge them again (live mode).
+ * `strict` counts anything that could still charge, however long ago its
+ * period was last confirmed.
+ */
+export function renewingPaidSubscribers(user, { now = Date.now(), strict = false } = {}) {
+  return paidSubscribers(user).filter(({ paid }) => paid.mode === 'live' && (strict ? couldStillCharge(paid) : isRenewing(paid, { now })))
 }
 
 export const describePrice = (amount, currency, interval) =>
@@ -288,7 +306,7 @@ export const describePrice = (amount, currency, interval) =>
  * null to leave things as they are. A reader who isn't on the list yet is
  * added (already confirmed: they paid with this address).
  */
-export async function writePaidRecord(uid, email, build, { now = Date.now() } = {}) {
+export async function writePaidRecord(uid, email, build, { now = Date.now(), resubscribe = false } = {}) {
   const target = norm(email)
   const userRef = firestore.collection('users').doc(uid)
   return firestore.runTransaction(async transaction => {
@@ -301,9 +319,12 @@ export async function writePaidRecord(uid, email, build, { now = Date.now() } = 
     const paid = build(entry)
     if (!paid) return { paid: previous, previous, entry, written: false }
     const base = entry && typeof entry === 'object' ? entry : { email: target, subscribedAt: new Date(now).toISOString() }
-    const { pending, lastRequestedAt, ...rest } = base
+    // Paying again puts someone who had unsubscribed back on the list;
+    // checking or cancelling a subscription leaves that as it is.
+    const { pending, lastRequestedAt, unsubscribed, unsubscribedAt, ...rest } = base
     const next = {
       ...rest,
+      ...(!resubscribe && unsubscribed ? { unsubscribed, unsubscribedAt: unsubscribedAt || null } : {}),
       email: target,
       ...(isPending(base) || !entry ? { confirmedAt: new Date(now).toISOString() } : {}),
       paid,
@@ -341,9 +362,9 @@ export async function refreshPaidSubscriber(user, email, { now = Date.now() } = 
   const entry = findSubscriber(user, email)
   const paid = verifiedPaid(user.id, entry)
   if (!paid) return null
-  const apiKey = paymentKey(user)
-  const payments = user.integrations?.payments
-  if (!apiKey || payments?.provider !== paid.provider || (payments.mode || 'live') !== paid.mode) return paid
+  const account = paymentAccount(user)
+  if (!account || account.provider !== paid.provider || account.mode !== paid.mode) return paid
+  const apiKey = account.apiKey
   const ref = openSubscriptionRef(user.id, email, paid)
   if (!ref?.subscriptionId) return paid
 
@@ -367,12 +388,26 @@ export async function refreshPaidSubscriber(user, email, { now = Date.now() } = 
 }
 
 /**
+ * Ask the provider about every record that could still charge but whose
+ * period has run out, and return the user document as it is afterwards.
+ */
+export async function refreshStaleRecords(user, { now = Date.now() } = {}) {
+  const stale = paidSubscribers(user).filter(({ paid }) => couldStillCharge(paid) && now >= (paid.currentPeriodEnd || 0))
+  for (let i = 0; i < stale.length; i += 5) {
+    await Promise.all(stale.slice(i, i + 5).map(({ email }) => refreshPaidSubscriber(user, email, { now }).catch(() => null)))
+  }
+  if (!stale.length) return user
+  const snapshot = await firestore.collection('users').doc(user.id).get()
+  return snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : user
+}
+
+/**
  * Whether `email` may read this writer's paid posts now, asking the provider
  * first if the record's period has run out.
  */
 export async function readerHasPaidAccess(user, email, { now = Date.now() } = {}) {
   if (!user || !email) return false
-  const currentMode = user.integrations?.payments?.mode || 'live'
+  const currentMode = currentModeOf(user)
   let paid = verifiedPaid(user.id, findSubscriber(user, email))
   if (!paid) return false
   if (needsRefresh(paid, { now })) paid = await refreshPaidSubscriber(user, email, { now })
@@ -384,9 +419,9 @@ export async function setPaidRenewal(user, email, { renew, now = Date.now() }) {
   const entry = findSubscriber(user, email)
   const paid = verifiedPaid(user.id, entry)
   if (!paid) throw new PaidNewsletterError('There’s no paid subscription for this address.', 404)
-  const apiKey = paymentKey(user)
-  const payments = user.integrations?.payments
-  if (!apiKey || payments?.provider !== paid.provider || (payments.mode || 'live') !== paid.mode) {
+  const account = paymentAccount(user)
+  const apiKey = account?.apiKey
+  if (!account || account.provider !== paid.provider || account.mode !== paid.mode) {
     throw new PaidNewsletterError(
       'The writer’s payment account isn’t connected to Bublr right now, so this can’t be changed here.',
       409,

@@ -1,11 +1,12 @@
 import { firestore } from '../../../../lib/firebase'
 import { PaymentProviderError } from '../../../../lib/shop-payments'
-import { paymentKey, paymentStatus, requireShopOwner } from '../../../../lib/shop-server'
+import { paymentAccount, paymentStatus, requireShopOwner } from '../../../../lib/shop-server'
 import { hasVerifiedShopAccess } from '../../../../lib/shop-trust'
 import { canSeal } from '../../../../lib/secret-box'
 import { verifySubscriptionKey } from '../../../../lib/newsletter-payments'
 import {
   PaidNewsletterError,
+  currentModeOf,
   normalizePaidSettings,
   openForSubscriptions,
   paidSubscribers,
@@ -28,7 +29,7 @@ import {
  * paid sign-ups, and existing paid subscribers keep what they pay for.
  */
 function summary(user) {
-  const currentMode = user.integrations?.payments?.mode || 'live'
+  const currentMode = currentModeOf(user)
   const all = paidSubscribers(user)
   return {
     settings: trustedPaidSettings(user),
@@ -38,7 +39,7 @@ function summary(user) {
     canSeal: canSeal(),
     counts: {
       paying: all.filter(({ paid }) => paidState(paid, { currentMode }) !== 'ended').length,
-      renewing: renewingPaidSubscribers(user).length,
+      renewing: renewingPaidSubscribers(user, { strict: true }).length,
       total: all.length,
     },
   }
@@ -57,7 +58,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') return res.status(200).json(summary(user))
 
   try {
-    const provider = user.integrations?.payments?.provider || null
+    const account = paymentAccount(user)
+    const provider = account?.provider || null
     // Anything left out keeps its saved value (so "turn off" needs no prices).
     const turningOff = req.body?.enabled === false
     const settings = normalizePaidSettings(
@@ -69,7 +71,7 @@ export default async function handler(req, res) {
       if (!hasVerifiedShopAccess(user)) {
         throw new PaidNewsletterError('Paid newsletters are part of the Pro + Shop plan ($3/month).', 402, 'SHOP_PLAN_REQUIRED')
       }
-      const apiKey = paymentKey(user)
+      const apiKey = account?.apiKey
       if (!apiKey || !provider) {
         throw new PaidNewsletterError('Connect your Stripe or Creem account first, so readers can pay you.', 409, 'PAYMENTS_REQUIRED')
       }

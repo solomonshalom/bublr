@@ -1,7 +1,7 @@
 import { firestore } from '../../../../lib/firebase'
 import { newId } from '../../../../lib/shop'
 import { PaymentProviderError } from '../../../../lib/shop-payments'
-import { findUserByName, paymentKey, shopOrigin } from '../../../../lib/shop-server'
+import { findUserByName, paymentAccount, shopOrigin } from '../../../../lib/shop-server'
 import { signCreemProduct, verifyCreemProduct } from '../../../../lib/shop-trust'
 import { getBearerToken, verifyIdToken } from '../../../../lib/server-auth'
 import { clientIp, isRateLimited } from '../../../../lib/rate-limit'
@@ -10,12 +10,14 @@ import { INTERVALS, createCreemNewsletterProduct, createSubscriptionCheckout } f
 import {
   findSubscriber,
   isRenewing,
+  needsRefresh,
   openForSubscriptions,
   paidAccess,
   priceFor,
+  refreshPaidSubscriber,
   verifiedPaid,
 } from '../../../../lib/paid-newsletter'
-import { loginUrl, safeNext } from '../../../../lib/reader-session'
+import { emailOrigin, loginUrl, safeNext } from '../../../../lib/reader-session'
 
 /**
  * Start a paid newsletter subscription. Public: readers aren't signed in.
@@ -71,13 +73,15 @@ export default async function handler(req, res) {
     const back = safeNext(returnPath) === '/' && !onCustomDomain ? home : safeNext(returnPath || home)
 
     // Already paying: don't charge twice. Email them a way in instead.
-    const existing = verifiedPaid(user.id, findSubscriber(user, email))
+    // (asking the provider first if the record's period has run out)
+    let existing = verifiedPaid(user.id, findSubscriber(user, email))
+    if (existing && needsRefresh(existing)) existing = (await refreshPaidSubscriber(user, email).catch(() => null)) || existing
     if (existing && paidAccess(existing, { currentMode: open.mode }) && (isRenewing(existing) || existing.cancelAtPeriodEnd)) {
       if (!isRateLimited(`paid-login:${user.id}:${email}`, { max: 3, windowMs: 60 * 60 * 1000 })) {
         await sendReaderLoginEmail({
           subscriberEmail: email,
           authorName: user.displayName || user.name,
-          loginUrl: loginUrl(origin, email, { next: back }),
+          loginUrl: loginUrl(emailOrigin(), email, { next: back }),
         }).catch(error => console.error('Paid checkout: sign-in email failed:', error))
       }
       return res.status(200).json({
@@ -86,7 +90,7 @@ export default async function handler(req, res) {
       })
     }
 
-    const apiKey = paymentKey(user)
+    const apiKey = paymentAccount(user).apiKey
     const writerName = user.displayName || user.name
     const orderId = newId(16)
     const metadata = {

@@ -85,6 +85,7 @@ export function verifyRequestSignature({ method, paths, headers, rawBody = null,
   const names = parsed.headers
   if (!names.includes('(request-target)')) throw new SignatureError('The request target isn’t signed')
   if (!names.includes('date') && !names.includes('(created)')) throw new SignatureError('The date isn’t signed')
+  if (rawBody !== null && !names.includes('host')) throw new SignatureError('The host isn’t signed')
 
   // Fresh enough
   const sentAt = names.includes('date') ? Date.parse(headerValue(headers, 'date') || '') : (parsed.created || 0) * 1000
