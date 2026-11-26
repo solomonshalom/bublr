@@ -10,7 +10,7 @@ Memory for the nightly product run. Read this first, then `CLAUDE.md` and the ne
 
 **Last full round: 20th November 2026.** Next one is due on or after the 27th. On other nights, check only issues and whether main is healthy.
 
-Last nightly check: 25th November 2026. No new or updated issues, and open PRs #1–#3 are unchanged since yesterday. The relaunch branch is still at its 13th November commit, so nothing shipped (same result every night since the 14th). No other branch was pushed in the last week. bublr.life, /changelog and /explore answer normally.
+Last nightly check: 26th November 2026. No new or updated issues; open PRs #1–#3 unchanged. On 25th November the owner pushed two releases straight to main: Tiny Home (gallery, music, shop, Pro + Shop plan) and comparison pages (`/compare`, Bublr vs 18 platforms). Vercel deployed them, 183 tests, lint and build pass, and bublr.life, /changelog, /explore and /compare answer normally. The relaunch branch is still at its 13th November commit. Nothing shipped tonight.
 
 20th November round: nothing new from users. Product Hunt still has the same 2 reviews; a search found only launch listings ([innolope](https://innolope.com/pulse/startups/691569a5f915b3ab4c718fdc) adds no comments). Peers: no new features found for November. Write.as [lets writers download their subscriber list](https://write.as/updates/); Bublr already does (Subscribers → export CSV). Bear Blog went [source-available in Sept 2025](https://alternativeto.net/news/2025/9/blogging-platform-bear-is-no-longer-open-source-moves-to-source-available-elastic-license), which makes Bublr's open source a clearer difference, not a gap.
 
@@ -56,6 +56,7 @@ Nothing may be built on main while the relaunch branch is open (see Waiting on t
 ## Waiting on the owner
 
 - **The relaunch branch.** `relaunch/next-16-yearly-plan-launch-assets` was pushed on 13th November. It moves the app to Next 16, React 19, Firebase 13 and Tiptap 3, adds the yearly plan, and changes 139 files, including two new entries at the bottom of `changelog.md`. Anything built on main now would be built underneath it, so the nightly run ships no code and doesn't touch the changelog until it is merged, or until you say otherwise in "From the owner". The owner was notified once, on 13th November. Don't notify again for this.
+  - New on 26th November: the owner now ships on main themselves (Tiny Home and /compare, 25th November), so the branch is further behind: it also lacks the profile blocks, the shop and the comparison pages. Question for the owner, in "From the owner": is the relaunch branch still planned, or may the nightly run build on main again?
   - Before merging: it needs Node 24.12 or newer, so check the Node version in the Vercel project settings. Main's billing moved from Polar to Creem on 19th November (`src/lib/creem.js`, `src/lib/creem-webhook.js`); the branch still has the Polar code, so it needs the same move before it merges. Its yearly plan will then read `CREEM_CUSTOM_DOMAIN_YEARLY_PRODUCT_ID`, which is already set in Vercel.
 - **Issue #7.** Needs Vercel access, or the writer's domain, to find out what the verify step actually returned.
 - **Firestore rules.** Not in this repo. Needs the Firebase console.
