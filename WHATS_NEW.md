@@ -37,6 +37,12 @@ Export every post and draft as Markdown (plus a JSON copy with the original HTML
 ### Leave whenever you like
 Delete your account yourself from Settings → Advanced. Your profile, posts, drafts and subscriber list go with you.
 
+### A paid newsletter, with no cut
+On Pro + Shop ($3/month), charge readers monthly or yearly for some of your posts. They pay you directly, through your own Stripe or Creem; Bublr takes nothing. Everyone else sees a free preview and can subscribe.
+
+### Follow from the fediverse
+Turn it on and people follow you from Mastodon and other fediverse apps as @you@bublr.life. New posts show up in their timelines.
+
 ### Explore without an account
 Readers can discover writing on Bublr without signing up.
 
@@ -67,6 +73,8 @@ AI moderation keeps spam and harmful content out automatically.
 | Voice input | No | Yes |
 | Custom domains | No | Yes |
 | Newsletters | No | Yes |
+| Paid newsletter (0% cut) | No | Yes |
+| Fediverse (Mastodon) | No | Yes |
 | Follow system | No | Yes |
 | Profile customization | Basic | Full control |
 | Reading list | No | Yes |

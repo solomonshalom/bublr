@@ -1,4 +1,6 @@
 import { firestore } from '../../../lib/firebase'
+import { fullContent } from '../../../lib/paid-content'
+import { federatePost } from '../../../lib/activitypub/federation'
 import { moderateContent } from '../../../lib/publishing'
 import { hasSharedSecret } from '../../../lib/server-auth'
 
@@ -42,7 +44,8 @@ export default async function handler(req, res) {
     }
 
     // Moderate the content
-    const result = await moderateContent(post.title, post.content)
+    // A paid post is moderated whole, not just its free preview
+    const result = await moderateContent(post.title, fullContent({ ...post, id: postDoc.id }) ?? post.content)
 
     if (result.shouldUnpublish) {
       // Unpublish the post (don't delete)
@@ -52,6 +55,8 @@ export default async function handler(req, res) {
         moderationCategory: result.category,
         moderatedAt: new Date().toISOString(),
       })
+      // Off the fediverse too
+      await federatePost(postId)
 
       return res.status(200).json({
         message: 'Post unpublished due to content policy violation',

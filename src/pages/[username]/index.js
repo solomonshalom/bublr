@@ -17,6 +17,7 @@ import { hasActiveAccess } from '../../lib/subscription'
 import meta from '../../components/meta'
 import { generateProfilePageSchema, generateOrganizationSchema, generateBreadcrumbSchema, generateNewsletterSchema } from '../../lib/seo-utils'
 import { SubscribeOrSign, GuestBookEntries } from '../../components/guestbook'
+import { PaidReturnNotice } from '../../components/paid-newsletter'
 import FollowButton from '../../components/follow-button'
 import { ProfileCanvas } from '../../components/profile-canvas'
 import GalleryBlock from '../../components/blocks/gallery-block'
@@ -725,6 +726,8 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
 
         {/* RSS Feed autodiscovery for this author */}
         <link rel="alternate" type="application/rss+xml" title={`${user.displayName}'s RSS Feed`} href={`https://bublr.life/${user.name}/feed.xml`} />
+        {/* Fediverse apps find the writer from their page */}
+        {user.fediverseActor && <link rel="alternate" type="application/activity+json" href={user.fediverseActor} />}
 
         {/* Load custom Google Fonts if needed */}
         {customFonts && customFonts.length > 0 && (
@@ -1164,10 +1167,12 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                 const buttonsVisibility = user.buttonsVisibility || { follow: false, newsletter: true }
                 const visibleButtons = buttonsOrder.filter(btn => buttonsVisibility[btn] !== false)
 
-                if (visibleButtons.length === 0) return null
+                if (visibleButtons.length === 0) return <PaidReturnNotice authorUsername={user.name} authorDisplayName={user.displayName} colors={colors} />
 
                 return (
                   <div css={css`margin-top: 16px; display: flex; flex-direction: column; gap: 10px;`}>
+                    {/* Back from paying for the newsletter: confirm and say thanks */}
+                    <PaidReturnNotice authorUsername={user.name} authorDisplayName={user.displayName} colors={colors} />
                     {visibleButtons.map((btn) => {
                       if (btn === 'follow') {
                         return mounted ? (
@@ -1199,6 +1204,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                                 enableGuestbook={false}
                                 newsletterButtonText={user.newsletterButtonText || ''}
                                 guestbookButtonText={user.guestbookButtonText || ''}
+                                paidPlan={user.paidPlan}
                               />
                               {guestbookEnabled && (
                                 <SubscribeOrSign
@@ -1226,6 +1232,7 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                             enableGuestbook={guestbookEnabled}
                             newsletterButtonText={user.newsletterButtonText || ''}
                             guestbookButtonText={user.guestbookButtonText || ''}
+                            paidPlan={user.paidPlan}
                           />
                         )
                       }
@@ -1234,6 +1241,36 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                   </div>
                 )
               })()}
+
+              {/* Follow from Mastodon and the rest of the fediverse */}
+              {user.fediverseHandle && (
+                <p
+                  css={css`
+                    margin: 12px 0 0 0;
+                    font-size: 13px;
+                    color: ${colors.muted};
+                    line-height: 1.5;
+                  `}
+                >
+                  On the fediverse:{' '}
+                  <button
+                    type="button"
+                    title="Copy to follow from Mastodon or any fediverse app"
+                    onClick={() => navigator.clipboard?.writeText(user.fediverseHandle).catch(() => {})}
+                    css={css`
+                      font: inherit;
+                      color: ${colors.text};
+                      background: none;
+                      border: 0;
+                      padding: 0;
+                      cursor: copy;
+                      border-bottom: 1px dotted ${colors.border};
+                    `}
+                  >
+                    {user.fediverseHandle}
+                  </button>
+                </p>
+              )}
 
               {/* Render sections based on sectionOrder */}
               {sectionRenderOrder.map((sectionType) => {
@@ -1366,6 +1403,25 @@ export default function Profile({ user, organizationSchema, profilePageSchema, b
                               `}>
                                 <ColorDot color={getPostColor(post)} />
                                 {post.title ? htmlToText(post.title) : 'Untitled'}
+                                {post.access === 'paid' && (
+                                  <svg
+                                    role="img"
+                                    aria-label="For paid subscribers"
+                                    width="11"
+                                    height="11"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    css={css`margin-left: 6px; vertical-align: -1px; color: ${colors.muted};`}
+                                  >
+                                    <title>For paid subscribers</title>
+                                    <rect x="5" y="11" width="14" height="10" rx="2" />
+                                    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                                  </svg>
+                                )}
                               </p>
                               {/* Excerpt and date */}
                               <p css={css`

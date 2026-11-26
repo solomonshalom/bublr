@@ -1,11 +1,10 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/router'
+import { useEffect, useMemo, useState } from 'react'
 
 import { firestore } from '../../../lib/firebase'
 import { authedFetch } from '../../../lib/authed-fetch'
-import { hasActiveAccess, hasActiveShopAccess } from '../../../lib/subscription'
+import { hasActiveShopAccess } from '../../../lib/subscription'
 
 // Display only: the server checks the signed grant (lib/shop-trust) itself.
 const shopIsOpen = user => hasActiveShopAccess(user) && Boolean(user.shopGrant)
@@ -26,6 +25,7 @@ import { DsInput, DsTextarea, DsLabel, DsField } from '../../../components/dashb
 import DsButton from '../../../components/dashboard/ds-button'
 import DsSwitch from '../../../components/dashboard/ds-switch'
 import ShopGrid from '../../../components/blocks/shop-grid'
+import { PaymentsPanel, PlanGate, noticeStyle } from '../../../components/dashboard/payments-panel'
 import { BlockStyles } from '../../../components/blocks/tokens'
 import {
   BlockSettingsPage,
@@ -39,205 +39,6 @@ import {
   useCurrentUserDoc,
   withBlockLayout,
 } from '../../../components/dashboard/block-editor-kit'
-
-const noticeStyle = type => css`
-  font-size: 0.8rem;
-  line-height: 1.5;
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
-  border: 1px solid ${type === 'error' ? 'rgba(220,38,38,0.3)' : type === 'success' ? 'var(--green-border)' : 'var(--border)'};
-  background: ${type === 'error' ? 'rgba(220,38,38,0.08)' : type === 'success' ? 'var(--green-soft)' : 'var(--accent-bg)'};
-  color: var(--grey-4);
-`
-
-const CheckIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-)
-
-// ------------------------------------------------------------ plan
-
-function PlanGate({ user, authUser }) {
-  const router = useRouter()
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState(null)
-  const [upgrading, setUpgrading] = useState(false)
-  const waiting = router.query.subscription === 'success' || upgrading
-  const onPro = hasActiveAccess(user)
-  const renewing = onPro && user.subscription?.id && ['active', 'trialing'].includes(user.subscription.status) && !user.subscription.cancelAtPeriodEnd
-
-  const start = async () => {
-    setBusy(true)
-    setError(null)
-    try {
-      if (renewing) {
-        const response = await authedFetch('/api/subscription/upgrade', { method: 'POST' })
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Could not add the shop')
-        setUpgrading(true)
-        return
-      }
-      const response = await authedFetch('/api/subscription/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, userEmail: user.email || authUser?.email, userName: user.name, plan: 'shop' }),
-      })
-      const data = await response.json()
-      if (!response.ok || !data.checkoutUrl) throw new Error(data.error || 'Could not start checkout')
-      window.location.assign(data.checkoutUrl)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <DsSection title="Shop" description="Sell what you make, right from your profile.">
-      <DsTray>
-        <DsTile>
-          <div css={css`display: flex; flex-direction: column; gap: 0.9rem;`}>
-            <div css={css`display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap;`}>
-              <span css={css`font-size: 1rem; font-weight: 500; color: var(--grey-5);`}>Pro + Shop</span>
-              <span css={css`font-size: 0.85rem; color: var(--grey-3);`}>
-                <strong css={css`font-size: 1.1rem; font-weight: 500; color: var(--grey-5);`}>$3</strong> / month
-              </span>
-            </div>
-            <ul css={css`list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.82rem; color: var(--grey-4); li { display: flex; gap: 0.5rem; align-items: center; } svg { color: var(--green); flex-shrink: 0; }`}>
-              <li><CheckIcon /> Everything in Pro: custom domain and your own footer</li>
-              <li><CheckIcon /> A shop on your profile, with product pages and checkout</li>
-              <li><CheckIcon /> Unlimited sales; Bublr takes no cut</li>
-              <li><CheckIcon /> Buyers pay you directly, through your own Stripe or Creem</li>
-            </ul>
-            {waiting ? (
-              <p css={noticeStyle('info')}>{upgrading ? 'Switching your plan… your shop opens here as soon as Creem confirms the payment.' : 'Thanks! Your payment went through. Opening your shop… this page updates by itself in a few seconds.'}</p>
-            ) : (
-              <div css={css`display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;`}>
-                <DsButton variant="accent" disabled={busy} onClick={start}>
-                  {busy ? 'One moment…' : renewing ? 'Add the shop (+$1/month)' : 'Start Pro + Shop'}
-                </DsButton>
-                <span css={helpText}>
-                  {renewing ? 'Your Pro plan moves to Pro + Shop; you’re charged the difference for this month.' : 'Cancel any time.'}
-                </span>
-              </div>
-            )}
-            {error ? <p css={noticeStyle('error')}>{error}</p> : null}
-            {onPro && !renewing ? (
-              <p css={helpText}>Your Pro plan is set to end, so it can’t be changed. Start Pro + Shop once it ends, or turn renewal back on from the billing portal in Advanced settings.</p>
-            ) : null}
-          </div>
-        </DsTile>
-      </DsTray>
-    </DsSection>
-  )
-}
-
-// ------------------------------------------------------------ payments
-
-function PaymentsPanel({ onChange }) {
-  const [payments, setPayments] = useState(undefined)
-  const [apiKey, setApiKey] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState(null)
-  const [editing, setEditing] = useState(false)
-
-  const load = useCallback(async () => {
-    const response = await authedFetch('/api/shop/payments')
-    const data = await response.json().catch(() => ({}))
-    setPayments(response.ok ? data.payments || null : null)
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  useEffect(() => {
-    onChange?.(payments)
-  }, [payments, onChange])
-
-  const connect = async () => {
-    setBusy(true)
-    setMessage(null)
-    try {
-      const response = await authedFetch('/api/shop/payments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: apiKey.trim() }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Could not connect')
-      setPayments(data.payments)
-      setApiKey('')
-      setEditing(false)
-      setMessage({ type: 'success', text: `${PROVIDERS[data.payments.provider].name} is connected. Buyers now pay you directly.` })
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message })
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const disconnect = async () => {
-    setBusy(true)
-    await authedFetch('/api/shop/payments', { method: 'DELETE' })
-    setPayments(null)
-    setBusy(false)
-    setMessage({ type: 'info', text: 'Payments are disconnected. Your shop shows “Not available yet” until you connect again.' })
-  }
-
-  if (payments === undefined) return <p css={helpText}>Loading…</p>
-
-  return (
-    <div css={css`display: flex; flex-direction: column; gap: 0.9rem;`}>
-      {message ? <p role="status" css={noticeStyle(message.type)}>{message.text}</p> : null}
-      {payments && !editing ? (
-        <DsTile>
-          <div css={css`display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;`}>
-            <div css={css`flex: 1; min-width: 180px; font-size: 0.85rem; color: var(--grey-4); line-height: 1.5;`}>
-              <strong css={css`font-weight: 500;`}>{PROVIDERS[payments.provider]?.name}</strong>
-              {payments.accountName ? ` · ${payments.accountName}` : ''}
-              <div css={css`font-size: 0.75rem; color: var(--grey-3);`}>
-                <code>{payments.keyHint}</code>
-                {payments.mode === 'test' ? ' · Test mode: no real money moves' : ''}
-              </div>
-            </div>
-            <DsButton size="sm" variant="outline" disabled={busy} onClick={() => setEditing(true)}>Change</DsButton>
-            <DsButton size="sm" variant="outline" disabled={busy} onClick={disconnect}>Disconnect</DsButton>
-          </div>
-        </DsTile>
-      ) : (
-        <>
-          <div css={[helpText, css`display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));`]}>
-            <div>
-              <strong css={css`color: var(--grey-4); font-weight: 500;`}>Stripe</strong> (anything, including things you ship). In Stripe, open <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer">Developers → API keys</a>, create a <strong>restricted key</strong> with <strong>Checkout Sessions: Write</strong>, and paste it here (<code>rk_live_…</code>). Your secret key isn’t accepted: it can do much more than a shop needs.
-            </div>
-            <div>
-              <strong css={css`color: var(--grey-4); font-weight: 500;`}>Creem</strong> (digital things only, in USD or EUR; Creem handles sales tax for you). In Creem, open <a href="https://www.creem.io/dashboard/developers" target="_blank" rel="noreferrer">Developers → API keys</a>, create a key with <strong>Products</strong> and <strong>Checkouts</strong> read/write, and paste it here (<code>creem_…</code>).
-            </div>
-          </div>
-          <div css={css`display: flex; gap: 0.5rem; flex-wrap: wrap;`}>
-            <DsInput
-              type="password"
-              value={apiKey}
-              onChange={event => setApiKey(event.target.value)}
-              placeholder="Paste your Stripe or Creem API key"
-              autoComplete="off"
-              spellCheck={false}
-              aria-label="Payment API key"
-              css={css`flex: 1; min-width: 240px;`}
-            />
-            <DsButton variant="accent" disabled={busy || apiKey.trim().length < 12} onClick={connect}>
-              {busy ? 'Checking…' : 'Connect'}
-            </DsButton>
-            {editing ? <DsButton variant="ghost" onClick={() => setEditing(false)}>Cancel</DsButton> : null}
-          </div>
-          <p css={helpText}>The key is checked with Stripe/Creem, then stored encrypted. Bublr only uses it to open checkouts for your products and to confirm they were paid. A test key works for trying your shop out: while it’s connected, only you can buy.</p>
-        </>
-      )}
-    </div>
-  )
-}
 
 // ------------------------------------------------------------ products
 

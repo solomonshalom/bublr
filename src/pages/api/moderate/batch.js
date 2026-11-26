@@ -1,4 +1,6 @@
 import { firestore } from '../../../lib/firebase'
+import { fullContent } from '../../../lib/paid-content'
+import { federatePost } from '../../../lib/activitypub/federation'
 import { moderateContent } from '../../../lib/publishing'
 import { hasSharedSecret } from '../../../lib/server-auth'
 
@@ -44,7 +46,8 @@ export default async function handler(req, res) {
       }
 
       try {
-        const result = await moderateContent(post.title, post.content)
+        // A paid post is moderated whole, not just its free preview
+        const result = await moderateContent(post.title, fullContent({ ...post, id: postId }) ?? post.content)
         results.processed++
 
         if (result.shouldUnpublish) {
@@ -55,6 +58,8 @@ export default async function handler(req, res) {
             moderationCategory: result.category,
             moderatedAt: new Date().toISOString(),
           })
+          // Off the fediverse too
+          await federatePost(postId)
 
           results.unpublished++
           results.details.push({

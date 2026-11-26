@@ -3,7 +3,7 @@ import Head from 'next/head'
 import { createPortal } from 'react-dom'
 import { tinykeys } from 'tinykeys'
 import { css } from '@emotion/react'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import router, { useRouter } from 'next/router'
 import { useAuthState } from 'react-firebase-hooks/auth'
@@ -48,10 +48,12 @@ import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import SlashCommands from '../../components/editor/slash-commands'
 import EditorFloatingMenu from '../../components/editor/editor-floating-menu'
 import Callout from '../../components/editor/callout-extension'
+import PaywallLine from '../../components/editor/paywall-extension'
+import AccessTile from '../../components/editor/access-tile'
 
 import firebase, { auth, firestore } from '../../lib/firebase'
 import { authedFetch } from '../../lib/authed-fetch'
-import { postWithUserIDAndSlugExists, removePostForUser } from '../../lib/db'
+import { postWithUserIDAndSlugExists } from '../../lib/db'
 
 // Color palette for post dots (same as berrysauce)
 const DOT_COLORS = [
@@ -542,7 +544,7 @@ const LOCALLY_EDITED_FIELDS = ['title', 'content', 'excerpt', 'slug']
 // Fields autosave writes (the slug has its own validated save path).
 const AUTOSAVE_FIELDS = ['title', 'content', 'excerpt']
 
-function Editor({ post, onBeforeDelete }) {
+function Editor({ post, onBeforeDelete, onPaidSaved }) {
   // Right-side post settings sidebar — chord-style focused writing chrome.
   // Closed by default so the writing column is uninterrupted; user toggles
   // with ⌘B or the ⋮ icon in the top bar.
@@ -620,6 +622,45 @@ function Editor({ post, onBeforeDelete }) {
     )
   }, [post, clientPost])
 
+  // Who can read this post, as of the latest change made here (the realtime
+  // copy of the post can lag a moment behind a switch). While a switch is
+  // under way nothing is saved, so a paid post's body never lands in the open.
+  const accessRef = useRef(post.access === 'paid' ? 'paid' : 'everyone')
+  const switchingAccessRef = useRef(false)
+  useEffect(() => {
+    if (!switchingAccessRef.current) accessRef.current = post.access === 'paid' ? 'paid' : 'everyone'
+  }, [post.access])
+
+  // Fediverse followers get the new version of a published post a little
+  // while after the last edit (one Update, not one per keystroke).
+  const federateTimeoutRef = useRef(null)
+  const federatePostIdRef = useRef(post.id)
+  federatePostIdRef.current = post.id
+  const fediverseOn = Boolean(userdata?.fediverse?.enabled)
+  const sendFederate = useCallback(postId => {
+    authedFetch('/api/posts/federate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId }),
+      keepalive: true,
+    }).catch(() => {})
+  }, [])
+  const scheduleFederate = useCallback(() => {
+    if (!post.published || !fediverseOn) return
+    clearTimeout(federateTimeoutRef.current)
+    federateTimeoutRef.current = setTimeout(() => {
+      federateTimeoutRef.current = null
+      sendFederate(post.id)
+    }, 20000)
+  }, [post.published, post.id, fediverseOn, sendFederate])
+  useEffect(() => () => {
+    // Leaving the editor with an update still waiting: send it now.
+    if (federateTimeoutRef.current) {
+      clearTimeout(federateTimeoutRef.current)
+      sendFederate(federatePostIdRef.current)
+    }
+  }, [sendFederate])
+
   // Save function
   const saveChanges = useCallback(async () => {
     if (!hasChanges()) return
@@ -634,19 +675,36 @@ function Editor({ post, onBeforeDelete }) {
       }
     }
     if (Object.keys(changed).length === 0) return
+    if (switchingAccessRef.current) return // saved once the switch is done
 
     setSaveStatus('saving')
     try {
-      await firestore.collection('posts').doc(post.id).update({
-        ...changed,
-        lastEdited: firebase.firestore.Timestamp.now(),
-      })
+      if (accessRef.current === 'paid') {
+        // A paid post's body is sealed on the server; it never goes to
+        // Firestore from here (lib/paid-content).
+        const response = await authedFetch('/api/posts/content', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId: post.id, ...changed }),
+        })
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}))
+          throw new Error(data.error || 'Save failed')
+        }
+        if (changed.content !== undefined) onPaidSaved?.(changed.content)
+      } else {
+        await firestore.collection('posts').doc(post.id).update({
+          ...changed,
+          lastEdited: firebase.firestore.Timestamp.now(),
+        })
+      }
       setSaveStatus('saved')
+      scheduleFederate()
     } catch (err) {
       console.error('Save error:', err)
       setSaveStatus('unsaved')
     }
-  }, [clientPost, post, hasChanges])
+  }, [clientPost, post, hasChanges, onPaidSaved, scheduleFederate])
 
   // Validate and save slug with debouncing
   const validateAndSaveSlug = useCallback(async (newSlug) => {
@@ -685,13 +743,14 @@ function Editor({ post, onBeforeDelete }) {
       })
       setSaveStatus('saved')
       setSlugValidating(false)
+      scheduleFederate()
     } catch (err) {
       console.error('Slug save error:', err)
       setSlugErr(true)
       setSlugValidating(false)
       setSaveStatus('unsaved')
     }
-  }, [post.slug, post.author, post.id])
+  }, [post.slug, post.author, post.id, scheduleFederate])
 
   // Auto-save effect for slug changes
   useEffect(() => {
@@ -989,6 +1048,7 @@ function Editor({ post, onBeforeDelete }) {
       }),
       SlashCommands,
       Callout,
+      PaywallLine,
     ],
     editorProps: {
       attributes: {
@@ -999,6 +1059,24 @@ function Editor({ post, onBeforeDelete }) {
       setClientPost(prevPost => ({ ...prevPost, content: newEditor.getHTML() }))
     },
   })
+
+  // Switching who can read: save what's pending first, and tell the page the
+  // whole post (it holds the body of a paid post, which the server seals).
+  const beforeAccessChange = useCallback(async () => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    await saveChanges()
+    switchingAccessRef.current = true
+  }, [saveChanges])
+  const afterAccessChange = useCallback(
+    (value, ok) => {
+      switchingAccessRef.current = false
+      if (!ok) return
+      accessRef.current = value
+      if (value === 'paid') onPaidSaved?.(contentEditor ? contentEditor.getHTML() : clientPost.content)
+      scheduleFederate()
+    },
+    [onPaidSaved, contentEditor, clientPost.content, scheduleFederate]
+  )
 
   async function uploadAndInsertImage(file) {
     if (!file || !contentEditor) return
@@ -1251,6 +1329,9 @@ function Editor({ post, onBeforeDelete }) {
                             reason: result.reason,
                             category: result.category,
                           })
+                        } else if (willPublish && response.ok && !result.published && result.message) {
+                          // Not published for another reason (a paid post without the plan)
+                          alert(result.message)
                         } else if (!response.ok) {
                           throw new Error(result.error?.message || result.error || 'Publish failed')
                         }
@@ -1263,6 +1344,13 @@ function Editor({ post, onBeforeDelete }) {
                     }}
                   />
                 </DsTile>
+                <AccessTile
+                  post={post}
+                  userdata={userdata}
+                  editor={contentEditor}
+                  onBeforeChange={beforeAccessChange}
+                  onAfterChange={afterAccessChange}
+                />
                 {/* Preview tile — same shape as Published, links to /dashboard/[pid]/preview */}
                 <DsTile
                   as="a"
@@ -1726,7 +1814,16 @@ function Editor({ post, onBeforeDelete }) {
                 variant="destructive"
                 onClick={async () => {
                   onBeforeDelete?.()
-                  await removePostForUser(post.author, post.id)
+                  // Through the server, so fediverse followers' servers hear about it
+                  const response = await authedFetch('/api/posts/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId: post.id }),
+                  }).catch(() => null)
+                  if (!response || !response.ok) {
+                    alert('Couldn’t delete the post right now. Please try again.')
+                    return
+                  }
                   router.push('/dashboard')
                 }}
                 css={css`width: 100%;`}
@@ -2332,6 +2429,33 @@ function Editor({ post, onBeforeDelete }) {
             border-top-color: var(--accent-border);
           }
 
+          /* Paywall line: free preview above, paid subscribers below */
+          .tiptap-paywall {
+            position: relative;
+            margin: 2.25rem 0;
+            border-top: 1px dashed var(--accent-border, var(--border-dashed));
+            cursor: grab;
+          }
+          .tiptap-paywall::after {
+            content: 'Paid subscribers only below this line';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translate(-50%, -50%);
+            padding: 0.1rem 0.6rem;
+            border-radius: 999px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.68rem;
+            letter-spacing: 0.02em;
+            color: var(--accent-foreground, var(--grey-4));
+            background: var(--grey-1);
+            border: 1px solid var(--accent-border, var(--border));
+            white-space: nowrap;
+          }
+          .tiptap-paywall.ProseMirror-selectednode::after {
+            background: var(--accent-soft, var(--grey-2));
+          }
+
           /* Callout/Pop-up Styles */
           .tiptap-callout {
             margin: 1rem 0;
@@ -2366,6 +2490,35 @@ export default function PostEditor() {
     },
   )
 
+  // A paid post's body is sealed on the server (lib/paid-content): the
+  // document holds only the free preview. Fetch the whole post for the
+  // editor, and keep it current as the editor saves.
+  const isPaid = post?.access === 'paid'
+  const [paidContent, setPaidContent] = useState(undefined)
+  const [paidContentError, setPaidContentError] = useState(null)
+  useEffect(() => {
+    if (!isPaid) setPaidContent(undefined)
+  }, [isPaid])
+  useEffect(() => {
+    if (!post?.id || !isPaid || paidContent !== undefined || !user) return undefined
+    let cancelled = false
+    authedFetch(`/api/posts/content?postId=${encodeURIComponent(post.id)}`)
+      .then(async response => {
+        const data = await response.json().catch(() => ({}))
+        if (cancelled) return
+        if (response.ok && typeof data.content === 'string') setPaidContent(data.content)
+        else setPaidContentError(data.error || 'This post couldn’t be loaded.')
+      })
+      .catch(() => !cancelled && setPaidContentError('This post couldn’t be loaded.'))
+    return () => {
+      cancelled = true
+    }
+  }, [post?.id, isPaid, paidContent, user])
+  const editorPost = useMemo(
+    () => (post && isPaid ? (paidContent === undefined ? null : { ...post, content: paidContent }) : post),
+    [post, isPaid, paidContent]
+  )
+
   useEffect(() => {
     // Skip redirect if we're in the process of deleting (navigating to /dashboard)
     if (isDeletingPost) return
@@ -2387,12 +2540,18 @@ export default function PostEditor() {
         <pre>{JSON.stringify(postError)}</pre>
       </>
     )
-  } else if (post) {
+  } else if (post && isPaid && paidContentError && !editorPost) {
+    return (
+      <div css={css`max-width: 520px; margin: 4rem auto; padding: 0 1rem; font-family: 'Inter', sans-serif; color: var(--grey-4);`}>
+        <p>{paidContentError}</p>
+      </div>
+    )
+  } else if (editorPost) {
     // Post just finished loading — reveal the editor with a slow, premium fade
     // (longer + gentler than page navigation) so it eases in instead of popping.
     return (
       <GsapReveal duration={0.8} ease="power2.out">
-        <Editor post={post} onBeforeDelete={() => setIsDeletingPost(true)} />
+        <Editor post={editorPost} onBeforeDelete={() => setIsDeletingPost(true)} onPaidSaved={setPaidContent} />
       </GsapReveal>
     )
   }

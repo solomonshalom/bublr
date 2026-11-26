@@ -1,6 +1,10 @@
 import { firestore } from '../../../lib/firebase'
 import { escapeHtml } from '../../../lib/escape'
 import { verifyUnsubscribe } from '../../../lib/unsubscribe-token'
+import { PROVIDERS } from '../../../lib/shop'
+import { findSubscriber, isRenewing, setPaidRenewal, verifiedPaid, describePrice } from '../../../lib/paid-newsletter'
+import { manageUrl, maskEmail } from '../../../lib/reader-session'
+import { sendPaidCancelFailedEmail } from '../../../lib/resend'
 
 // GET (the link in the email) only shows a confirm button, so mail scanners
 // that pre-open links can't unsubscribe anyone. The button POSTs to here.
@@ -69,20 +73,53 @@ export default async function handler(req, res) {
     const authorLabel = escapeHtml(authorData.displayName || author)
     const authorPath = encodeURIComponent(author)
 
+    // A paid subscriber who leaves stops paying too: nobody should be charged
+    // for a newsletter they no longer get.
+    const writer = { id: authorDoc.id, ...authorData }
+    const paid = verifiedPaid(writer.id, findSubscriber(writer, email))
+    const renewing = Boolean(paid && isRenewing(paid))
+
     if (isGet) {
+      const base = (process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life').replace(/\/$/, '')
+      const paidNote = renewing
+        ? `<p>You also have a paid subscription (${escapeHtml(describePrice(paid.amount, paid.currency, paid.interval))}). Unsubscribing cancels it, so you won’t be charged again, and your access to paid posts ends now.</p>
+           <p>Only want to stop paying? <a href="${escapeHtml(manageUrl(base, email, writer.id))}">Cancel the payment and keep reading</a> until the end of the period you paid for.</p>`
+        : ''
       return page(
         res,
         200,
         'Unsubscribe',
         `<h1>Unsubscribe?</h1>
          <p>Stop getting email about new posts from ${authorLabel}?</p>
+         ${paidNote}
          <form method="POST" action="/api/newsletter/unsubscribe">
            <input type="hidden" name="email" value="${escapeHtml(email)}">
            <input type="hidden" name="author" value="${escapeHtml(author)}">
            <input type="hidden" name="token" value="${escapeHtml(token)}">
-           <button type="submit">Unsubscribe</button>
+           <button type="submit">${renewing ? 'Unsubscribe and cancel payment' : 'Unsubscribe'}</button>
          </form>`
       )
+    }
+
+    // Stop the payments first. If the provider can't be reached the reader is
+    // still unsubscribed (that's what they asked for), and the writer is told
+    // to cancel it themselves.
+    let paymentStopped = !renewing
+    if (renewing) {
+      try {
+        await setPaidRenewal(writer, email, { renew: false })
+        paymentStopped = true
+      } catch (error) {
+        console.error('Unsubscribe: could not stop a paid subscription:', error?.status, error?.message)
+        if (writer.email) {
+          await sendPaidCancelFailedEmail({
+            writerEmail: writer.email,
+            writerName: writer.displayName || writer.name,
+            subscriberLabel: maskEmail(email),
+            providerName: PROVIDERS[paid.provider]?.name,
+          }).catch(() => {})
+        }
+      }
     }
 
     const normalizedEmail = email.trim().toLowerCase()
@@ -101,10 +138,13 @@ export default async function handler(req, res) {
         'Unsubscribed',
         `<h1>Successfully Unsubscribed</h1>
          <p>You won't receive any more email about ${authorLabel}'s new posts.</p>
+         ${renewing ? (paymentStopped
+           ? '<p>Your paid subscription is cancelled too. You won’t be charged again.</p>'
+           : `<p><strong>We couldn’t cancel your payment automatically.</strong> We’ve asked ${authorLabel} to cancel it. You can also cancel it yourself from the receipt ${escapeHtml(PROVIDERS[paid.provider]?.name || 'your payment provider')} emailed you.</p>`) : ''}
          <p style="margin-top: 24px;"><a href="https://bublr.life/${authorPath}">Visit ${authorLabel}'s profile</a></p>`
       )
     }
-    return res.status(200).json({ success: true, message: 'Successfully unsubscribed' })
+    return res.status(200).json({ success: true, message: 'Successfully unsubscribed', paymentStopped })
   } catch (error) {
     console.error('Unsubscribe error:', error)
     return wantsHtml

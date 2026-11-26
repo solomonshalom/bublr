@@ -9,7 +9,7 @@
  * verdict is from a writer's point of view (is it there, and on fair terms).
  */
 
-export const COMPARE_UPDATED = '2026-11-25'
+export const COMPARE_UPDATED = '2026-11-26'
 
 export function formatUpdated() {
   return new Date(`${COMPARE_UPDATED}T12:00:00Z`).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
@@ -26,6 +26,7 @@ export const ROWS = [
   { key: 'readers', label: 'Ads, paywalls or upsells for your readers' },
   { key: 'home', label: 'Gallery, music and guest book' },
   { key: 'paid', label: 'Paid subscriptions' },
+  { key: 'fediverse', label: 'Follow from the fediverse' },
   { key: 'source', label: 'Source code public' },
   { key: 'leave', label: 'Export and leave' },
 ]
@@ -35,18 +36,19 @@ export const BUBLR = {
   domain: { text: '$2 a month ($18 a year)', verdict: 'yes' },
   newsletter: { text: 'Built in and free. Readers confirm by email; each post you publish reaches them', verdict: 'yes' },
   selling: { text: 'A shop on your page (Pro + Shop, $3 a month)', verdict: 'yes' },
-  cut: { text: '0%. Buyers pay you directly through your own Stripe or Creem', verdict: 'yes' },
-  readers: { text: 'None. No ads, no paywall, no sign-up wall', verdict: 'yes' },
+  cut: { text: '0%. Buyers and paid subscribers pay you directly through your own Stripe or Creem', verdict: 'yes' },
+  readers: { text: 'No ads or sign-up wall. Posts are free unless you choose to charge for some', verdict: 'yes' },
   home: { text: 'Yes, plus stickers, your own fonts and live Spotify', verdict: 'yes' },
-  paid: { text: 'No. Bublr doesn’t put writing behind a paywall', verdict: 'no' },
+  paid: { text: 'Yes, 0% fee, through your own Stripe or Creem (Pro + Shop, $3 a month)', verdict: 'yes' },
+  fediverse: { text: 'Yes, free: people follow you as @you@bublr.life (turn it on in Settings)', verdict: 'yes' },
   source: { text: 'Yes, on GitHub', verdict: 'yes' },
   leave: { text: 'Every post as Markdown in one .zip; delete your account yourself', verdict: 'yes' },
 }
 
 export const BUBLR_POINTS = [
   { title: 'One page for everything.', text: 'Your writing, a newsletter, a photo gallery, the music you love and a shop, on a page that looks like you.' },
-  { title: 'Your readers are yours.', text: 'No ads, no paywall, no app pushing other writers at them. Export everything and leave whenever you like.' },
-  { title: 'Fair, small prices.', text: 'Free to write and send newsletters. Your own domain is $2 a month; add a shop for $1 more and keep every sale.' },
+  { title: 'Your readers are yours.', text: 'No ads, no app pushing other writers at them, and they can follow you from email, RSS or the fediverse. Export everything and leave whenever you like.' },
+  { title: 'Fair, small prices.', text: 'Free to write and send newsletters. Your own domain is $2 a month; add a shop and a paid newsletter for $1 more and keep every sale and subscription.' },
 ]
 
 // Platforms Bublr can import posts from (src/pages/api/import/platforms.js).
@@ -72,11 +74,11 @@ export const PLATFORMS = [
     name: 'Substack',
     website: 'https://substack.com',
     kind: 'Newsletter platforms',
-    oneLiner: 'Both are free newsletters; Bublr gives you a whole page and keeps no cut.',
+    oneLiner: 'Both are free newsletters with paid subscriptions; Bublr gives you a whole page and keeps no cut.',
     titleHook: 'a free Substack alternative with your own home page',
-    metaDescription: 'Bublr vs Substack: both are free to write and send a newsletter. Bublr adds a gallery, music and a shop with no cut, on your own domain for $2 a month.',
+    metaDescription: 'Bublr vs Substack: both are free newsletters with paid subscriptions. Bublr takes no cut (Substack takes 10%) and adds a gallery, music and a shop.',
     keywords: 'substack alternative free, substack vs bublr, newsletter with custom domain',
-    summary: 'Substack is a free newsletter platform that takes 10% when you charge for subscriptions and introduces your readers to other publications. Bublr is your own home on the internet: a free page with a newsletter built in, plus your photos, your music and a shop that keeps no cut, on your own domain for $2 a month.',
+    summary: 'Substack is a free newsletter platform that takes 10% when you charge for subscriptions and introduces your readers to other publications. Bublr is your own home on the internet: a free page with a newsletter built in, paid subscriptions that keep no cut, plus your photos, your music and a shop, on your own domain for $2 a month.',
     values: {
       start: v('Free', 'yes'),
       domain: v('$50 one-time; a subdomain such as www', 'partial'),
@@ -88,16 +90,17 @@ export const PLATFORMS = [
       paid: v('Yes, with a 10% fee', 'yes'),
       source: v('No', 'no'),
       leave: v('Posts and subscriber list, as a .zip and CSV', 'yes'),
+      fediverse: v('No', 'no'),
     },
     whyBublr: [
       'Your page is a home, not an inbox: a photo gallery, your music and a shop sit next to your writing.',
-      'Sell anything and keep it: Bublr takes 0%. Substack has no shop and takes 10% of paid subscriptions.',
+      'Charge for your writing and keep it all: Bublr takes 0% of paid subscriptions and of shop sales. Substack takes 10% of paid subscriptions and has no shop.',
       'Your own domain for $2 a month, root domain or subdomain. Substack charges $50 and uses a subdomain such as www.',
       'Your readers see you, not suggestions of other publications.',
     ],
-    whenThem: 'If you want to charge for your writing with paid subscriptions, or grow through Substack’s network of recommendations, Substack does that and Bublr doesn’t: Bublr has no paid subscriptions.',
+    whenThem: 'If you want to grow through Substack’s app and its network of recommendations, with features like podcasts, chat and live video, Substack does that and Bublr doesn’t.',
     moving: `Bublr imports your recent posts from your Substack feed (Settings → Import, then Substack). ${NO_LIST_IMPORT}`,
-    faqAlternative: 'Yes, if you want a free newsletter and a page that’s more than an inbox: your writing, photos, music and a shop, on your own domain, with no cut taken. If paid subscriptions are the heart of what you do, Substack fits better.',
+    faqAlternative: 'Yes, if you want a newsletter, free or paid, and a page that’s more than an inbox: your writing, photos, music and a shop, on your own domain, with no cut taken. If growing through Substack’s app and recommendations matters most, Substack fits better.',
     sources: [
       { label: 'Substack pricing', url: 'https://support.substack.com/hc/en-us/articles/360037607131-How-much-does-Substack-cost' },
       { label: 'custom domains', url: 'https://support.substack.com/hc/en-us/articles/360051222571-How-do-I-set-up-my-custom-domain-on-Substack' },
@@ -125,15 +128,16 @@ export const PLATFORMS = [
       paid: v('Yes, 0% fee, on paid plans', 'yes'),
       source: v('No', 'no'),
       leave: v('Posts and subscribers as CSV', 'yes'),
+      fediverse: v('No', 'no'),
     },
     whyBublr: [
       'Free with no subscriber cap and no platform branding on your page.',
-      'A flat, small price: $2 a month for your domain, $3 with a shop, however big your list gets.',
+      'A flat, small price: $2 a month for your domain, $3 with a shop and paid subscriptions, however big your list gets.',
       'More than a newsletter: a gallery, your music and a shop for physical things too, not only digital products.',
     ],
-    whenThem: 'If your newsletter is a business you want to grow with an ad network, paid recommendations, paid subscriptions and detailed growth tools, beehiiv is built for that.',
+    whenThem: 'If your newsletter is a business you want to grow with an ad network, paid recommendations and detailed growth tools, beehiiv is built for that.',
     moving: `Copy your posts into Bublr’s editor (Bublr can’t import from beehiiv’s feed yet). ${NO_LIST_IMPORT}`,
-    faqAlternative: 'Yes, if you want a newsletter without limits or list-size pricing, inside a page that’s your own. If running ads or paid subscriptions in your newsletter matters most, beehiiv fits better.',
+    faqAlternative: 'Yes, if you want a newsletter without limits or list-size pricing, paid subscriptions included, inside a page that’s your own. If running ads in your newsletter or growth tools matter most, beehiiv fits better.',
     sources: [
       { label: 'beehiiv pricing', url: 'https://www.beehiiv.com/pricing' },
       { label: 'ad network', url: 'https://www.beehiiv.com/support/article/17507491038231-ad-network-faq' },
@@ -161,6 +165,7 @@ export const PLATFORMS = [
       paid: v('Yes, 3.5% + $0.30', 'yes'),
       source: v('No', 'no'),
       leave: v('Subscribers as CSV; a list of broadcasts as CSV', 'partial'),
+      fediverse: v('No', 'no'),
     },
     whyBublr: [
       'Bublr takes 0% of what you sell; Kit takes 3.5% + $0.30 per sale.',
@@ -198,18 +203,20 @@ export const PLATFORMS = [
       paid: v('Yes, 0% fee, from $9 a month', 'yes'),
       source: v('No', 'no'),
       leave: v('Subscribers as CSV, emails as Markdown', 'yes'),
+      fediverse: v('Not yet; Mastodon links only', 'no'),
     },
     whyBublr: [
       'Free past 100 subscribers, with no cap at all.',
-      'Your whole page on your domain for $2 a month, not $29.',
+      'Your whole page on your domain for $2 a month, not $29; paid subscriptions with 0% fees for $3.',
       'A gallery, your music and a shop on the same page as your writing.',
     ],
-    whenThem: 'If all you want is a newsletter, especially a paid one, with Markdown, an API and nothing else around it, Buttondown is a fine, focused choice.',
+    whenThem: 'If all you want is a newsletter with Markdown, an API, automations and nothing else around it, Buttondown is a fine, focused choice.',
     moving: `Copy your emails into Bublr as posts (Buttondown exports them as Markdown). ${NO_LIST_IMPORT}`,
-    faqAlternative: 'Yes, if you like Buttondown’s calm but want a whole page around your newsletter and no subscriber limit. If you need paid subscriptions, Buttondown fits better.',
+    faqAlternative: 'Yes, if you like Buttondown’s calm but want a whole page around your newsletter, paid subscriptions from $3 a month and no subscriber limit. If you want a newsletter tool with nothing around it, Buttondown fits better.',
     sources: [
       { label: 'Buttondown pricing', url: 'https://buttondown.com/pricing' },
       { label: 'paid subscriptions', url: 'https://buttondown.com/features/paid-subscriptions' },
+      { label: 'ActivityPub', url: 'https://buttondown.com/blog/what-is-activitypub' },
     ],
   },
   {
@@ -217,11 +224,11 @@ export const PLATFORMS = [
     name: 'Medium',
     website: 'https://medium.com',
     kind: 'Blogging platforms',
-    oneLiner: 'Writing inside Medium’s app vs a home of your own, with no paywall for readers.',
+    oneLiner: 'Writing inside Medium’s app vs a home of your own, with no membership wall for readers.',
     titleHook: 'a Medium alternative with no paywall and your own domain',
-    metaDescription: 'Bublr vs Medium: on Bublr your readers never hit a paywall, you keep your subscribers’ emails, and your own domain is $2 a month without a membership.',
+    metaDescription: 'Bublr vs Medium: on Bublr readers never hit a membership wall, you keep your subscribers’ emails, and your own domain is $2 a month.',
     keywords: 'medium alternative, medium vs bublr, blog without paywall',
-    summary: 'Medium is a reading app with a built-in audience: free to write, $5 a month to read member-only stories, with Medium’s recommendations beside yours. Bublr is your own page: no paywall for readers, your subscribers’ emails stay yours, and your domain is $2 a month.',
+    summary: 'Medium is a reading app with a built-in audience: free to write, $5 a month to read member-only stories, with Medium’s recommendations beside yours. Bublr is your own page: no membership wall for readers (if you charge, they pay you), your subscribers’ emails stay yours, and your domain is $2 a month.',
     values: {
       start: v('Free to write', 'yes'),
       domain: v('Needs a $5 a month membership', 'partial'),
@@ -233,9 +240,10 @@ export const PLATFORMS = [
       paid: v('No; earn through the Partner Program instead', 'partial'),
       source: v('No', 'no'),
       leave: v('Stories as HTML in a .zip', 'yes'),
+      fediverse: v('No; members can join Medium’s own Mastodon server, me.dm', 'no'),
     },
     whyBublr: [
-      'Readers never hit a paywall or a membership prompt on your page.',
+      'Readers never hit a Medium-style membership wall. If you charge for some posts, readers pay you, and you keep it all.',
       'Your subscribers are yours: you see who they are and can download the list as CSV.',
       'Your own domain for $2 a month, without a Medium membership.',
       'A gallery, your music and a shop sit next to your writing.',
@@ -248,6 +256,7 @@ export const PLATFORMS = [
       { label: 'custom domains', url: 'https://help.medium.com/hc/en-us/articles/115003053487-Setting-up-a-custom-domain-for-your-profile-or-publication' },
       { label: 'paywall', url: 'https://help.medium.com/hc/en-us/articles/360017581433-About-the-paywall' },
       { label: 'email subscriptions', url: 'https://help.medium.com/hc/en-us/articles/360059837393-Email-notifications' },
+      { label: 'me.dm', url: 'https://help.medium.com/hc/en-us/articles/12101044403095-me-dm-Medium-s-Mastodon-instance' },
     ],
   },
   {
@@ -271,6 +280,7 @@ export const PLATFORMS = [
       paid: v('Yes, 0% fee, from the $35 a month Publisher plan', 'yes'),
       source: v('Yes, MIT licence', 'yes'),
       leave: v('Posts as JSON, members as CSV', 'yes'),
+      fediverse: v('Yes, built in since Ghost 6; needs a custom domain', 'yes'),
     },
     whyBublr: [
       'Free to start, instead of paying monthly for hosting.',
@@ -278,13 +288,14 @@ export const PLATFORMS = [
       'A gallery, your music and a shop for anything, built in rather than bolted on.',
       'No server, theme or email provider to set up.',
     ],
-    whenThem: 'If you run a publication with paid memberships, a team and your own theme, Ghost is built for that, and its software is open source under the MIT licence.',
+    whenThem: 'If you run a publication with a team, membership tiers and your own theme, Ghost is built for that, and its software is open source under the MIT licence.',
     moving: `Bublr imports your recent posts from your Ghost site’s feed (Settings → Import, then Ghost). ${NO_LIST_IMPORT}`,
-    faqAlternative: 'Yes, if you want Ghost’s clean publishing for free and without hosting. If you need paid memberships or a custom theme, Ghost fits better.',
+    faqAlternative: 'Yes, if you want Ghost’s clean publishing, a paid newsletter and the fediverse without hosting or a price that grows with your members. If you need a team, membership tiers or a custom theme, Ghost fits better.',
     sources: [
       { label: 'Ghost pricing', url: 'https://ghost.org/pricing/' },
       { label: 'hosting', url: 'https://docs.ghost.org/hosting' },
       { label: 'source code', url: 'https://github.com/TryGhost/Ghost' },
+      { label: 'social web', url: 'https://ghost.org/help/social-web/' },
     ],
   },
   {
@@ -308,6 +319,7 @@ export const PLATFORMS = [
       paid: v('Yes, 10% on Free down to 0% on Commerce', 'yes'),
       source: v('The WordPress software is open source (GPL); WordPress.com is a hosted service', 'partial'),
       leave: v('XML export of your content', 'yes'),
+      fediverse: v('Yes, with Automattic’s ActivityPub feature', 'yes'),
     },
     whyBublr: [
       'No ads on your page, even for free.',
@@ -322,6 +334,7 @@ export const PLATFORMS = [
       { label: 'WordPress.com pricing', url: 'https://wordpress.com/pricing/' },
       { label: 'paid newsletters', url: 'https://wordpress.com/support/paid-newsletters/' },
       { label: 'export', url: 'https://wordpress.com/support/export/' },
+      { label: 'fediverse', url: 'https://wordpress.com/support/enter-the-fediverse/' },
     ],
   },
   {
@@ -345,6 +358,7 @@ export const PLATFORMS = [
       paid: v('No', 'no'),
       source: v('No', 'no'),
       leave: v('Every post as Markdown; GitHub backup on Pro', 'yes'),
+      fediverse: v('No', 'no'),
     },
     whyBublr: [
       'A newsletter built in: readers subscribe and get each post by email.',
@@ -380,6 +394,7 @@ export const PLATFORMS = [
       paid: v('No (Post+ was removed in January 2024)', 'no'),
       source: v('No', 'no'),
       leave: v('A .zip of posts and media', 'yes'),
+      fediverse: v('Announced in 2022, on hold since mid-2025', 'no'),
     },
     whyBublr: [
       'Readers can subscribe by email and get every post.',
@@ -393,6 +408,7 @@ export const PLATFORMS = [
       { label: 'ads on Tumblr', url: 'https://www.tumblr.com/changes/797297386722607104' },
       { label: 'domains', url: 'https://help.tumblr.com/knowledge-base/domains/' },
       { label: 'export', url: 'https://help.tumblr.com/knowledge-base/export-your-blog/' },
+      { label: 'ActivityPub on hold', url: 'https://techcrunch.com/2025/07/01/automattic-puts-tumblr-migration-to-wordpress-on-hold/' },
     ],
   },
   {
@@ -416,6 +432,7 @@ export const PLATFORMS = [
       paid: v('Member sites, 7% on Basic down to 0% on Advanced', 'yes'),
       source: v('No', 'no'),
       leave: v('Partly: pages and one blog as XML; store and media left out', 'partial'),
+      fediverse: v('No', 'no'),
     },
     whyBublr: [
       'Free to start, instead of $19 a month.',
@@ -453,6 +470,7 @@ export const PLATFORMS = [
       paid: v('Paywalls through Pricing Plans, on Core and up', 'yes'),
       source: v('No', 'no'),
       leave: v('Blog posts can’t be exported to other platforms', 'no'),
+      fediverse: v('No', 'no'),
     },
     whyBublr: [
       'No ads on your free page.',
@@ -490,6 +508,7 @@ export const PLATFORMS = [
       paid: v('No', 'no'),
       source: v('No', 'no'),
       leave: v('PDF, HTML, Markdown and CSV', 'yes'),
+      fediverse: v('No', 'no'),
     },
     whyBublr: [
       'Your domain for $2 a month instead of about $18.',
@@ -526,6 +545,7 @@ export const PLATFORMS = [
       paid: v('No blog to subscribe to', 'na'),
       source: v('No', 'no'),
       leave: v('Clicks and contacts only; no page export', 'no'),
+      fediverse: v('No posts to follow', 'na'),
     },
     whyBublr: [
       'Your own domain for $2 a month; Linktree doesn’t support custom domains at all.',
@@ -562,6 +582,7 @@ export const PLATFORMS = [
       paid: v('No', 'no'),
       source: v('No', 'no'),
       leave: v('HTML download on Pro Plus', 'partial'),
+      fediverse: v('No posts to follow', 'na'),
     },
     whyBublr: [
       'Write posts and send them as a newsletter, with no other tool to connect.',
@@ -598,6 +619,7 @@ export const PLATFORMS = [
       paid: v('No', 'no'),
       source: v('Source available, but not for running as a service', 'partial'),
       leave: v('CSV or Markdown export', 'yes'),
+      fediverse: v('No; RSS and Atom feeds', 'no'),
     },
     whyBublr: [
       'Your newsletter sends itself: every post reaches your subscribers, free.',
@@ -611,6 +633,7 @@ export const PLATFORMS = [
       { label: 'Bear upgrade (source)', url: 'https://github.com/HermanMartinus/bearblog/blob/master/templates/dashboard/upgrade.html' },
       { label: 'sending emails', url: 'https://docs.bearblog.dev/sending-emails/' },
       { label: 'licence', url: 'https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md' },
+      { label: 'feeds', url: 'https://docs.bearblog.dev/rss-and-atom-feeds/' },
     ],
   },
   {
@@ -634,18 +657,20 @@ export const PLATFORMS = [
       paid: v('No', 'no'),
       source: v('Yes, WriteFreely (AGPL-3.0)', 'yes'),
       leave: v('Posts as plain text', 'yes'),
+      fediverse: v('Yes, built in for public blogs', 'yes'),
     },
     whyBublr: [
       'Free to join, with the newsletter included.',
       'Your domain for $2 a month instead of $6 to $9.',
       'A gallery, your music and a shop on the same page.',
     ],
-    whenThem: 'If you want a private, distraction-free blog on open-source software with fediverse support, Write.as is built for that.',
+    whenThem: 'If you want to write anonymously across several blogs, or host the software yourself with WriteFreely, Write.as is built for that.',
     moving: 'Write.as exports your posts as plain text; copy them into Bublr’s editor.',
-    faqAlternative: 'Yes, if you want Write.as’s calm with a free newsletter and a page for more than words. If open-source software and the fediverse matter most, Write.as fits better.',
+    faqAlternative: 'Yes, if you want Write.as’s calm with a free newsletter, the fediverse and a page for more than words. If writing anonymously or hosting the software yourself matters most, Write.as fits better.',
     sources: [
       { label: 'Write.as pricing', url: 'https://write.as/pricing' },
       { label: 'WriteFreely', url: 'https://write.as/writefreely' },
+      { label: 'fediverse', url: 'https://howto.write.as/enabling-federation' },
     ],
   },
   {
@@ -669,6 +694,7 @@ export const PLATFORMS = [
       paid: v('No', 'no'),
       source: v('Yes, AGPL-3.0', 'yes'),
       leave: v('Any time, as Markdown, ePub or Hugo/Zola', 'yes'),
+      fediverse: v('Yes, built in; turn it on in Settings', 'yes'),
     },
     whyBublr: [
       'More than text: a gallery, your music and a shop on your page.',
@@ -688,7 +714,7 @@ export const PLATFORMS = [
     name: 'Micro.blog',
     website: 'https://micro.blog',
     kind: 'Blogging platforms',
-    oneLiner: 'An indie blog in the fediverse vs a free home with a newsletter and a shop.',
+    oneLiner: 'Two indie homes on the fediverse; Bublr is free, with a newsletter and a shop.',
     titleHook: 'a free Micro.blog alternative with a newsletter',
     metaDescription: 'Bublr vs Micro.blog: Micro.blog’s hosted blogs start at $5 a month and its newsletter is on Premium. Bublr is free, newsletter included, with a shop.',
     keywords: 'micro.blog alternative, indie blog with newsletter',
@@ -704,18 +730,21 @@ export const PLATFORMS = [
       paid: v('No', 'no'),
       source: v('Not stated', 'na'),
       leave: v('WordPress, JSON, Markdown and zip exports', 'yes'),
+      fediverse: v('Yes, built in on every (paid) plan', 'yes'),
     },
     whyBublr: [
       'Free to start, and the newsletter is included.',
       'Your domain for $2 a month.',
       'A shop on your page that takes 0%.',
+      'Followed from Mastodon and the rest of the fediverse, free.',
     ],
-    whenThem: 'If you want your blog tied into the fediverse and Bluesky, with a friendly community around it, Micro.blog does that well.',
+    whenThem: 'If you want your blog cross-posted to Bluesky as well, with a friendly community around it, Micro.blog does that well.',
     moving: 'Micro.blog exports your posts as Markdown or for WordPress; copy them into Bublr’s editor.',
-    faqAlternative: 'Yes, if you want a free home with a newsletter and a shop. If the fediverse and Micro.blog’s community matter most, Micro.blog fits better.',
+    faqAlternative: 'Yes, if you want a free home on the fediverse with a newsletter and a shop. If Bluesky and Micro.blog’s community matter most, Micro.blog fits better.',
     sources: [
       { label: 'Micro.blog pricing', url: 'https://micro.blog/about/pricing' },
       { label: 'plans', url: 'https://help.micro.blog/t/pricing/19' },
+      { label: 'ActivityPub', url: 'https://help.micro.blog/t/activitypub/95' },
     ],
   },
 ]
@@ -731,9 +760,9 @@ export function faqsFor(platform) {
     { q: `Can I move my writing from ${platform.name} to Bublr?`, a: platform.moving },
     {
       q: 'How much does Bublr cost?',
-      a: 'Writing, your page, the newsletter, the gallery and music are free. Your own domain is $2 a month ($18 a year). A domain plus a shop is $3 a month, and Bublr takes no cut of what you sell; your payment provider’s usual fees apply.',
+      a: 'Writing, your page, the newsletter, the fediverse, the gallery and music are free. Your own domain is $2 a month ($18 a year). Pro + Shop, $3 a month, adds a shop and a paid newsletter, and Bublr takes no cut of sales or subscriptions; your payment provider’s usual fees apply.',
     },
-    { q: 'Does Bublr show ads or a paywall to my readers?', a: 'No. Your page and posts have no ads, no paywall and no sign-up wall. Readers can subscribe by email if they want to.' },
+    { q: 'Does Bublr show ads or a paywall to my readers?', a: 'No ads and no sign-up wall, ever. Posts are free unless you choose to make some of them for paid subscribers; then readers see a preview and can subscribe, and the money goes to you. Readers can also subscribe by email or follow you from the fediverse.' },
     ...(platform.extraFaqs || []),
   ]
 }

@@ -2,6 +2,8 @@ import { authenticateApiKey, API_ERROR_CODES } from '../../../../lib/api-auth'
 import firebase, { firestore } from '../../../../lib/firebase'
 import { setPostPublished } from '../../../../lib/publishing'
 import { toMillis } from '../../../../lib/timestamps'
+import { fullContent, isPaidPost, sealedFields, PaidContentError } from '../../../../lib/paid-content'
+import { federatePost, federatePostDeleted } from '../../../../lib/activitypub/federation'
 
 // Content size limits (in characters)
 const LIMITS = {
@@ -85,7 +87,9 @@ async function handleGetPost(req, res, auth, slug) {
       slug: post.slug,
       title: post.title || '',
       excerpt: post.excerpt || '',
-      content: post.content || '',
+      // The key belongs to the writer, so a paid post comes back whole.
+      content: fullContent(post) ?? post.content ?? '',
+      access: isPaidPost(post) ? 'paid' : 'everyone',
       published: post.published || false,
       lastEdited: toMillis(post.lastEdited) != null ? new Date(toMillis(post.lastEdited)).toISOString() : null,
       createdAt: post.createdAt || null,
@@ -130,7 +134,11 @@ async function handleUpdatePost(req, res, auth, slug) {
     }
 
     if (content !== undefined) {
-      updateData.content = content
+      if (typeof content !== 'string' || content.length > LIMITS.CONTENT_MAX) {
+        return res.status(400).json({ error: `Content must be a string of ${LIMITS.CONTENT_MAX} characters or less` })
+      }
+      // A paid post's body stays sealed (lib/paid-content).
+      Object.assign(updateData, isPaidPost(post) ? sealedFields(auth.userId, post.id, content) : { content })
     }
 
     if (dotColor !== undefined) {
@@ -184,6 +192,9 @@ async function handleUpdatePost(req, res, auth, slug) {
         })
       }
       updateData.published = Boolean(result.published)
+    } else if (post.published) {
+      // Edited or unpublished: fediverse followers see the change.
+      await federatePost(post.id)
     }
 
     return res.status(200).json({
@@ -198,6 +209,7 @@ async function handleUpdatePost(req, res, auth, slug) {
       message: 'Post updated successfully'
     })
   } catch (error) {
+    if (error instanceof PaidContentError) return res.status(error.status).json({ error: error.message })
     console.error('API v1 update post error:', error)
     return res.status(500).json({ error: 'Internal server error' })
   }
@@ -210,6 +222,12 @@ async function handleDeletePost(req, res, auth, slug) {
 
     if (!post) {
       return res.status(404).json({ error: 'Post not found' })
+    }
+
+    // Fediverse followers' servers are told first, while the post still exists
+    if (post.fediverse?.live) {
+      const ownerDoc = await firestore.collection('users').doc(auth.userId).get()
+      await federatePostDeleted(post, ownerDoc.exists ? { id: ownerDoc.id, ...ownerDoc.data() } : null)
     }
 
     // Remove post from posts collection

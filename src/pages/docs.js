@@ -343,12 +343,16 @@ export default function Docs() {
     "title": "My First Post",
     "excerpt": "A brief summary...",
     "content": "<p>Full HTML content...</p>",
+    "access": "everyone",
     "published": true,
     "lastEdited": "2024-01-15T10:30:00.000Z",
     "createdAt": 1705312200000,
     "dotColor": "#4D96FF"
   }
 }`}</CodeBlock>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
+                <InlineCode>access</InlineCode> is <InlineCode>&quot;paid&quot;</InlineCode> for posts for paid subscribers. Your key is yours, so <InlineCode>content</InlineCode> is the whole post either way, paywall line included (<InlineCode>{'<div data-type="paywall"></div>'}</InlineCode>). Updating a paid post&apos;s content keeps it paid: everything above the line is the free preview.
+              </p>
 
               <Endpoint
                 method="POST"

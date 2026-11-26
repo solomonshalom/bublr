@@ -160,6 +160,22 @@ const ShopIcon = () => (
   </svg>
 )
 
+const NewsletterIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="m22 7-10 6L2 7" />
+  </svg>
+)
+
+const FediverseIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="5" r="2.5" />
+    <circle cx="5" cy="17" r="2.5" />
+    <circle cx="19" cy="17" r="2.5" />
+    <path d="M10.8 7.2 6.2 14.8M13.2 7.2l4.6 7.6M7.5 17h9" />
+  </svg>
+)
+
 const ChevronLeftIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <polyline points="15 18 9 12 15 6" />
@@ -179,6 +195,8 @@ const settingsLinks = [
   { href: '/dashboard/settings/gallery', label: 'Gallery', icon: <GalleryIcon /> },
   { href: '/dashboard/settings/music', label: 'Music', icon: <MusicIcon /> },
   { href: '/dashboard/settings/shop', label: 'Shop', icon: <ShopIcon /> },
+  { href: '/dashboard/settings/newsletter', label: 'Newsletter', icon: <NewsletterIcon /> },
+  { href: '/dashboard/settings/fediverse', label: 'Fediverse', icon: <FediverseIcon /> },
   { href: '/dashboard/settings/advanced', label: 'Advanced', icon: <AdvancedIcon /> },
   { href: '/dashboard/settings/developer', label: 'Developer', icon: <DeveloperIcon /> },
 ]

@@ -152,6 +152,17 @@ export default function Privacy() {
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
 
               <p css={css`font-weight: 500; margin-bottom: 8px;`}>
+                Paid Newsletters and the Fediverse
+              </p>
+              <ul css={css`color: var(--grey-3); margin-top: 12px; margin-left: 1.25rem; line-height: 1.7;`}>
+                <li>If you pay for a writer&apos;s newsletter, you pay the writer through their own Stripe or Creem account, under that provider&apos;s privacy policy. Bublr keeps your email address, your plan and its status, and the provider&apos;s reference to your subscription (encrypted). Your card details never reach Bublr. The writer can see your address and plan, as with any subscriber.</li>
+                <li>To read paid posts on the web you sign in with a link we email you. It sets one essential cookie on that device so Bublr knows which address you are; signing out removes it.</li>
+                <li>If a writer turns on the fediverse, their public profile and published posts are sent to the servers of the people who follow them, which keep copies under their own policies. Who follows a writer isn&apos;t published. Nothing is shared this way unless the writer turns it on.</li>
+              </ul>
+
+              <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />
+
+              <p css={css`font-weight: 500; margin-bottom: 8px;`}>
                 Your Rights
               </p>
               <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
@@ -170,7 +181,7 @@ export default function Privacy() {
                 Cookies
               </p>
               <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
-                We use essential cookies for authentication and theme preferences. We do not use tracking cookies or third-party analytics that would compromise your privacy.
+                We use essential cookies for authentication, theme preferences and, for paid subscribers who sign in to read, remembering which email address they are. We do not use tracking cookies or third-party analytics that would compromise your privacy.
               </p>
 
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />

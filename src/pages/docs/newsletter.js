@@ -199,6 +199,8 @@ export default function NewsletterDocs() {
                 <Tag>{'{{postUrl}}'}</Tag>
                 <Tag>{'{{postColor}}'}</Tag>
                 <Tag>{'{{unsubscribeUrl}}'}</Tag>
+                <Tag>{'{{notice}}'}</Tag>
+                <Tag>{'{{manageUrl}}'}</Tag>
               </div>
 
               <div css={css`margin-top: 24px;`}>
@@ -214,11 +216,16 @@ export default function NewsletterDocs() {
                   <li><InlineCode>{'{{postUrl}}'}</InlineCode> — Full URL to read the post</li>
                   <li><InlineCode>{'{{postColor}}'}</InlineCode> — Post&apos;s accent color (hex, e.g. #4D96FF)</li>
                   <li><InlineCode>{'{{unsubscribeUrl}}'}</InlineCode> — Unsubscribe link <strong>(required)</strong></li>
+                  <li><InlineCode>{'{{notice}}'}</InlineCode> — A line about paid posts (&quot;This post is for paid subscribers…&quot;), empty for free posts</li>
+                  <li><InlineCode>{'{{manageUrl}}'}</InlineCode> — For paid subscribers: their page to cancel or change their card. Empty for everyone else</li>
                 </ul>
               </div>
 
               <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
                 Snake_case versions are also supported: <InlineCode>{'{{post_url}}'}</InlineCode>, <InlineCode>{'{{author_name}}'}</InlineCode>, etc.
+              </p>
+              <p css={css`color: var(--grey-3); margin-top: 16px; line-height: 1.7;`}>
+                With a paid newsletter, each reader gets their own version of a paid post: for paid subscribers <InlineCode>{'{{content}}'}</InlineCode> is the start of the whole post and <InlineCode>{'{{postUrl}}'}</InlineCode> signs them in; for everyone else they&apos;re the free preview and the post&apos;s page, where they can subscribe.
               </p>
 
               <hr css={css`opacity: 0.15; margin-top: 32px; margin-bottom: 32px; border-color: var(--grey-4);`} />

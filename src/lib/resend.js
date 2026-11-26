@@ -65,6 +65,8 @@ function replaceTemplatePlaceholders(template, data) {
     .replace(/\{\{postUrl\}\}/gi, postUrl || '')
     .replace(/\{\{postColor\}\}/gi, postColor || '#4D96FF')
     .replace(/\{\{unsubscribeUrl\}\}/gi, unsubscribeUrl || '')
+    .replace(/\{\{notice\}\}/gi, escHtml(data.notice || ''))
+    .replace(/\{\{manageUrl\}\}/gi, data.manageUrl || '')
     // Also support snake_case versions for flexibility
     .replace(/\{\{post_url\}\}/gi, postUrl || '')
     .replace(/\{\{post_color\}\}/gi, postColor || '#4D96FF')
@@ -107,18 +109,18 @@ ${cleanTitle}
 
 ${cleanExcerpt || cleanContent}
 
-Read the full post: ${postUrl}
+${data.notice ? `${data.notice}\n\n` : ''}${data.ctaText || 'Read the full post'}: ${postUrl}
 
 ---
 You're receiving this because you subscribed to ${authorName}'s newsletter on Bublr.
-Unsubscribe: ${unsubscribeUrl}
+Unsubscribe: ${unsubscribeUrl}${data.manageUrl ? `\nManage your paid subscription: ${data.manageUrl}` : ''}
 `
 }
 
 /**
  * Generate the HTML email template for new post notifications
  */
-function generateNewPostEmailHTML({ authorName, authorPhoto, postTitle, postExcerpt, postContent, postUrl, postColor, unsubscribeUrl }) {
+function generateNewPostEmailHTML({ authorName, authorPhoto, postTitle, postExcerpt, postContent, postUrl, postColor, unsubscribeUrl, notice, ctaText, manageUrl }) {
   // Clean HTML content for email (basic sanitization)
   const cleanExcerpt = postExcerpt
     ? postExcerpt.replace(/<[^>]*>/g, '').substring(0, 300)
@@ -179,12 +181,18 @@ function generateNewPostEmailHTML({ authorName, authorPhoto, postTitle, postExce
                 ${cleanContent}${cleanContent.length >= 500 ? '...' : ''}
               </p>
 
+              ${notice ? `
+              <p style="margin: 0 0 20px 0; padding: 10px 12px; border-radius: 6px; background-color: #f5f5f5; color: #2e2e2e; font-size: 13px; line-height: 1.5;">
+                ${escHtml(notice)}
+              </p>
+              ` : ''}
+
               <!-- CTA Button -->
               <table cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
                 <tr>
                   <td style="background-color: #2e2e2e; border-radius: 6px;">
                     <a href="${postUrl}" style="display: inline-block; padding: 12px 24px; color: #ffffff; text-decoration: none; font-weight: 500; font-size: 14px;">
-                      Read Full Post
+                      ${escHtml(ctaText || 'Read Full Post')}
                     </a>
                   </td>
                 </tr>
@@ -199,6 +207,8 @@ function generateNewPostEmailHTML({ authorName, authorPhoto, postTitle, postExce
                     </p>
                     <p style="margin: 0; font-size: 12px;">
                       <a href="${unsubscribeUrl}" style="color: #6f6f6f; text-decoration: underline;">Unsubscribe</a>
+                      ${manageUrl ? `<span style="color: #c7c7c7; margin: 0 8px;">|</span>
+                      <a href="${manageUrl}" style="color: #6f6f6f; text-decoration: underline;">Manage your paid subscription</a>` : ''}
                       <span style="color: #c7c7c7; margin: 0 8px;">|</span>
                       <a href="https://bublr.life" style="color: #6f6f6f; text-decoration: underline;">Visit Bublr</a>
                     </p>
@@ -219,7 +229,7 @@ function generateNewPostEmailHTML({ authorName, authorPhoto, postTitle, postExce
 /**
  * Generate plain text version of the email
  */
-function generateNewPostEmailText({ authorName, postTitle, postExcerpt, postContent, postUrl, unsubscribeUrl }) {
+function generateNewPostEmailText({ authorName, postTitle, postExcerpt, postContent, postUrl, unsubscribeUrl, notice, ctaText, manageUrl }) {
   const cleanExcerpt = postExcerpt
     ? postExcerpt.replace(/<[^>]*>/g, '').substring(0, 300)
     : ''
@@ -234,12 +244,12 @@ ${authorName} published a new post
 ${postTitle}
 
 ${cleanExcerpt || cleanContent}
-
-Read the full post: ${postUrl}
+${notice ? `\n${notice}\n` : ''}
+${ctaText || 'Read the full post'}: ${postUrl}
 
 ---
 You're receiving this because you subscribed to ${authorName}'s newsletter on Bublr.
-Unsubscribe: ${unsubscribeUrl}
+Unsubscribe: ${unsubscribeUrl}${manageUrl ? `\nManage your paid subscription: ${manageUrl}` : ''}
 `
 }
 
@@ -352,6 +362,7 @@ export async function sendBatchNotifications({
   postSlug,
   postColor,
   customTemplate,
+  personalize,
 }) {
   if (!process.env.RESEND_API_KEY) {
     console.error('RESEND_API_KEY not configured')
@@ -380,6 +391,8 @@ export async function sendBatchNotifications({
       const email = typeof subscriber === 'string' ? subscriber : subscriber.email
       const unsubscribeUrl = buildUnsubscribeUrl(email, authorUsername)
 
+      // Paid posts: paying readers get a link that signs them in, the rest a
+      // preview and an invitation (lib/newsletter-notify decides).
       const templateData = {
         authorName,
         authorPhoto,
@@ -389,6 +402,7 @@ export async function sendBatchNotifications({
         postUrl,
         postColor,
         unsubscribeUrl,
+        ...(personalize ? personalize(subscriber) || {} : {}),
       }
 
       // Use custom template if provided, otherwise use default
@@ -725,6 +739,104 @@ ${rows.map(([k, v]) => `<tr><td style="font-size:14px;padding:6px 0;border-top:1
   } catch (error) {
     return { success: false, error: error.message }
   }
+}
+
+// ------------------------------------------------------------ paid newsletter
+
+function simpleEmail({ heading, paragraphs, button, footer }) {
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escHtml(heading)}</title></head>
+<body style="margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.6; color: #2e2e2e; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;"><tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background-color: #ffffff; border-radius: 8px;"><tr><td style="padding: 32px;">
+      <h1 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 500;">${escHtml(heading)}</h1>
+      ${paragraphs.map(p => `<p style="margin: 0 0 16px 0; color: #6f6f6f;">${escHtml(p)}</p>`).join('\n      ')}
+      ${button ? `<a href="${button.url}" style="display: inline-block; margin-top: 8px; padding: 12px 24px; background-color: #2e2e2e; color: #ffffff; text-decoration: none; font-weight: 500; font-size: 14px; border-radius: 6px;">${escHtml(button.text)}</a>` : ''}
+      ${footer ? `<p style="margin: 24px 0 0 0; font-size: 12px; color: #9a9a9a;">${footer}</p>` : ''}
+    </td></tr></table>
+  </td></tr></table>
+</body></html>`
+  const text = [heading, '', ...paragraphs.flatMap(p => [p, '']), button ? `${button.text}: ${button.url}` : '', '']
+    .join('\n')
+  return { html, text }
+}
+
+async function sendSimple({ to, subject, ...content }) {
+  if (!process.env.RESEND_API_KEY) return { success: false, error: 'Email service not configured' }
+  const { html, text } = simpleEmail(content)
+  try {
+    const { error } = await resend().emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: String(subject).replace(/[\r\n]+/g, ' ').slice(0, 200),
+      html,
+      text,
+    })
+    if (error) return { success: false, error: error.message || String(error) }
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}
+
+/** A reader asked to sign in to read a writer's paid posts. */
+export async function sendReaderLoginEmail({ subscriberEmail, authorName, loginUrl }) {
+  return sendSimple({
+    to: subscriberEmail,
+    subject: `Your sign-in link for ${authorName || 'Bublr'}`,
+    heading: 'Sign in to read',
+    paragraphs: [
+      `Press the button to read ${authorName || 'this writer'}’s posts for paid subscribers on this device. The link works for one hour.`,
+      'If you didn’t ask for this, you can ignore this email.',
+    ],
+    button: { text: 'Sign in', url: loginUrl },
+  })
+}
+
+/** Sent once when a reader's paid subscription starts. */
+export async function sendPaidWelcomeEmail({ subscriberEmail, authorName, priceText, providerName, loginUrl, manageUrl }) {
+  return sendSimple({
+    to: subscriberEmail,
+    subject: `You’re a paid subscriber to ${authorName}`,
+    heading: 'Thank you for subscribing',
+    paragraphs: [
+      `You’re now a paid subscriber to ${authorName}${priceText ? ` (${priceText})` : ''}. Every post, including the ones for paid subscribers, comes to this address.`,
+      `${providerName || 'The payment provider'} sends your receipts. Your payment goes straight to ${authorName}; Bublr takes no cut.`,
+      'To read paid posts on another device, open the link in any of those emails, or ask for a sign-in link on a paid post.',
+    ],
+    button: { text: 'Start reading', url: loginUrl },
+    footer: `<a href="${manageUrl}" style="color: #6f6f6f;">Manage or cancel your subscription</a> any time.`,
+  })
+}
+
+/** Tell a writer about a new paid subscriber. */
+export async function sendNewPaidSubscriberEmail({ writerEmail, writerName, subscriberLabel, priceText, providerName, mode }) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
+  return sendSimple({
+    to: writerEmail,
+    subject: `New paid subscriber${priceText ? ` (${priceText})` : ''}`,
+    heading: 'You have a new paid subscriber',
+    paragraphs: [
+      `Hi${writerName ? ` ${writerName}` : ''}, ${subscriberLabel} just became a paid subscriber${priceText ? ` at ${priceText}` : ''}${mode === 'test' ? ' (test mode)' : ''}.`,
+      `The payment goes straight to your ${providerName || 'payment'} account.`,
+    ],
+    button: { text: 'See your subscribers', url: `${baseUrl}/dashboard/subscribers` },
+  })
+}
+
+/** A paid subscriber unsubscribed, but their payment couldn't be stopped from Bublr. */
+export async function sendPaidCancelFailedEmail({ writerEmail, writerName, subscriberLabel, providerName }) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
+  return sendSimple({
+    to: writerEmail,
+    subject: 'Please cancel a paid subscription',
+    heading: 'A paid subscriber left',
+    paragraphs: [
+      `Hi${writerName ? ` ${writerName}` : ''}, ${subscriberLabel} unsubscribed from your newsletter, but Bublr couldn’t stop their payments, because your ${providerName || 'payment'} account didn’t answer or isn’t connected any more.`,
+      `Please cancel their subscription in your ${providerName || 'payment provider'}’s dashboard so they aren’t charged again.`,
+    ],
+    button: { text: 'Open your subscribers', url: `${baseUrl}/dashboard/subscribers` },
+  })
 }
 
 export default {

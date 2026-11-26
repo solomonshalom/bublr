@@ -14,6 +14,14 @@ module.exports = {
       },
     ]
   },
+  // The fediverse looks for these at fixed addresses (lib/activitypub)
+  async rewrites() {
+    return [
+      { source: '/.well-known/webfinger', destination: '/api/activitypub/webfinger' },
+      { source: '/.well-known/nodeinfo', destination: '/api/activitypub/nodeinfo?discover=1' },
+      { source: '/.well-known/host-meta', destination: '/api/activitypub/host-meta' },
+    ]
+  },
   reactStrictMode: true,
   // Enable features for improved SEO and performance
   experimental: {

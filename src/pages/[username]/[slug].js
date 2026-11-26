@@ -57,6 +57,11 @@ import { authedFetch } from '../../lib/authed-fetch'
 import ThemeToggle from '../../components/theme-toggle'
 import TranslateModal from '../../components/translate-modal'
 import SubscribeOrSign from '../../components/guestbook/SubscribeOrSign'
+import { PaidPostGate, PaidReaderBar } from '../../components/paid-newsletter'
+import { fullContent, isPaidPost } from '../../lib/paid-content'
+import { publicPaidPlan } from '../../lib/paid-newsletter'
+import { fediverseHandle } from '../../lib/activitypub/actor-keys'
+import { objectUrl } from '../../lib/activitypub/config'
 
 // The site's own theme colours, so the sign-up matches the post in both modes
 const NEWSLETTER_COLORS = {
@@ -306,9 +311,14 @@ function AddToReadingListButton({ uid, pid }) {
   )
 }
 
-export default function Post({ post, seo, fontSettings, customFonts, newsletter }) {
+export default function Post({ post, seo, fontSettings, customFonts, newsletter, paywall = null, fediverse = null }) {
   const [user, _loading, _error] = useAuthState(auth)
   const [userInfo, setUserInfo] = useState(null)
+  // A paid post arrives with only its free preview; the whole post is fetched
+  // for the writer and for paying readers (components/paid-newsletter).
+  const isPaid = post.access === 'paid'
+  const [unlocked, setUnlocked] = useState(null)
+  const [gateKey, setGateKey] = useState(0)
 
   // Fetch current user info for notifications
   useEffect(() => {
@@ -349,6 +359,9 @@ export default function Post({ post, seo, fontSettings, customFonts, newsletter 
 
         {/* Canonical URL */}
         <link rel="canonical" href={seo.canonicalUrl} />
+        {/* Fediverse apps find the post (and credit the writer) from its URL */}
+        {fediverse?.objectUrl && <link rel="alternate" type="application/activity+json" href={fediverse.objectUrl} />}
+        {fediverse?.handle && <meta name="fediverse:creator" content={fediverse.handle} />}
         {/* Let feed readers find the writer's RSS from any of their posts */}
         <link rel="alternate" type="application/rss+xml" title={`${post.author.displayName}'s RSS Feed`} href={`${SITE_URL}/${post.author.name}/feed.xml`} />
 
@@ -473,13 +486,33 @@ export default function Post({ post, seo, fontSettings, customFonts, newsletter 
           textDirection={post.textDirection || 'auto'}
           fontSettings={fontSettings}
           dangerouslySetInnerHTML={{
-            __html: sanitizePostHtml(post.content),
+            __html: unlocked ? unlocked.html : sanitizePostHtml(post.content),
           }}
           css={css`
             margin-bottom: 2rem;
           `}
         />
       </article>
+
+      {isPaid && !unlocked && (
+        <PaidPostGate
+          key={gateKey}
+          postId={post.id}
+          author={post.author}
+          plan={paywall}
+          hasPreview={Boolean(String(post.content || '').trim())}
+          onUnlocked={setUnlocked}
+        />
+      )}
+      {isPaid && unlocked?.reader && (
+        <PaidReaderBar
+          reader={unlocked.reader}
+          onSignOut={() => {
+            setUnlocked(null)
+            setGateKey(key => key + 1)
+          }}
+        />
+      )}
 
       {/* Readers mostly arrive on a post, not the profile, so offer the
           newsletter here too (unless the writer turned it off, or it's theirs) */}
@@ -492,6 +525,7 @@ export default function Post({ post, seo, fontSettings, customFonts, newsletter 
             enableNewsletter={true}
             enableGuestbook={false}
             newsletterButtonText={newsletter.buttonText}
+            paidPlan={paywall}
           />
         </div>
       )}
@@ -580,8 +614,10 @@ export async function getStaticProps({ params }) {
     const postUrl = `${SITE_URL}/${post.author.name}/${post.slug}`
     const authorUrl = `${SITE_URL}/${post.author.name}`
     const publishedTime = new Date(lastEditedTime).toISOString()
-    const readingTime = calculateReadingTime(post.content)
-    const wordCount = getWordCount(post.content)
+    // A paid post's length counts all of it, not just the free preview
+    const wholeBody = isPaidPost(post) ? fullContent(post) || post.content : post.content
+    const readingTime = calculateReadingTime(wholeBody)
+    const wordCount = getWordCount(wholeBody)
     const description = generateMetaDescription(post.excerpt, post.content)
     const keywords = generateKeywords(post.title, post.content, post.author.displayName)
 
@@ -605,6 +641,11 @@ export async function getStaticProps({ params }) {
       readingTime,
       keywords
     })
+
+    // Paywalled content, marked the way search engines ask for
+    if (isPaidPost(post) && blogPostingSchema) {
+      blogPostingSchema.isAccessibleForFree = false
+    }
 
     const breadcrumbSchema = generateBreadcrumbSchema([
       { name: 'Home', url: SITE_URL },
@@ -634,8 +675,22 @@ export async function getStaticProps({ params }) {
       faqSchema
     }
 
+    const author = { id: authorId, ...userData }
+    const handle = fediverseHandle(author)
+    const fediverse = handle
+      ? { handle, objectUrl: objectUrl(post.id, Number.isInteger(post.fediverse?.gen) ? post.fediverse.gen : 0) }
+      : null
+
     return {
-      props: { post: toPublicPost(post), seo, fontSettings, customFonts, newsletter: toPostNewsletter(userData) },
+      props: {
+        post: toPublicPost(post),
+        seo,
+        fontSettings,
+        customFonts,
+        newsletter: toPostNewsletter(userData),
+        paywall: publicPaidPlan(author),
+        fediverse,
+      },
       revalidate: 60, // Revalidate at most once per minute
     }
   } catch (err) {

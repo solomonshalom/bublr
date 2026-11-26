@@ -39,7 +39,12 @@ const SERVER_MANAGED_USER_FIELDS = [
   'shopSectionTitle',
   'shopOrders',
   'hasShopAccess',
+  'shopGrant',
   'integrations',
+  // Paid newsletter settings are signed by the server (Settings → Newsletter),
+  // and the fediverse key is sealed (Settings → Fediverse).
+  'paidNewsletter',
+  'fediverse',
 ]
 
 function profileFieldsToSave(clientUser) {
@@ -2758,6 +2763,8 @@ function Editor({ user, section }) {
     )
   }, [user, clientUser])
 
+  const fediversePushRef = useRef(null)
+
   // Auto-save function
   const performAutoSave = useCallback(async () => {
     // Don't auto-save if username changed (requires validation)
@@ -2771,6 +2778,19 @@ function Editor({ user, section }) {
     try {
       await firestore.collection('users').doc(user.id).update(profileFieldsToSave(clientUser))
       setSaveStatus('saved')
+      // Fediverse followers' servers learn about a new name, bio or picture
+      // a little after the last change (the server sends at most one update).
+      if (user.fediverse?.enabled) {
+        clearTimeout(fediversePushRef.current)
+        fediversePushRef.current = setTimeout(() => {
+          authedFetch('/api/activitypub/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'profile' }),
+            keepalive: true,
+          }).catch(() => {})
+        }, 30000)
+      }
     } catch (err) {
       console.error('Auto-save error:', err)
       setSaveStatus('unsaved')

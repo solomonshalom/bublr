@@ -3,7 +3,10 @@ import { css } from '@emotion/react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { useDocumentData } from 'react-firebase-hooks/firestore'
 
+import { useState } from 'react'
 import { firestore, auth } from '../../lib/firebase'
+import { authedFetch } from '../../lib/authed-fetch'
+import { formatPrice } from '../../lib/shop'
 import { LoadingContainer } from '../../components/loading-container'
 
 import DashboardLayout, {
@@ -94,6 +97,23 @@ const tdMutedStyle = css`
   font-variant-numeric: tabular-nums;
 `
 
+const linkButtonStyle = css`
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--accent-foreground, var(--grey-4));
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+`
+
 const DownloadIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -124,13 +144,49 @@ const formatDate = ts => {
   })
 }
 
-function downloadCSV(subscribers) {
-  const header = 'email,subscribedAt,status\n'
+// What a paid record says, for this page only (the server decides who may
+// read; lib/paid-newsletter). Grace periods match the server's.
+const DAY = 24 * 60 * 60 * 1000
+function paidInfo(sub, currentMode) {
+  const paid = sub && typeof sub === 'object' ? sub.paid : null
+  if (!paid || typeof paid !== 'object') return null
+  const end = Number(paid.currentPeriodEnd) || 0
+  const now = Date.now()
+  const price = paid.amount ? `${formatPrice(paid.amount, paid.currency)}/${paid.interval === 'year' ? 'yr' : 'mo'}` : ''
+  let state = 'ended'
+  if (paid.mode === 'test' && currentMode !== 'test') state = 'ended'
+  else if (paid.cancelAtPeriodEnd || paid.status === 'canceled') state = now < end ? 'ending' : 'ended'
+  else if (paid.status === 'active' || paid.status === 'trialing') state = now < end + 3 * DAY ? 'active' : 'ended'
+  else if (paid.status === 'past_due') state = now < end + 7 * DAY ? 'past_due' : 'ended'
+  return { state, price, end, mode: paid.mode, renewing: ['active', 'past_due'].includes(state) && !paid.cancelAtPeriodEnd }
+}
+
+const paidLabel = info => {
+  if (!info) return 'Free'
+  const date = info.end ? new Date(info.end).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''
+  const test = info.mode === 'test' ? ' (test)' : ''
+  switch (info.state) {
+    case 'active':
+      return `Paid · ${info.price}${date ? ` · renews ${date}` : ''}${test}`
+    case 'ending':
+      return `Paid · ends ${date}${test}`
+    case 'past_due':
+      return `Paid · payment failed, retrying${test}`
+    default:
+      return `Free (was paid)${test}`
+  }
+}
+
+function downloadCSV(subscribers, currentMode) {
+  const header = 'email,subscribedAt,status,plan,paidUntil\n'
   const rows = subscribers
     .map(s => {
       const email = (s.email || '').replace(/"/g, '""')
       const date = toDateString(s.subscribedAt)
-      return `"${email}","${date}","${s.pending === true ? 'pending' : 'confirmed'}"`
+      const info = paidInfo(s, currentMode)
+      const plan = info && info.state !== 'ended' ? `paid ${info.price}` : 'free'
+      const until = info && info.state !== 'ended' && info.end ? new Date(info.end).toISOString() : ''
+      return `"${email}","${date}","${s.pending === true ? 'pending' : 'confirmed'}","${plan}","${until}"`
     })
     .join('\n')
   const csv = header + rows
@@ -155,10 +211,36 @@ function SubscribersContent() {
   const subscribers = userDoc?.subscribers || []
   const pendingCount = subscribers.filter(s => s && s.pending === true).length
   const count = subscribers.length - pendingCount
+  const currentMode = userDoc?.integrations?.payments?.mode || 'live'
+  const paidCount = subscribers.filter(s => {
+    const info = paidInfo(s, currentMode)
+    return info && info.state !== 'ended'
+  }).length
+  const [busyEmail, setBusyEmail] = useState(null)
+  const [actionError, setActionError] = useState(null)
+
+  const stopRenewal = async email => {
+    if (!window.confirm(`Stop ${email}’s paid subscription from renewing? They keep access until the end of the period they paid for, and aren’t charged again.`)) return
+    setBusyEmail(email)
+    setActionError(null)
+    try {
+      const response = await authedFetch('/api/newsletter/paid/subscribers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', email }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || 'Couldn’t stop the renewal')
+    } catch (error) {
+      setActionError(error.message)
+    } finally {
+      setBusyEmail(null)
+    }
+  }
 
   const handleExport = () => {
     if (subscribers.length === 0) return
-    downloadCSV(subscribers)
+    downloadCSV(subscribers, currentMode)
   }
 
   return (
@@ -184,12 +266,15 @@ function SubscribersContent() {
           <div css={summaryStyle}>
             <span css={countStyle}>
               {count} {count === 1 ? 'subscriber' : 'subscribers'}
+              {paidCount > 0 ? ` · ${paidCount} paid` : ''}
             </span>
             <span>
               People receiving your newsletter.
               {pendingCount > 0 && ` ${pendingCount} more ${pendingCount === 1 ? 'is' : 'are'} waiting to confirm by email.`}
             </span>
           </div>
+
+          {actionError ? <p role="alert" css={css`color: #dc2626; font-size: 0.85rem; margin: 0 0 1rem;`}>{actionError}</p> : null}
 
           {subscribers.length === 0 ? (
             <div css={emptyStateStyle}>
@@ -201,6 +286,7 @@ function SubscribersContent() {
                 <tr>
                   <th css={thStyle}>Email</th>
                   <th css={thStyle}>Subscribed</th>
+                  <th css={thStyle}>Plan</th>
                 </tr>
               </thead>
               <tbody>
@@ -218,6 +304,22 @@ function SubscribersContent() {
                         {sub.pending === true && <span css={tdMutedStyle}> (unconfirmed)</span>}
                       </td>
                       <td css={tdMutedStyle}>{formatDate(sub.subscribedAt)}</td>
+                      <td css={tdMutedStyle}>
+                        {paidLabel(paidInfo(sub, currentMode))}
+                        {paidInfo(sub, currentMode)?.renewing && (
+                          <>
+                            {' · '}
+                            <button
+                              type="button"
+                              css={linkButtonStyle}
+                              disabled={busyEmail === sub.email}
+                              onClick={() => stopRenewal(sub.email)}
+                            >
+                              {busyEmail === sub.email ? 'Stopping…' : 'Stop renewal'}
+                            </button>
+                          </>
+                        )}
+                      </td>
                     </tr>
                   ))}
               </tbody>

@@ -9,6 +9,9 @@
 
 const SITE_URL = 'https://bublr.life'
 
+// lib/paid-content's paywall line (not imported: this file also runs in the browser)
+const PAYWALL_LINE = /<div\b[^>]*\bdata-type\s*=\s*(["'])paywall\1[^>]*>\s*(?:<\/div>)?/gi
+
 function toDate(value) {
   if (!value) return null
   if (typeof value.toDate === 'function') return value.toDate()
@@ -68,6 +71,7 @@ export function buildExportFiles({ user, posts, toMarkdown, toText, now = new Da
       edited ? `date: ${edited.toISOString()}` : null,
       `slug: ${yamlString(post.slug || name)}`,
       `draft: ${!published}`,
+      post.access === 'paid' ? 'paid: true' : null,
       excerpt ? `description: ${yamlString(excerpt)}` : null,
       published && post.slug ? `canonical_url: ${SITE_URL}/${username}/${post.slug}` : null,
       '---',
@@ -78,7 +82,8 @@ export function buildExportFiles({ user, posts, toMarkdown, toText, now = new Da
 
     files.push({
       name: `${folder}/posts/${name}.md`,
-      data: `${frontMatter}\n${toMarkdown(post.content || '')}`,
+      // The paywall line becomes a plain marker, so a paid post's split survives the move.
+      data: `${frontMatter}\n${toMarkdown(String(post.content || '').replace(PAYWALL_LINE, '<p>&lt;!-- paywall --&gt;</p>'))}`,
       date: edited || now,
     })
 
@@ -90,6 +95,7 @@ export function buildExportFiles({ user, posts, toMarkdown, toText, now = new Da
       lastEdited: edited ? edited.toISOString() : null,
       excerpt,
       dotColor: post.dotColor || null,
+      paid: post.access === 'paid',
       html: post.content || '',
     })
   }
@@ -101,7 +107,7 @@ export function buildExportFiles({ user, posts, toMarkdown, toText, now = new Da
     `Exported ${now.toUTCString()} from ${SITE_URL}/${username}.`,
     '',
     `- ${jsonPosts.length} post${jsonPosts.length === 1 ? '' : 's'} (${published} published, ${jsonPosts.length - published} draft${jsonPosts.length - published === 1 ? '' : 's'})`,
-    '- `posts/` has one Markdown file per post, with front matter most static site generators understand. Drafts have `draft: true`.',
+    '- `posts/` has one Markdown file per post, with front matter most static site generators understand. Drafts have `draft: true`; posts for paid subscribers have `paid: true`, with `<!-- paywall -->` where the free preview ends.',
     '- `bublr-export.json` keeps every post’s original HTML, so nothing is lost if you want to convert it yourself.',
     '',
     'Your words are yours. Take them anywhere.',

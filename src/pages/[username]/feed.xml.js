@@ -2,6 +2,7 @@ import { getUserByName } from '../../lib/db'
 import { extractFirstImage, generateMetaDescription, calculateReadingTime, cleanTitle } from '../../lib/seo-utils'
 import { firestore } from '../../lib/firebase'
 import { toMillis } from '../../lib/timestamps'
+import { feedContent } from '../../lib/paid-content'
 
 const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://bublr.life'
 
@@ -128,7 +129,7 @@ export async function getServerSideProps({ params, res }) {
               id: post.id,
               slug: postData.slug || post.slug,
               title: postData.title,
-              content: postData.content,
+              content: feedContent(postData),
               excerpt: postData.excerpt,
               lastEdited: toMillis(postData.lastEdited) || Date.now()
             })

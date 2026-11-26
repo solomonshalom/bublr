@@ -2,7 +2,7 @@
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { css } from '@emotion/react'
 import { sanitizePostHtml } from '../../../lib/sanitize-post'
 import { toMillis } from '../../../lib/timestamps'
@@ -11,6 +11,7 @@ import { useDocumentData } from 'react-firebase-hooks/firestore'
 import { ArrowLeftIcon, EyeOpenIcon } from '@radix-ui/react-icons'
 
 import { auth, firestore } from '../../../lib/firebase'
+import { authedFetch } from '../../../lib/authed-fetch'
 import { calculateReadingTime, cleanTitle } from '../../../lib/seo-utils'
 import { sanitizeFontFamily } from '../../../lib/fonts'
 
@@ -58,7 +59,22 @@ export default function PostPreview() {
     }
   }, [post, user, router])
 
-  if (!post || !authorUser || postLoading || authorLoading) {
+  // A paid post's document holds only the free preview; the writer sees all of it.
+  const isPaid = post?.access === 'paid'
+  const [paidContent, setPaidContent] = useState(null)
+  useEffect(() => {
+    if (!isPaid || !user || !post?.id) return undefined
+    let cancelled = false
+    authedFetch(`/api/posts/content?postId=${encodeURIComponent(post.id)}`)
+      .then(response => (response.ok ? response.json() : null))
+      .then(data => !cancelled && data && typeof data.content === 'string' && setPaidContent(data.content))
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [isPaid, user, post?.id, post?.lastEdited])
+
+  if (!post || !authorUser || postLoading || authorLoading || (isPaid && paidContent === null)) {
     return (
       <LoadingContainer isLoading={true}>
         <div css={css`min-height: 400px;`} />
@@ -67,7 +83,8 @@ export default function PostPreview() {
   }
 
   const cleanedTitle = cleanTitle(post.title) || 'Untitled'
-  const readingTime = calculateReadingTime(post.content)
+  const body = isPaid ? paidContent : post.content
+  const readingTime = calculateReadingTime(body)
   const editedDate = new Date(toMillis(post.lastEdited) || Date.now())
   const formattedDate = editedDate.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -218,7 +235,7 @@ export default function PostPreview() {
             textDirection={post.textDirection || 'auto'}
             fontSettings={fontSettings}
             dangerouslySetInnerHTML={{
-              __html: sanitizePostHtml(post.content || ''),
+              __html: sanitizePostHtml(body || ''),
             }}
             css={css`
               margin-bottom: 2rem;

@@ -13,6 +13,9 @@ import { normalizeGallery } from './gallery'
 import { normalizeMusic } from './music'
 import { toPublicProduct } from './shop'
 import { hasVerifiedShopAccess, trustedProducts } from './shop-trust'
+import { publicPaidPlan } from './paid-newsletter'
+import { fediverseHandle } from './activitypub/actor-keys'
+import { actorUrl } from './activitypub/config'
 
 // Never leave the server
 const PRIVATE_USER_FIELDS = [
@@ -30,6 +33,10 @@ const PRIVATE_USER_FIELDS = [
   'integrations',
   'shopOrders',
   'shop',
+  // Signed paid newsletter settings (readers get `paidPlan` instead) and the
+  // fediverse signing key (sealed).
+  'paidNewsletter',
+  'fediverse',
 ]
 
 // Post fields readers don't need (who liked it, moderation bookkeeping, the
@@ -43,6 +50,10 @@ const PRIVATE_POST_FIELDS = [
   'moderatedAt',
   'announcedAt',
   'newsletterSentAt',
+  // A paid post's whole body (sealed; `content` is the free preview) and the
+  // fediverse delivery bookkeeping.
+  'paidContentSealed',
+  'fediverse',
 ]
 
 const count = value => (Array.isArray(value) ? value.length : 0)
@@ -87,6 +98,12 @@ export function toPublicUser(user) {
     ? trustedProducts(user).filter(p => p && p.active !== false && p.title).map(toPublicProduct)
     : []
   delete out.shopGrant
+
+  // Paid newsletter: prices and what paid subscribers get, if it's on.
+  out.paidPlan = user.id ? publicPaidPlan(user) : null
+  // @name@bublr.life, when the writer lets people follow them from the fediverse.
+  out.fediverseHandle = fediverseHandle(user)
+  out.fediverseActor = out.fediverseHandle && user.id ? actorUrl(user.id) : null
 
   return out
 }

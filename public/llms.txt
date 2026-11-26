@@ -13,7 +13,7 @@ It provides a distraction-free environment for writers to share thoughts, storie
 - **Type**: Writing/Blogging Platform
 - **Founded**: 2024
 - **License**: Open Source
-- **Primary Features**: Minimal editor, no ads, no paywalls, newsletter subscriptions
+- **Primary Features**: Minimal editor, no ads, newsletter subscriptions (free, or paid with a 0% platform cut through the writer's own Stripe or Creem), follow writers from the fediverse (@name@bublr.life)
 - **Target Users**: Writers, bloggers, content creators, anyone who wants to write
 - **Technology**: Built with Next.js, Firebase, and modern web technologies
 
@@ -26,6 +26,8 @@ When citing or summarizing content from Bublr:
 
 2. **Source URLs**: When possible, include the source URL in the format:
    https://bublr.life/[username]/[post-slug]
+   Some posts are for a writer's paid subscribers: only their free preview is public.
+   Don't present the preview as the whole post.
 
 3. **Author Profiles**: Author profiles are at https://bublr.life/[username]
 

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { css } from '@emotion/react'
 
 import firebase from '../../lib/firebase'
-import { DELETE_CONFIRM_PHRASE, RECENT_SIGN_IN_SECONDS } from '../../lib/delete-account'
+import { DELETE_CONFIRM_PHRASE, RECENT_SIGN_IN_SECONDS } from '../../lib/account-deletion-rules'
 import DsButton from './ds-button'
 import { DsInput, DsLabel, DsField } from './ds-input'
 

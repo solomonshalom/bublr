@@ -1,10 +1,14 @@
 import firebase, { firestore } from './firebase'
+import { federateAccountGone } from './activitypub/federation'
+import { removeAllFollowers } from './activitypub/followers'
 
 /**
  * Deleting an account: everything a writer made on Bublr goes with them.
  *
  * `deleteAccountData(uid)` removes the user's posts and drafts, profile,
- * subscriber list, API keys, guest book, notifications, follows and likes.
+ * subscriber list (paid subscribers included: the route refuses while any of
+ * them would still be charged), API keys, guest book, notifications, follows,
+ * likes and fediverse followers.
  * Every step can be run again safely, and the profile document goes last, so
  * a request that died halfway can simply be repeated.
  *
@@ -12,11 +16,7 @@ import firebase, { firestore } from './firebase'
  * (`user.delete()`); API routes have no admin credentials to do it.
  */
 
-export const DELETE_CONFIRM_PHRASE = 'delete my account'
-
-// How recently the caller must have signed in. Deleting everything is not
-// something a token left open in an old tab should be able to do.
-export const RECENT_SIGN_IN_SECONDS = 10 * 60
+export { DELETE_CONFIRM_PHRASE, RECENT_SIGN_IN_SECONDS } from './account-deletion-rules'
 
 const CHUNK = 40
 
@@ -67,6 +67,11 @@ export async function deleteAccountData(uid) {
   const userRef = firestore.collection('users').doc(uid)
   const userDoc = await userRef.get()
   const user = userDoc.exists ? userDoc.data() : {}
+
+  // 0. The fediverse: followers' servers are told the account is gone (while
+  //    its signing key still exists), then the follower list goes.
+  await bestEffort('fediverse', () => federateAccountGone({ id: uid, ...user }))
+  await bestEffort('fediverse followers', () => removeAllFollowers(uid))
 
   // 1. Posts and drafts. Queried by author, so posts missing from the
   //    profile's list are found too.

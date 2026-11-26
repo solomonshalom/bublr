@@ -37,3 +37,14 @@ test('compare: pages are unique, sourced and fit search snippets', () => {
 test('compare: the page path is reserved', () => {
   assert.equal(isReservedUsername('compare'), true)
 })
+
+test('compare: Bublr’s paid subscriptions and fediverse rows say what the app does, and no copy says otherwise', () => {
+  assert.equal(BUBLR.paid.verdict, 'yes')
+  assert.match(BUBLR.paid.text, /0%/)
+  assert.equal(BUBLR.fediverse.verdict, 'yes')
+  assert.ok(ROWS.some(row => row.key === 'fediverse'))
+  for (const p of PLATFORMS) {
+    const copy = [p.oneLiner, p.summary, p.metaDescription, p.whenThem, p.faqAlternative, ...p.whyBublr].join(' ')
+    assert.doesNotMatch(copy, /Bublr has no paid subscriptions|Bublr doesn’t put writing behind a paywall/, p.slug)
+  }
+})

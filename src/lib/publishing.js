@@ -2,6 +2,9 @@ import Groq from 'groq-sdk'
 import { htmlToText } from 'html-to-text'
 import { firestore } from './firebase'
 import { notifySubscribersOfPost } from './newsletter-notify'
+import { fullContent, isPaidPost } from './paid-content'
+import { canPublishPaid } from './paid-newsletter'
+import { federatePost } from './activitypub/federation'
 
 /**
  * Publishing a post, shared by the dashboard (/api/posts/publish) and the
@@ -137,10 +140,37 @@ export async function setPostPublished({ postId, publish }) {
 
   if (!publish) {
     await postRef.update({ published: false })
+    // Off the fediverse too (followers' servers get a Delete).
+    await federatePost(postId)
     return { success: true, published: false, message: 'Post unpublished' }
   }
 
-  const moderationResult = await moderateContent(post.title, post.content)
+  // A paid post goes out only while the writer's paid newsletter is on.
+  // Moderation reads the whole post, not just the free preview.
+  let body = post.content
+  if (isPaidPost(post)) {
+    const authorDoc = await firestore.collection('users').doc(post.author).get()
+    const author = authorDoc.exists ? { id: authorDoc.id, ...authorDoc.data() } : null
+    if (!canPublishPaid(author)) {
+      return {
+        success: false,
+        published: false,
+        code: 'PAID_PLAN_REQUIRED',
+        message: 'Paid posts need the Pro + Shop plan with paid subscriptions turned on (Settings → Newsletter). Switch the post to Everyone to publish it for free.',
+      }
+    }
+    body = fullContent(post, postId)
+    if (body === null) {
+      return {
+        success: false,
+        published: false,
+        code: 'PAID_CONTENT_UNREADABLE',
+        message: 'This paid post can’t be opened on the server right now, so it wasn’t published.',
+      }
+    }
+  }
+
+  const moderationResult = await moderateContent(post.title, body)
 
   if (moderationResult.shouldUnpublish) {
     await postRef.update({
@@ -149,6 +179,7 @@ export async function setPostPublished({ postId, publish }) {
       moderationCategory: moderationResult.category,
       moderatedAt: new Date().toISOString(),
     })
+    await federatePost(postId)
     return {
       success: false,
       published: false,
@@ -191,6 +222,10 @@ export async function setPostPublished({ postId, publish }) {
       console.error('Newsletter notification error:', newsletterError)
     }
   }
+
+  // Followers on the fediverse: a Create the first time, an Update after
+  // edits (nothing if nothing they'd see changed).
+  await federatePost(postId)
 
   return { success: true, published: true, message: 'Post published successfully' }
 }

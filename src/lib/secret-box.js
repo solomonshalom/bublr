@@ -35,8 +35,17 @@ function masterSecret() {
 
 // Separate keys for sealing and for signing OAuth state, both derived from the
 // one environment variable.
-function derivedKey(purpose) {
-  return crypto.createHmac('sha256', masterSecret()).update(`bublr:${purpose}`).digest()
+function derivedKey(purpose, secret = masterSecret()) {
+  return crypto.createHmac('sha256', secret).update(`bublr:${purpose}`).digest()
+}
+
+// INTEGRATIONS_SECRET_PREVIOUS lets the secret be changed without losing what
+// was sealed with the old one (paid posts' bodies among them): values sealed
+// or signed with it still open and verify, and everything new uses the
+// current secret. Remove it once nothing sealed with it is left.
+function previousSecrets() {
+  const old = process.env.INTEGRATIONS_SECRET_PREVIOUS
+  return old && old.length >= 32 && old !== process.env.INTEGRATIONS_SECRET ? [old] : []
 }
 
 /** Whether secrets can be stored on this deployment. */
@@ -65,16 +74,18 @@ export function open(sealed, context) {
   if (typeof sealed !== 'string' || !sealed) return null
   const parts = sealed.split('.')
   if (parts.length !== 4 || parts[0] !== VERSION) return null
-  try {
-    const [, iv, tag, ciphertext] = parts
-    const decipher = crypto.createDecipheriv('aes-256-gcm', derivedKey('seal'), Buffer.from(iv, 'base64url'))
-    decipher.setAAD(Buffer.from(String(context)))
-    decipher.setAuthTag(Buffer.from(tag, 'base64url'))
-    return Buffer.concat([decipher.update(Buffer.from(ciphertext, 'base64url')), decipher.final()]).toString('utf8')
-  } catch (error) {
-    if (error instanceof SecretBoxError) throw error
-    return null
+  const [, iv, tag, ciphertext] = parts
+  for (const secret of [masterSecret(), ...previousSecrets()]) {
+    try {
+      const decipher = crypto.createDecipheriv('aes-256-gcm', derivedKey('seal', secret), Buffer.from(iv, 'base64url'))
+      decipher.setAAD(Buffer.from(String(context)))
+      decipher.setAuthTag(Buffer.from(tag, 'base64url'))
+      return Buffer.concat([decipher.update(Buffer.from(ciphertext, 'base64url')), decipher.final()]).toString('utf8')
+    } catch (_) {
+      // try the previous secret, if there is one
+    }
   }
+  return null
 }
 
 /**
@@ -118,23 +129,65 @@ export function keyHint(key) {
  * grant, cached Creem product IDs. Anyone can read them; only the server can
  * produce a signature that matches.
  */
-export function signValues(purpose, values) {
-  const mac = crypto.createHmac('sha256', derivedKey(`sign:${purpose}`))
+export function signValues(purpose, values, secret) {
+  const mac = crypto.createHmac('sha256', derivedKey(`sign:${purpose}`, secret || masterSecret()))
   for (const value of values) mac.update(`${String(value ?? '')}\u0000`)
   return mac.digest('base64url')
 }
 
 export function verifyValues(purpose, values, signature) {
   if (typeof signature !== 'string' || !signature) return false
-  let expected
+  let secrets
   try {
-    expected = signValues(purpose, values)
+    secrets = [masterSecret(), ...previousSecrets()]
   } catch (_) {
     return false
   }
   const a = Buffer.from(signature)
-  const b = Buffer.from(expected)
-  return a.length === b.length && crypto.timingSafeEqual(a, b)
+  return secrets.some(secret => {
+    const b = Buffer.from(signValues(purpose, values, secret))
+    return a.length === b.length && crypto.timingSafeEqual(a, b)
+  })
+}
+
+/**
+ * A signed token carrying a small JSON payload, for links and cookies (a
+ * reader's sign-in link, their session, the link to manage a paid
+ * subscription). Each purpose has its own key, so a token made for one can
+ * never be used as another. `exp` (milliseconds) is optional.
+ */
+export function signToken(purpose, payload, { now = Date.now(), ttlMs = null } = {}) {
+  const data = { ...payload, iat: now, ...(ttlMs ? { exp: now + ttlMs } : {}) }
+  const body = Buffer.from(JSON.stringify(data)).toString('base64url')
+  const mac = crypto.createHmac('sha256', derivedKey(`token:${purpose}`)).update(body).digest('base64url')
+  return `${body}.${mac}`
+}
+
+export function verifyToken(purpose, token, { now = Date.now() } = {}) {
+  if (typeof token !== 'string' || token.length > 4096) return null
+  const [body, mac, extra] = token.split('.')
+  if (!body || !mac || extra !== undefined) return null
+  let secrets
+  try {
+    secrets = [masterSecret(), ...previousSecrets()]
+  } catch (_) {
+    return null
+  }
+  const a = Buffer.from(mac)
+  const ok = secrets.some(secret => {
+    const b = Buffer.from(crypto.createHmac('sha256', derivedKey(`token:${purpose}`, secret)).update(body).digest('base64url'))
+    return a.length === b.length && crypto.timingSafeEqual(a, b)
+  })
+  if (!ok) return null
+  try {
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'))
+    if (!payload || typeof payload !== 'object') return null
+    if (typeof payload.iat !== 'number' || payload.iat - now > 60 * 1000) return null
+    if (payload.exp !== undefined && !(typeof payload.exp === 'number' && payload.exp > now)) return null
+    return payload
+  } catch (_) {
+    return null
+  }
 }
 
 /** Stable hash for IDs that must be matched but not revealed (checkout IDs). */

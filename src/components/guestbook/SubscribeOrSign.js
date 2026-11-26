@@ -2,6 +2,7 @@
 import { css, keyframes } from '@emotion/react'
 import { useState } from 'react'
 import SignatureCanvas from './SignatureCanvas'
+import { PaidSubscribeForm, planPrice } from '../paid-newsletter'
 
 // Newsletter icon
 const NewsletterIcon = () => (
@@ -93,7 +94,11 @@ export default function SubscribeOrSign({
   enableGuestbook = true,
   newsletterButtonText = '',
   guestbookButtonText = '',
+  paidPlan = null,
 }) {
+  // Writers with a paid newsletter: readers choose free or paid here.
+  const paidOpen = Boolean(paidPlan?.open)
+  const [tier, setTier] = useState('free')
   // Use custom text or fallback to default
   const newsletterText = newsletterButtonText || `Subscribe to ${authorDisplayName}'s newsletter`
   const guestbookText = guestbookButtonText || `Sign ${authorDisplayName}'s Guest Book`
@@ -203,6 +208,7 @@ export default function SubscribeOrSign({
 
   // Handle cancel/close
   const handleCancel = () => {
+    setTier('free')
     setMode(null)
     setStatus('idle')
     setErrorMessage('')
@@ -449,14 +455,16 @@ export default function SubscribeOrSign({
           }
         }}
       >
-        <form
-          onSubmit={handleNewsletterSubmit}
+        <div
+          role="dialog"
+          aria-label={`Subscribe to ${authorDisplayName}`}
           css={css`
             width: 100%;
             max-width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
             border: 1px solid ${colors.border};
             border-radius: 6px;
-            overflow: hidden;
             background: ${colors.bg};
           `}
         >
@@ -562,6 +570,49 @@ export default function SubscribeOrSign({
           padding: 16px;
         `}
       >
+        {paidOpen && (
+          <div
+            role="radiogroup"
+            aria-label="Free or paid"
+            css={css`
+              display: flex;
+              gap: 8px;
+              margin-bottom: 14px;
+            `}
+          >
+            {[
+              { value: 'free', title: 'Free', detail: 'New posts by email' },
+              { value: 'paid', title: 'Paid', detail: `${planPrice(paidPlan, 'month')}, every post` },
+            ].map(option => (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={tier === option.value}
+                onClick={() => setTier(option.value)}
+                css={css`
+                  flex: 1;
+                  text-align: left;
+                  font-family: Inter, sans-serif;
+                  padding: 8px 10px;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  background: ${colors.bg};
+                  border: 1px solid ${tier === option.value ? colors.text : colors.border};
+                  color: ${tier === option.value ? colors.text : colors.muted};
+                `}
+              >
+                <span css={css`display: block; font-size: 13px; font-weight: 500;`}>{option.title}</span>
+                <span css={css`font-size: 12px;`}>{option.detail}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {tier === 'paid' && paidOpen ? (
+          <PaidSubscribeForm authorUsername={authorUsername} authorDisplayName={authorDisplayName} plan={paidPlan} colors={colors} autoFocus />
+        ) : (
+        <>
         <p
           css={css`
             font-size: 13px;
@@ -575,7 +626,8 @@ export default function SubscribeOrSign({
         </p>
 
         {/* Input and button */}
-        <div
+        <form
+          onSubmit={handleNewsletterSubmit}
           css={css`
             display: flex;
             flex-direction: column;
@@ -654,7 +706,7 @@ export default function SubscribeOrSign({
               'Subscribe'
             )}
           </button>
-        </div>
+        </form>
 
         {/* Error message */}
         {status === 'error' && errorMessage && (
@@ -668,8 +720,10 @@ export default function SubscribeOrSign({
             {errorMessage}
           </p>
         )}
+        </>
+        )}
       </div>
-        </form>
+        </div>
       </div>
     </>
   )

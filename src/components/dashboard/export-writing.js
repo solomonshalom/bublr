@@ -4,6 +4,7 @@ import { css } from '@emotion/react'
 import { DownloadIcon } from '@radix-ui/react-icons'
 
 import { getUserByID } from '../../lib/db'
+import { authedFetch } from '../../lib/authed-fetch'
 import { htmlToMarkdown } from '../../lib/html-to-markdown'
 import { buildExportFiles } from '../../lib/export-posts'
 import { createZip } from '../../lib/zip'
@@ -38,9 +39,19 @@ export default function ExportWritingButton({ uid }) {
     setStatus('working')
     try {
       const user = await getUserByID(uid)
+      // Paid posts: the document holds only the free preview; export all of it.
+      const posts = await Promise.all(
+        (user.posts || []).map(async post => {
+          if (!post || post.access !== 'paid') return post
+          const response = await authedFetch(`/api/posts/content?postId=${encodeURIComponent(post.id)}`)
+          const data = await response.json().catch(() => ({}))
+          if (!response.ok || typeof data.content !== 'string') throw new Error(data.error || 'A paid post could not be exported')
+          return { ...post, content: data.content }
+        })
+      )
       const { folder, files } = buildExportFiles({
         user,
-        posts: user.posts || [],
+        posts,
         toMarkdown: htmlToMarkdown,
         toText: htmlToPlainText,
       })

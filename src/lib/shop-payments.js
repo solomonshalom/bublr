@@ -56,7 +56,7 @@ export function toFormBody(value, prefix = '', out = new URLSearchParams()) {
   return out
 }
 
-async function stripeRequest(apiKey, method, path, body, { idempotencyKey } = {}) {
+export async function stripeRequest(apiKey, method, path, body, { idempotencyKey } = {}) {
   const headers = { Authorization: `Bearer ${apiKey}` }
   if (body) headers['Content-Type'] = 'application/x-www-form-urlencoded'
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
@@ -180,7 +180,7 @@ export function creemBase(apiKey) {
   return String(apiKey || '').startsWith('creem_test_') ? CREEM_TEST_API : CREEM_LIVE_API
 }
 
-async function creemRequest(apiKey, method, path, body) {
+export async function creemRequest(apiKey, method, path, body) {
   const response = await fetch(`${creemBase(apiKey)}${path}`, {
     method,
     headers: { 'x-api-key': apiKey, ...(body ? { 'Content-Type': 'application/json' } : {}) },

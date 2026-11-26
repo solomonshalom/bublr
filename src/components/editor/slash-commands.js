@@ -160,6 +160,20 @@ const SLASH_COMMANDS = [
       editor.chain().focus().deleteRange(range).setHorizontalRule().run()
     },
   },
+  {
+    title: 'Paywall',
+    description: 'Free above the line, paid subscribers below.',
+    category: 'basic',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="5" y="11" width="14" height="10" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      </svg>
+    ),
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).setPaywallLine().run()
+    },
+  },
   // Media
   {
     title: 'Code',

@@ -253,3 +253,36 @@ Bublr is meant to be a tiny home for anyone on the internet. A home has more in 
 - An order is recorded when the buyer comes back from paying. If they close the tab on the payment page, you're still paid and see it in Stripe or Creem, but it won't show in Bublr's order list.
 - A shop holds up to 200 products.
 - The Firestore rules and the Explore spam clean-up are still open (see the comeback release).
+
+# Front Porch - Update (26th November'26)
+Yesterday profiles became a tiny home. A home has a front porch: the place where neighbours stop by, and where you can set out something you made and ask a fair price for it. So this update opens two doors. Writers on Pro + Shop can now charge for their newsletter, with the money going straight to them. And anyone can let people follow them from Mastodon and the rest of the fediverse. Bublr still shows no ads, and still takes no cut.
+
+## Added
+- **A paid newsletter.** *Settings → Newsletter* (Pro + Shop, $3 a month). Set a monthly price, and a yearly one if you like, and say what paid subscribers get. Readers choose Free or Paid where they subscribe: on your profile, at the end of every post, and on a paid post's paywall.
+- **You keep every cent.** Subscribers pay through your own Stripe (a restricted key with *Checkout Sessions* and *Subscriptions*) or Creem account, the same one your shop uses. Bublr takes 0% and never holds the money; your payment provider's usual fees apply.
+- **Posts for paid subscribers.** In the editor, set *Who can read* to *Paid subscribers*. Type `/paywall` to choose where the free preview ends; without a line, only the title and excerpt are free. Everyone else sees the preview and a way to subscribe.
+- **Paid posts stay paid.** A paid post's full text is stored encrypted, and only its preview is kept where pages, feeds, search, Explore, the developer API (for anyone but you) and the fediverse can see it. The full post is opened only for you and for readers who pay.
+- **Reading without an account.** Paid subscribers get every post by email, with a link that signs them in. On another device they ask for a sign-in link on the post. The sign-in lasts on that device and can't be read by scripts.
+- **Readers stay in control.** Every email to a paid subscriber links to a page where they can cancel, change their mind, or update their card. Unsubscribing cancels their payment too, so nobody pays for a newsletter they've left.
+- **Writers stay in control.** *Subscribers* shows who pays, at what price, and when they renew or end. You can stop anyone's renewal, check every status with Stripe or Creem, or end all paid subscriptions at once. Free subscribers can get a preview of each paid post, or nothing (your choice).
+- **Follow from the fediverse.** *Settings → Fediverse*. Turn it on and people follow you from Mastodon and other fediverse (ActivityPub) apps as `@you@bublr.life`. New posts reach their timelines, edits follow a little later, and unpublishing or deleting a post takes it back. Your name, picture and bio go along. Paid posts go out as their preview and a link.
+- **Found from anywhere.** Paste your profile or a post's address into Mastodon's search and it finds you. Your handle is on your profile, and posts carry the `fediverse:creator` tag, which Mastodon uses to credit you on link previews.
+- **Tests.** `npm test` now runs 239 tests, including that a paid post's text never reaches a page, feed, email or server it shouldn't, that prices come from your saved settings and never from the reader, that what was actually paid is checked, that a session from paying one writer can't open another, and that every fediverse delivery is signed and checked both ways.
+
+## Changed
+- **The comparison pages say what's true now.** Bublr has paid subscriptions with a 0% fee, and a new row compares who you can follow from the fediverse: Ghost, WordPress.com, Write.as, Mataroa and Micro.blog can be followed too; the other 13 platforms can't (checked 26th November).
+- **Settings → Shop and Settings → Newsletter share one payment connection**, with the Stripe and Creem permissions both need explained in one place.
+- **Deleting a post goes through Bublr's server,** so fediverse followers hear about it.
+- **Account deletion waits while readers would still be charged.** End your paid subscriptions first (one button), then delete.
+
+## Fixed
+- **Saving your profile no longer risks closing your shop.** The profile editor wrote back the shop plan's server signature as it was when the page opened, so a plan change made meanwhile could be undone.
+
+## Known issues
+- Paid subscribers who changed their payment method or cancelled directly in Stripe or Creem show the change in Bublr when their current period ends, or straight away if you press *Check with Stripe/Creem* on the Newsletter page.
+- If you disconnect or change the payment account your paid subscribers signed up with, Bublr can no longer check or cancel their subscriptions; cancel them in that account's dashboard.
+- Translation of a paid post covers its free preview only.
+- If a follower's server is down when you publish, it misses that post (it's still on your profile and in your fediverse outbox). Replies, likes and boosts from the fediverse aren't shown on Bublr.
+- A fediverse handle uses your Bublr username. If you change it, followers keep following you, but their apps may take a day to show the new name.
+- The fediverse follower list lives in a new Firestore collection, `fediverseFollowers`; like everything the server writes, the Firestore rules must allow it.
+- The Firestore rules and the Explore spam clean-up are still open (see the comeback release).

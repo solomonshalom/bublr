@@ -6,6 +6,7 @@ import {
   DELETE_CONFIRM_PHRASE,
   RECENT_SIGN_IN_SECONDS,
 } from '../../../lib/delete-account'
+import { renewingPaidSubscribers } from '../../../lib/paid-newsletter'
 
 /**
  * POST /api/account/delete  { confirm: "delete my account" }
@@ -53,6 +54,16 @@ export default async function handler(req, res) {
         error:
           'Your custom domain subscription is still active. Cancel it first with Manage Billing, further up this page, so you are not charged again, then delete your account.',
         code: 'SUBSCRIPTION_ACTIVE',
+      })
+    }
+
+    // Readers paying this writer would keep being charged by the writer's
+    // Stripe/Creem with nothing left to read.
+    const renewingReaders = userDoc.exists ? renewingPaidSubscribers({ id: uid, ...userDoc.data() }).length : 0
+    if (renewingReaders > 0) {
+      return res.status(409).json({
+        error: `${renewingReaders} paid ${renewingReaders === 1 ? 'subscriber is' : 'subscribers are'} still being charged for your newsletter. Stop their subscriptions first (Settings → Newsletter → End all paid subscriptions), then delete your account.`,
+        code: 'PAID_SUBSCRIBERS_ACTIVE',
       })
     }
 
