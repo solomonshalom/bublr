@@ -8,9 +8,11 @@ Memory for the nightly product run. Read this first, then `CLAUDE.md` and the ne
 
 ## Research
 
-**Last full round: 20th November 2026.** Next one is due on or after the 27th. On other nights, check only issues and whether main is healthy.
+**Last full round: 27th November 2026.** Next one is due on or after 4th December. On other nights, check only issues and whether main is healthy.
 
-Last nightly check: 26th November 2026. No new or updated issues; open PRs #1–#3 unchanged. On 25th November the owner pushed two releases straight to main: Tiny Home (gallery, music, shop, Pro + Shop plan) and comparison pages (`/compare`, Bublr vs 18 platforms). Vercel deployed them, 183 tests, lint and build pass, and bublr.life, /changelog, /explore and /compare answer normally. The relaunch branch is still at its 13th November commit. Nothing shipped tonight.
+Last nightly check: 27th November 2026. No new or updated issues; open PRs #1–#3 unchanged. Main (183 tests, lint, build) passes on Node 22; bublr.life, /changelog, /explore and /compare answer normally. Nothing shipped: a new session branch, `ccr-f0888bdc-g3lx5o` (26th November, 99 files: paid newsletters, fediverse), rewrites most of the app on top of main, so anything built tonight would collide (see Waiting on the owner).
+
+27th November round: nothing new from users. Product Hunt still has the same 2 reviews; searches found only the old launch listings. [SaaSHub](https://www.saashub.com/compare-lex-vs-bublr) lists Bublr at "$5/month", which isn't a Bublr price; it's their listing, not ours to fix. Peers: [Pika](https://releasebot.io/updates/pika) shipped focus and typewriter modes (8th Oct), a "/" menu (9th Oct), masonry galleries (6th Nov) and default social preview images (16th Nov). Bublr already has slash commands, a gallery and per-post preview images; a typewriter mode is a guess with no Bublr writer asking (see Backlog). [Write.as](https://write.as/@updates) reopened free accounts (Aug); Bublr is free already. Nothing for Bear Blog or Mataroa.
 
 20th November round: nothing new from users. Product Hunt still has the same 2 reviews; a search found only launch listings ([innolope](https://innolope.com/pulse/startups/691569a5f915b3ab4c718fdc) adds no comments). Peers: no new features found for November. Write.as [lets writers download their subscriber list](https://write.as/updates/); Bublr already does (Subscribers → export CSV). Bear Blog went [source-available in Sept 2025](https://alternativeto.net/news/2025/9/blogging-platform-bear-is-no-longer-open-source-moves-to-source-available-elastic-license), which makes Bublr's open source a clearer difference, not a gap.
 
@@ -52,12 +54,14 @@ Nothing may be built on main while the relaunch branch is open (see Waiting on t
 3. **Proposal, the look: skip the "Dashboard / Log out" choice** on the home page for signed-in writers and go to the dashboard. Evidence: one Product Hunt comment.
 4. **Proposal, the look: make the top navigation buttons easier to see.** Evidence: one Product Hunt comment.
 5. **Proposal, the look: one line on the landing page** saying nothing is public until you publish. Evidence: one Product Hunt comment.
+6. **Typewriter mode in the editor** (keep the line you're typing in the middle of the screen). Evidence: Pika added it on 8th October 2026. No Bublr writer has asked, so this is a guess. It would be off by default and add nothing to the page.
 
 ## Waiting on the owner
 
 - **The relaunch branch.** `relaunch/next-16-yearly-plan-launch-assets` was pushed on 13th November. It moves the app to Next 16, React 19, Firebase 13 and Tiptap 3, adds the yearly plan, and changes 139 files, including two new entries at the bottom of `changelog.md`. Anything built on main now would be built underneath it, so the nightly run ships no code and doesn't touch the changelog until it is merged, or until you say otherwise in "From the owner". The owner was notified once, on 13th November. Don't notify again for this.
   - New on 26th November: the owner now ships on main themselves (Tiny Home and /compare, 25th November), so the branch is further behind: it also lacks the profile blocks, the shop and the comparison pages. Question for the owner, in "From the owner": is the relaunch branch still planned, or may the nightly run build on main again?
   - Before merging: it needs Node 24.12 or newer, so check the Node version in the Vercel project settings. Main's billing moved from Polar to Creem on 19th November (`src/lib/creem.js`, `src/lib/creem-webhook.js`); the branch still has the Polar code, so it needs the same move before it merges. Its yearly plan will then read `CREEM_CUSTOM_DOMAIN_YEARLY_PRODUCT_ID`, which is already set in Vercel.
+- **The paid newsletter and fediverse branch.** `ccr-f0888bdc-g3lx5o` (26th November, 2 commits, 99 files, one behind main). It edits these notes too: it reverses the paywall decision (writers on Pro + Shop may charge, Bublr takes no cut) and lists what it needs before shipping (Firestore rules for `fediverseFollowers`). Until it is merged or dropped, the nightly run ships no code underneath it. The Decisions section here still says paywalls are against the mission; the branch's wording takes over when it merges.
 - **Issue #7.** Needs Vercel access, or the writer's domain, to find out what the verify step actually returned.
 - **Firestore rules.** Not in this repo. Needs the Firebase console.
 - **Explore spam clean-up.** Deletes existing posts, so it's the owner's call. Needs database access.
